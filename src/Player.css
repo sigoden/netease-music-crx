@@ -1,0 +1,16 @@
+.divider {
+  border-left:2px solid #f8f9fa; 
+  border-right:2px solid #f8f9fa; 
+  height:30px;
+}
+
+.player .progress {
+  height: .5rem;
+  overflow: inherit;
+}
+
+.player .dot {
+  font-size: 1rem;
+  align-self: center;
+  margin-left: -0.2rem;
+}
