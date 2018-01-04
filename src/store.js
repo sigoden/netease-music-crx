@@ -1,5 +1,5 @@
 import { extendObservable, action } from 'mobx'
-import * as API from 'netease-music-api'
+import * as API from './api'
 
 import {
   TOP_NEW_ID,
