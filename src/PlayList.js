@@ -7,7 +7,7 @@ import './PlayList.css'
 class PlayList extends Component {
   render() {
     let isPlaying = this.props.isPlaying
-    let {coverImgUrl, name, creator, songs} = this.props.item
+    let {coverImgUrl, name, creator, songsCount} = this.props.item
     return (
       <div className={classNames('playlist container-fluid list-group-item p-0', {'list-group-item-secondary': isPlaying})}>
         <div className="d-flex align-items-center">
@@ -18,7 +18,7 @@ class PlayList extends Component {
                 {name}
               </p>
               <p className="m-0 text-muted">
-                {songs.length}首 by {creator}
+                {songsCount}首 by {creator}
               </p>
             </div>
           </div>

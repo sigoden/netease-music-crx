@@ -3,6 +3,9 @@ import { observer } from 'mobx-react'
 import classNames from 'classnames'
 
 import './Player.css'
+import {
+  PLAY_MODE
+} from './constants'
 
 class Player extends Component {
   constructor (props) {
@@ -11,7 +14,8 @@ class Player extends Component {
       currentTimeStr: '0:00',
       durationTimeStr: '0:00',
       percentPlayed: 0,
-      percentBuffered: 0
+      percentBuffered: 0,
+      isVolumeBarVisiable: false
     }
   }
 
@@ -21,6 +25,32 @@ class Player extends Component {
     this.setState({
       durationTimeStr: formatScondTime(this.duration)
     })
+  }
+
+  moveAudioThumb (e) {
+    let bb = e.currentTarget.getBoundingClientRect()
+    let player = this.refs.player
+    let percent = (e.pageX - bb.x) / bb.width
+    let {playing}  = this.props.store
+    this.setState({
+      percentPlayed: percent * 100
+    })
+    player.currentTime = percent * player.duration
+    if (!playing) {
+      this.togglePlay()
+    }
+  }
+
+  toggleVolumeBarVisibility () {
+    this.setState({
+      isVolumeBarVisiable: !this.state.isVolumeBarVisiable
+    })
+  }
+
+  updateVolume (e) {
+    let player = this.refs.player
+    this.props.store.updateVolume(e.target.value)
+    player.volume = e.target.value
   }
 
   progress (currentTime = 0) {
@@ -57,7 +87,15 @@ class Player extends Component {
   }
 
   render () {
-    let { playing, song, playNext } = this.props.store
+    let {
+      playing,
+      song,
+      playNext,
+      playPrev,
+      volume,
+      playMode,
+      updatePlayMode
+    } = this.props.store
     return (
       <div className="player container-fluid mt-3">
         <div className="row align-items-center flex-nowrap">
@@ -74,27 +112,44 @@ class Player extends Component {
           </div>
           <div className="ctls d-flex ml-auto" style={{minWidth: '230px'}}>
             <div className="btns">
-              <button className="btn btn-light rounded-circle">
+              <button className="btn btn-light rounded-circle" onClick={_ => playPrev()}>
                 <i className="fas fa-step-backward" />
               </button>
               <button className="btn btn-light rounded-circle" onClick={_ => this.togglePlay()} >
                 {playing ?
-                    (<i className="fas fa-pause-circle" />) :
+                    (<i className="fas fa-pause" />) :
                     (<i className="fas fa-play" />)
                 }
               </button>
-              <button className="btn btn-light rounded-circle">
+              <button className="btn btn-light rounded-circle" onClick={_ => playNext()}>
                 <i className="fas fa-step-forward" />
               </button>
             </div>
             <div className="divider mx-2" />
             <div className="btns">
-              <button className="btn btn-light rounded-circle">
-                <i className="fas fa-random" />
+              <button className="btn btn-light rounded-circle" onClick={_ => updatePlayMode()}>
+                {playMode === PLAY_MODE.SHUFFLE ?
+                    (<i className="fas fa-random" />) :
+                    (playMode === PLAY_MODE.LOOP ?
+                      (<i className="fas fa-retweet" />) :
+                      (<i className="fas fa-redo" />)
+                    )
+                }
               </button>
-              <button className="btn btn-light rounded-circle">
-                <i className="fas fa-volume-down" />
-              </button>
+              <div className="volume">
+                <button className="btn btn-light rounded-circle" onClick={_ => this.toggleVolumeBarVisibility()}>
+                  <i className="fas fa-volume-down" />
+                </button>
+                <input
+                  min="0"
+                  max="1"
+                  value={volume}
+                  step="0.1"
+                  className={classNames('progress-volume', {'d-none': !this.state.isVolumeBarVisiable})}
+                  type="range"
+                  onChange={e => this.updateVolume(e)}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -102,9 +157,10 @@ class Player extends Component {
           <div className='curtime m-1'>
             {this.state.currentTimeStr}
           </div>
-          <div className="progress"  style={{flexGrow: 2}}>
-            <div className="progress-bar bg-secondary" role="progressbar" style={{width: this.state.percentPlayed + '%'}} aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-            <div className="dot">
+          <div className="progress progress-audio" style={{flexGrow: 2}} onClick={e => this.moveAudioThumb(e)}>
+            <div className="progress-bar bg-secondary progress-bar-buffered " style={{width: this.state.percentBuffered + '%'}}></div>
+            <div className="progress-bar bg-primary progress-bar-played" style={{width: this.state.percentPlayed + '%'}}></div>
+            <div className="thumb" style={{zIndex: 3}}>
               <i className="fas fa-dot-circle" />
             </div>
           </div>
@@ -113,6 +169,7 @@ class Player extends Component {
           </div>
         </div>
         <audio
+          autoPlay={playing}
           onLoadedData={e => this.onLoadedData()}
           onAbort={e => {
             this.passed = 0
@@ -124,9 +181,8 @@ class Player extends Component {
           }}
           onError={e => console.log(e)}
           onProgress={e => this.buffering(e)}
-          onSeeked={e => this.resetProgress()}
           onTimeUpdate={e => {
-            this.progress(e.target.currentTime)
+            this.progress(e.target.currentTime);
           }}
           ref="player"
           src={song.url}

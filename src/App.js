@@ -22,10 +22,11 @@ class App extends Component {
             })
           }
         </ul>
-        <Login />
+        {!store.isAuthed && (<Login store={store}/>)}
         {
           store.song && <Player store={store} />
         }
+        <button onClick={_ => store.fun()}>debug</button>
       </div>
     )
   }

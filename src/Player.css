@@ -4,13 +4,57 @@
   height:30px;
 }
 
-.player .progress {
+.player .progress-audio {
+  position: relative;
   height: .5rem;
   overflow: inherit;
 }
 
-.player .dot {
+.player .thumb {
   font-size: 1rem;
   align-self: center;
   margin-left: -0.2rem;
+  z-index: 3;
+  cursor: pointer;
+}
+
+.progress .progress-bar-played {
+  z-index: 2;
+}
+
+.progress .progress-bar-buffered {
+  position: absolute;
+  height: .5rem;
+}
+
+
+.player .volume {
+  display: inline-block;
+  position: relative;
+}
+
+.player .progress-volume {
+  position: absolute;
+  top: -9.3rem;
+  left: 1rem;
+  width: 6.3rem;
+  height: 0.5rem;
+  margin: 0;
+  transform-origin: 75px 75px;
+  transform: rotate(-90deg);
+  outline: none;
+  border-radius: 1rem;
+  cursor: pointer;
+  -webkit-appearance: none;
+  z-index: 3;
+  border: 1px solid #e6e6e6;
+  background-color: #f8f9fa; 
+}
+
+.player .progress-volume::-webkit-slider-thumb {
+  -webkit-appearance: none; 
+  width: 1rem; 
+  height: 1rem; 
+  border-radius: 50%!important;
+  background-color: #e6e6e6;
 }

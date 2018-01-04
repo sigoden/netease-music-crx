@@ -6,16 +6,28 @@ class Login extends Component {
   constructor (props) {
     super(props)
     this.state = {
+      phone: '',
+      password: '',
       collapsed: true
     }
   }
-  render() {
-    let {store} = this.props
+  formFieldUpdate (field, value) {
+    this.setState({
+      [field]: value
+    })
+  }
+  submit (e) {
+    let {login} = this.props.store
+    let {phone, password} = this.state
+    login(phone, password)
+    e.preventDefault()
+  }
+  render () {
     let {collapsed} = this.state
     return (
       <div>
         <div className={classNames('text-center border', {'d-none': !collapsed})}>
-          <div>
+          <div className="m-3">
             <button className="btn btn-link" onClick={() => {
               this.setState({
                 collapsed: false
@@ -25,14 +37,14 @@ class Login extends Component {
           </div>
         </div>
         <div className={classNames({'d-none': collapsed})}>
-          <form className="form-inline flex-nowrap mx-0 my-2">
+          <form className="form-inline flex-nowrap mx-0 my-3" onSubmit={e => this.submit(e)}>
             <div className="form-group mb-0">
               <label className="sr-only">手机号</label>
-              <input type="text" className="form-control" placeholder="手机号" />
+              <input type="text" className="form-control" placeholder="手机号" onChange={e => this.formFieldUpdate('phone', e.target.value)} />
             </div>
             <div className="form-group mb-0">
               <label className="sr-only">密码</label>
-              <input type="password" className="form-control" placeholder="密码" />
+              <input type="password" className="form-control" placeholder="密码"  onChange={e => this.formFieldUpdate('password', e.target.value)} />
             </div>
             <div className="ml-auto">
               <button type="submit" className="btn btn-primary">登录</button>
