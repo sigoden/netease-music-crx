@@ -3,6 +3,7 @@ import { observer } from 'mobx-react'
 import Player from './Player'
 import PlayList from './PlayList'
 import Login from './Login'
+import './App.css'
 
 class App extends Component {
   componentDidMount () {

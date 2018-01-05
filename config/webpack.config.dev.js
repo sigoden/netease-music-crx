@@ -4,6 +4,7 @@ const autoprefixer = require('autoprefixer');
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const WriteFilePlugin = require('write-file-webpack-plugin');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 const InterpolateHtmlPlugin = require('react-dev-utils/InterpolateHtmlPlugin');
 const WatchMissingNodeModulesPlugin = require('react-dev-utils/WatchMissingNodeModulesPlugin');
@@ -11,6 +12,7 @@ const eslintFormatter = require('react-dev-utils/eslintFormatter');
 const ModuleScopePlugin = require('react-dev-utils/ModuleScopePlugin');
 const getClientEnvironment = require('./env');
 const paths = require('./paths');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 // Webpack uses `publicPath` to determine where the app is being served from.
 // In development, we always serve from the root. This makes config easier.
@@ -35,18 +37,19 @@ module.exports = {
   entry: {
     index: [
       require.resolve('./polyfills'),
-      require.resolve('react-dev-utils/webpackHotDevClient'),
+      'webpack-dev-server/client?http://localhost:' + (process.env.PORT || 3000),
+      'webpack/hot/dev-server',
       paths.appIndexJs,
     ],
     background: [
       require.resolve('./polyfills'),
-      require.resolve('react-dev-utils/webpackHotDevClient'),
+      'webpack-dev-server/client?http://localhost:3000' + (process.env.PORT || 3000),
+      'webpack/hot/dev-server',
       paths.appBackgroundJs,
     ],
   },
   output: {
-    // Add /* filename */ comments to generated require()s in the output.
-    pathinfo: true,
+    path: paths.appBuild,
     // This does not produce a real file. It's just the virtual path that is
     // served by WebpackDevServer in development. This is the JS bundle
     // containing code from all our entry points, and the Webpack runtime.
@@ -242,6 +245,17 @@ module.exports = {
     // https://github.com/jmblog/how-to-optimize-momentjs-with-webpack
     // You can remove this if you don't use Moment.js:
     new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
+    new WriteFilePlugin({
+      // test: /\.html$/,
+    }),
+    new CopyWebpackPlugin([
+      {
+        context: paths.appPublic,
+        from: '**/*',
+        to: paths.appBuild,
+        ignore: ['*.html']
+      },
+    ]),
   ],
   // Some libraries import Node modules but don't use them in the browser.
   // Tell Webpack to provide empty mocks for them so importing them works.

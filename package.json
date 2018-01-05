@@ -101,5 +101,9 @@
   },
   "eslintConfig": {
     "extends": "react-app"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^4.3.1",
+    "write-file-webpack-plugin": "^4.2.0"
   }
 }
