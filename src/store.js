@@ -1,5 +1,4 @@
 import { extendObservable, action } from 'mobx'
-import * as API from './api'
 
 import {
   TOP_NEW_ID,
@@ -8,6 +7,7 @@ import {
   PLAY_MODE
 } from './constants'
 
+const API = wrapedAPI()
 const DEFAULT_STORAGE_DATA = {
   isAuthed: false, // 是否登录
   selectedPlaylistId: TOP_NEW_ID, // 上次播放的歌单
@@ -223,6 +223,34 @@ function getSongOnChangePlaylist (self, songId) {
     self.selectedSongId = song.id
     self.song = song
   })
+}
+
+// popup 存在跨域，所以将请求抛给 background 中转
+function wrapedAPI () {
+  function proxy (func) {
+    return function () {
+      let args = Array.from(arguments) 
+      return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          action: 'weapi',
+          func,
+          args
+        }, (err, res) => {
+          if (err) {
+            return reject(err)
+          } 
+          return resolve(res)
+        })
+      })
+    }
+  }
+  return {
+    cellphoneLogin: proxy('cellphoneLogin'),
+    getPlaylistDetail: proxy('getPlaylistDetail'),
+    getUserPlaylist: proxy('getUserPlaylist'),
+    getSongUrls: proxy('getSongUrls'),
+    getRecommendSongs: proxy('getRecommendSongs'),
+  }
 }
 
 export default new Store()

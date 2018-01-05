@@ -13,3 +13,4 @@ export const IMAGE_CLIP = '?param=150y150'
 
 // localStorage 键名
 export const STORAGE_KEY = 'data'
+

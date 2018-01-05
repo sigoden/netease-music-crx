@@ -1,8 +1,7 @@
 import axios from 'axios'
 import * as encrypt from './encrypt'
 // 网易 API 请求路径前缀
-// const API_PREFIX = 'https://music.163.com/weapi'
-const API_PREFIX = '/weapi'
+const API_PREFIX = 'https://music.163.com/weapi'
 
 const requester = createRequester()
 
