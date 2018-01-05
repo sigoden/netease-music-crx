@@ -7,9 +7,10 @@ import './PlayList.css'
 class PlayList extends Component {
   render() {
     let isPlaying = this.props.isPlaying
-    let {coverImgUrl, name, creator, songsCount} = this.props.item
+    let {changePlaylist} = this.props.store
+    let {id, coverImgUrl, name, creator, songsCount} = this.props.item
     return (
-      <div className={classNames('playlist container-fluid list-group-item p-0', {'list-group-item-secondary': isPlaying})}>
+      <div className={classNames('playlist container-fluid list-group-item p-0', {'list-group-item-success': isPlaying})} onClick={_ => changePlaylist(id)}>
         <div className="d-flex align-items-center">
           <div className="media">
             <img src={coverImgUrl} alt="album pic" className="rounded img-thumbnail p-0 mr-2" width="64" />

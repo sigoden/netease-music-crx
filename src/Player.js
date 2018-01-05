@@ -131,7 +131,7 @@ class Player extends Component {
                 {playMode === PLAY_MODE.SHUFFLE ?
                     (<i className="fas fa-random" />) :
                     (playMode === PLAY_MODE.LOOP ?
-                      (<i className="fas fa-retweet" />) :
+                      (<i className="fas fa-sync" />) :
                       (<i className="fas fa-redo" />)
                     )
                 }

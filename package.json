@@ -13,6 +13,15 @@
     "big-integer": "^1.6.26",
     "crypto-browserify": "^3.12.0"
   },
+  "proxy": {
+    "/weapi": {
+      "target": "https://music.163.com",
+      "headers": {
+        "host": "music.163.com",
+        "cookie": "MUSIC_U=c4f1b6b2f30516358bc3be0a5b342ea4c9bc587cc57a0a6a22575984ff14b459cac3b06c3e1be675cdced0ca4bf4b05e480f4d0bd2f3d1b9c3061cd18d77b7a0; Expires=Sat, 20 Jan 2018 01:54:29 GMT; Path=/; HttpOnly; Domain=.music.163.com; __remember_me=true; Expires=Sat, 20 Jan 2018 01:54:29 GMT; Path=/; HttpOnly; Domain=.music.163.com; __csrf=3409d6de5e126b0fb6d53c8ff577eab2; Domain=.music.163.com; Expires=Sat, 20-Jan-2018 01:54:39 GMT; Path=/;"
+      }
+    }
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "PUBLIC_URL=. react-scripts build",

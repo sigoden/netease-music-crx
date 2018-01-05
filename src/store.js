@@ -68,40 +68,42 @@ class Store {
         let nextModeKeyIndex = (modeKeyIndex + 1 + modeKeys.length) % modeKeys.length
         _this.playMode = PLAY_MODE[modeKeys[nextModeKeyIndex]]
       }),
+      changePlaylist: action((playlistId) => {
+        if (playlistId === _this.selectedPlaylistId) {
+          return
+        }
+        _this.selectedPlaylistId = playlistId
+        return getSongOnChangePlaylist(_this)
+      }),
       login: action((phone, password) => {
         _this.loading = true
-        API.cellphoneLogin(phone, password).then((res) => {
+        return API.cellphoneLogin(phone, password).then((res) => {
           _this.isAuthed = true
           let user = res.profile
           _this.user = user
           if (res.code === 200) {
-            Promise.all([createLikeSongsPlaylist(user), createRecommendSongsPlaylist(user), getUserPlaylist(user)]).then(result => {
-              let [likeSongsPlayList, recommendSongsPlaylist, userPlaylists] = result
-              _this.playlistGroup.push(likeSongsPlayList)
-              _this.playlistGroup.push(recommendSongsPlaylist)
-              userPlaylists.playlist.forEach(playlist => {
-                _this.playlistGroup.push(playlist)
-              })
-            })
+            return loadPlaylists(_this, user)
+          } else {
+            throw new Error('登录失败')
           }
+        }).catch(e => {
+          console.log(e)
         })
       }),
       // 获取新歌榜
       fetchTopNew: action(() => {
         // mockGetPlaylistDetail().then(res => {
-        API.getPlaylistDetail(TOP_NEW_ID).then(res => {
+        return API.getPlaylistDetail(TOP_NEW_ID).then(res => {
           if (res.code === 200) {
             let playlist = tidyPlaylist(res.playlist)
             _this.playlistGroup[0] = playlist
             // 没有登录时，自动选择一首新歌播放
             if (!_this.isAuthed) {
-              _this.selectedPlaylistId = playlist.id
-              getSong(playlist, _this.playMode).then(song => {
-                _this.selectedSongId = song.id
-                _this.song = song
-              })
+              return _this.changePlaylist(playlist.id)
             }
           }
+        }).catch(e => {
+          console.log(e)
         })
       })
     })
@@ -165,27 +167,6 @@ function shuffleArray (array) {
   return _array
 }
 
-function createLikeSongsPlaylist (user) {
-  let playlist = {id: generateId(), creator: user.nickname, name: '我喜欢的音乐'}
-  return getLikeSongs(user.userId).then(songs => {
-    playlist.tracks = songs
-    playlist.coverImgUrl = songs[0].al.picUrl
-    return tidyPlaylist(playlist)
-  })
-}
-
-function getLikeSongs (userId) {
-  return API.getLikeSongs(userId).then(res => {
-    if (res.code === 200) {
-      return API.getSongDetail(res.ids).then(res => {
-        if (res.code === 200) {
-          return res.songs
-        }
-      })
-    }
-  })
-}
-
 function createRecommendSongsPlaylist (user) {
   let playlist = {id: generateId(), creator: '网易云音乐', name: '每日推荐歌曲'}
   return getRecommendSongs(user.userId).then(songs => {
@@ -199,6 +180,16 @@ function generateId () {
   return Math.random().toString().substr(3, 8)
 }
 
+function loadPlaylists (self, user) {
+  return Promise.all([createRecommendSongsPlaylist(user), getUserPlaylist(user)]).then(result => {
+    let [recommendSongsPlaylist, userPlaylists] = result
+    self.playlistGroup.push(recommendSongsPlaylist)
+    userPlaylists.forEach(playlist => {
+      self.playlistGroup.push(playlist)
+    })
+  })
+}
+
 function getRecommendSongs (userId) {
   return API.getRecommendSongs(userId).then(res => {
     if (res.code === 200) {
@@ -206,19 +197,31 @@ function getRecommendSongs (userId) {
         let {id, album: al, artists: ar} = song
         return  {id, al, ar}
       })
+    } else {
+      throw new Error('获取推荐音乐失败')
     }
   })
 }
 
-function getUserPlaylist (userId) {
-  return API.getUserPlaylist(userId).then(res => {
+function getUserPlaylist (user) {
+  return API.getUserPlaylist(user.userId).then(res => {
     if (res.code === 200) {
       return Promise.all(res.playlist.map(playlist => {
         return API.getPlaylistDetail(playlist.id)
       })).then(result => {
         return result.filter(res => res.code === 200).map(res => tidyPlaylist(res.playlist))
       })
+    } else {
+      throw new Error('获取我的歌单失败')
     }
+  })
+}
+
+function getSongOnChangePlaylist (self, songId) {
+  let playlist = self.playlistGroup.find(playlist => playlist.id === self.selectedPlaylistId)
+  return getSong(playlist, self.playMode, songId).then(song => {
+    self.selectedSongId = song.id
+    self.song = song
   })
 }
 

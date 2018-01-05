@@ -1,7 +1,8 @@
 import axios from 'axios'
 import * as encrypt from './encrypt'
 // 网易 API 请求路径前缀
-const API_PREFIX = 'https://music.163.com/weapi'
+// const API_PREFIX = 'https://music.163.com/weapi'
+const API_PREFIX = '/weapi'
 
 const requester = createRequester()
 
@@ -51,15 +52,6 @@ export function getRecommendSongs () {
   return requester.getRecommendSongs(data)
 }
 
-// 获取喜欢歌曲
-export function getLikeSongs (uid) {
-  const data = {
-    uid,
-    csrf_token: ''
-  }
-  return requester.getLikeSongs(data)
-}
-
 // 获取歌曲详情
 export function getSongDetail (ids) {
   let idsHash = ids.map(id => ({id}))
@@ -69,7 +61,6 @@ export function getSongDetail (ids) {
     ids: idsStringify,
     csrf_token: ''
   }
-  console.log(data)
   return requester.getSongDetail(data)
 }
 
@@ -85,7 +76,6 @@ export function getSongUrls (ids) {
 }
 
 function createRequester () {
-  let cookie
   function createRequest(reqInfo) {
     let {
       method = 'post',
@@ -98,11 +88,8 @@ function createRequester () {
       method,
       baseURL,
       params: createRequestParams(data),
-      headers: createRequestHeaders(cookie)
+      headers: createRequestHeaders()
     }).then(res => {
-      if (res.status === 200) {
-        cookie = res.headers['set-cookie']
-      }
       return res.data
     })
   }
@@ -132,12 +119,6 @@ function createRequester () {
         data
       })
     },
-    getLikeSongs: (data) => {
-      return createRequest({
-        url: '/song/like/get',
-        data
-      })
-    },
     getSongDetail: (data) => {
       return createRequest({
         url: '/v3/song/detail',
@@ -153,7 +134,7 @@ function createRequester () {
   }
 }
 
-function createRequestHeaders (cookie) {
+function createRequestHeaders () {
   let headers = {
     Accept: '*/*',
     'Accept-Language': 'zh-CN,zh;q=0.8,gl;q=0.6,zh-TW;q=0.4',
@@ -161,9 +142,6 @@ function createRequestHeaders (cookie) {
     'Content-Type': 'application/x-www-form-urlencoded',
     Referer: 'https://music.163.com',
     Host: 'music.163.com',
-  }
-  if (cookie) {
-    headers.Cookie = cookie
   }
   return headers
 }

@@ -17,7 +17,7 @@ class App extends Component {
           {
             store.playlistGroup.map(item => {
               return (
-                <PlayList key={item.id} item={item} isPlaying={item.id === store.selectedPlaylistId} />
+                <PlayList key={item.id} item={item} isPlaying={item.id === store.selectedPlaylistId} store={store}/>
               )
             })
           }
@@ -26,7 +26,6 @@ class App extends Component {
         {
           store.song && <Player store={store} />
         }
-        <button onClick={_ => store.fun()}>debug</button>
       </div>
     )
   }
