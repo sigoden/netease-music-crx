@@ -1,0 +1,4 @@
+{
+  "globals": { "chrome": true },
+  "extends": "react-app"
+}
