@@ -43,7 +43,7 @@ module.exports = {
     ],
     background: [
       require.resolve('./polyfills'),
-      'webpack-dev-server/client?http://localhost:3000' + (process.env.PORT || 3000),
+      'webpack-dev-server/client?http://localhost:' + (process.env.PORT || 3000),
       'webpack/hot/dev-server',
       paths.appBackgroundJs,
     ],

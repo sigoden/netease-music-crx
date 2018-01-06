@@ -1,8 +1,23 @@
 import * as encrypt from './encrypt'
+
+import {parse as parseCookie} from 'cookie'
+
 // 网易 API 请求路径前缀
 const API_PREFIX = 'https://music.163.com/weapi'
 
 const requester = createRequester()
+
+let csrf = ''
+
+export function setCookie (_cookies) {
+  document.cookie = _cookies
+  if (_cookies) {
+    let _cookiesObj = parseCookie(_cookies)
+    csrf = _cookiesObj.__csrf
+  } else {
+    csrf = ''
+  }
+}
 
 // 手机登录
 export function cellphoneLogin (phone, password) {
@@ -75,7 +90,6 @@ export function getSongUrls (ids) {
 }
 
 function createRequester () {
-  let csrf
   function createRequest(reqInfo) {
     let {
       method = 'post',
@@ -84,25 +98,20 @@ function createRequester () {
       data
     } = reqInfo
     url = baseURL + url
-    if (csrf) {
-      url += '?csrf_token=' + csrf
-      data.csrf_token = csrf
-    }
+    url += '?csrf_token=' + csrf
+    data.csrf_token = csrf
     return fetch(url, {
       method,
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-        'Cookie': document.cookies,
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: createQueryParams(data)
+      credentials: 'same-origin',
+      body: createQueryParams(data),
     }).then(res => {
       return res.json()
     })
   }
   return {
-    csrf: (_csrf) => {
-      csrf = _csrf
-    },
     cellphoneLogin: (data) => {
       return createRequest({
         url: '/login/cellphone',

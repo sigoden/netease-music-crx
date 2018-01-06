@@ -9,7 +9,7 @@ class App extends Component {
   render() {
     let {store} = this.props
     return (
-      <div>
+      <div className="app">
         <ul className="list-group">
           {
             store.playlistGroup.map(item => {

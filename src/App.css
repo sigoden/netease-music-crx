@@ -1,3 +1,8 @@
-body {
+.app {
   width: 500px;
+}
+
+.app .list-group {
+  height: 488px;
+  overflow-y: scroll;
 }

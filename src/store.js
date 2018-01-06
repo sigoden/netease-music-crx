@@ -14,6 +14,7 @@ import {
   OMIT_PERSIST_KEYS,
 } from './constants'
 
+
 class Store {
   @observable playing = false
   @observable userId = null
@@ -37,8 +38,7 @@ class Store {
       chrome.storage.sync.get(persistData => {
         if (persistData) {
           if (persistData.cookies) {
-            document.cookies = persistData.cookies
-            delete persistData.cookies
+            API.setCookie(persistData.cookies)
           }
           extendObservable(self, persistData)
         }
@@ -148,18 +148,25 @@ class Store {
     }).then(() => {
       if (self.userId) {
         return API.loginRefresh().then(res => {
-          console.log(res)
           if (res.code === 200) {
             return self.loadRecommandAndUserPlaylists(self)
           } else if (res.code === 301) {
-            return self.applyChange({
-              userId: null,
-              cookies: [],
-              selectedPlaylistId: TOP_NEW_ID
-            })
+            // return self.applyChange({
+            //   userId: null,
+            //   cookies: null,
+            //   selectedPlaylistId: TOP_NEW_ID
+            // })
           }
         })
       }
+    })
+  }
+
+  setCookie (cookies) {
+    chrome.storage.sync.set({cookies})
+    API.setCookie(cookies)
+    return self.applyChange({
+      cookies
     })
   }
 }
@@ -169,7 +176,7 @@ function tidyPlaylist (playlist) {
   let songsHash = tracksToSongsHash(tracks)
   let normalSongsIndex = Object.keys(songsHash).map(index => Number(index))
   let shuffleSongsIndex = shuffleArray(normalSongsIndex)
-  return {id, creator, name, songsCount: normalSongsIndex.length, coverImgUrl: coverImgUrl + IMAGE_CLIP, songsHash, normalSongsIndex, shuffleSongsIndex}
+  return {id: Number(id), creator, name, songsCount: normalSongsIndex.length, coverImgUrl: coverImgUrl + IMAGE_CLIP, songsHash, normalSongsIndex, shuffleSongsIndex}
 }
 
 function tracksToSongsHash (tracks) {
@@ -225,16 +232,14 @@ function createRecommendSongsPlaylist (userId) {
 }
 
 function generateId () {
-  return Math.random().toString().substr(3, 8)
+  return Number(Math.random().toString().substr(3, 8))
 }
 
 function loadRecommandAndUserPlaylists (self) {
   let userId = self.userId
   return Promise.all([createRecommendSongsPlaylist(userId), getUserPlaylist(userId)]).then(result => {
     let [recommendSongsPlaylist, userPlaylists] = result
-    return {
-      playlistGroup: [recommendSongsPlaylist, ...userPlaylists]
-    }
+    return [recommendSongsPlaylist, ...userPlaylists]
   })
 }
 
