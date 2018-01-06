@@ -3,7 +3,7 @@
   "description": "网易云音乐是一款专注于发现与分享的音乐产品，依托专业音乐人、DJ、好友推荐及社交功能，为用户打造全新的音乐生活。",
   "version": "1.0.0",
   "background": {
-    "persistent": false,
+    "persistent": true,
     "page": "background.html"
   },
   "browser_action": {
@@ -13,7 +13,7 @@
   "icons": {
     "128": "./static/img/icon-128.png"
   },
-  "permissions": ["storage"],
+  "permissions": ["storage", "webRequest", "https://music.163.com/"],
   "update_url": "http://clients2.google.com/service/update2/crx",
   "manifest_version": 2,
   "content_security_policy": "script-src 'self'; object-src 'self'"

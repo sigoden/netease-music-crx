@@ -235,10 +235,7 @@ function wrapedAPI () {
           action: 'weapi',
           func,
           args
-        }, (err, res) => {
-          if (err) {
-            return reject(err)
-          } 
+        }, (res) => {
           return resolve(res)
         })
       })

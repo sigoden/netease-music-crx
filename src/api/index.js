@@ -1,4 +1,3 @@
-import axios from 'axios'
 import * as encrypt from './encrypt'
 // 网易 API 请求路径前缀
 const API_PREFIX = 'https://music.163.com/weapi'
@@ -82,14 +81,12 @@ function createRequester () {
       url,
       data
     } = reqInfo
-    return axios({
-      url,
+    let queryParams = encodeQueryParams(createQueryParams(data))
+    url = baseURL + url + '?' + queryParams
+    return fetch(url, {
       method,
-      baseURL,
-      params: createRequestParams(data),
-      headers: createRequestHeaders()
     }).then(res => {
-      return res.data
+      return res.json()
     })
   }
 
@@ -133,22 +130,17 @@ function createRequester () {
   }
 }
 
-function createRequestHeaders () {
-  let headers = {
-    Accept: '*/*',
-    'Accept-Language': 'zh-CN,zh;q=0.8,gl;q=0.6,zh-TW;q=0.4',
-    Connection: 'keep-alive',
-    'Content-Type': 'application/x-www-form-urlencoded',
-    Referer: 'https://music.163.com',
-    Host: 'music.163.com',
-  }
-  return headers
-}
-
-function createRequestParams (data) {
+function createQueryParams (data) {
   const cryptoReq = encrypt.encryptData(data)
   return {
     params: cryptoReq.params,
     encSecKey: cryptoReq.encSecKey
   }
+}
+
+function encodeQueryParams (params) {
+  let esc = encodeURIComponent
+  return Object.keys(params)
+    .map(k => esc(k) + '=' + esc(params[k]))
+    .join('&')
 }
