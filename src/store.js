@@ -1,4 +1,4 @@
-import { extendObservable, action } from 'mobx'
+import { observable, computed, action, extendObservable } from 'mobx'
 
 import {
   TOP_NEW_ID,
@@ -9,103 +9,101 @@ import {
 
 const API = wrapedAPI()
 const DEFAULT_STORAGE_DATA = {
-  isAuthed: false, // 是否登录
   selectedPlaylistId: TOP_NEW_ID, // 上次播放的歌单
   selectedSongId: null,  // 上次播放的歌曲
   volume: 0.5, // 音量
   playMode: PLAY_MODE.LOOP, //  播放模式
-  user: null
+  user: {}, // 用户详情 
 }
 
+let storageData = getStorageData()
+
 class Store {
-  constructor() {
-    let _this = this
-    let storageData = getStorageData()
-    extendObservable(_this, {
-      loading: false,
-      isAuthed: storageData.isAuthed,
-      playing: false,
-      volume: storageData.volume,
-      playMode: storageData.playMode,
-      selectedPlaylistId: storageData.selectedPlaylistId,
-      selectedSongId: storageData.selectedSongId,
-      user: storageData.user,
-      song: null,
-      playlistGroup: [
-        {
-          id: TOP_NEW_ID,
-          creator: '网易云音乐',
-          name: '云音乐新歌榜',
-          coverImgUrl: 'http://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg?param=150y150',
-          shuffleSongsIndex: [],
-          songsHash: []
+  @observable loading = false
+  @observable playing = false
+  @observable user = storageData.user
+  @computed get isAuthed () {
+    return Boolean(this.user.userId)
+  }
+  @observable volume = storageData.volume
+  @observable playMode = storageData.playMode
+  @observable playlistGroup = [
+    {
+      id: TOP_NEW_ID,
+      creator: '网易云音乐',
+      name: '云音乐新歌榜',
+      coverImgUrl: 'http://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg?param=150y150',
+      shuffleSongsIndex: [],
+      songsHash: []
+    }
+  ]
+  @observable selectedPlaylistId = storageData.selectedPlaylistId
+  @observable selectedSongId = storageData.selectedSongId
+  @observable song = null
+
+  @action togglePlaying = () => {
+    this.playing = !this.playing
+  }
+  @action updateVolume = (volume) => {
+    this.volume = volume
+  }
+  @action playPrev = () => {
+    let playlist = this.playlistGroup.find(playlist => playlist.id === this.selectedPlaylistId)
+    getSong(playlist, this.playMode, this.song.id, -1).then(song => {
+      this.selectedSongId = song.id
+      this.song = song
+    })
+  }
+  @action playNext = () => {
+    let playlist = this.playlistGroup.find(playlist => playlist.id === this.selectedPlaylistId)
+    getSong(playlist, this.playMode, this.song.id).then(song => {
+      this.selectedSongId = song.id
+      this.song = song
+    })
+  }
+  @action updatePlayMode = () => {
+    let modeKeys = Object.keys(PLAY_MODE)
+    let currentPlayMode = this.playMode
+    let modeKeyIndex = modeKeys.findIndex(key => PLAY_MODE[key] === currentPlayMode)
+    let nextModeKeyIndex = (modeKeyIndex + 1 + modeKeys.length) % modeKeys.length
+    this.playMode = PLAY_MODE[modeKeys[nextModeKeyIndex]]
+  }
+  @action changePlaylist = (playlistId) => {
+    if (playlistId === this.selectedPlaylistId) {
+      return
+    }
+    this.selectedPlaylistId = playlistId
+    return getSongOnChangePlaylist(this)
+  }
+  @action login = (phone, password) => {
+    this.loading = true
+    return API.cellphoneLogin(phone, password).then((res) => {
+      this.isAuthed = true
+      let {userId} = res.profile
+      extendObservable(this.user, {userId, phone, password})
+      if (res.code === 200) {
+        return loadPlaylists(this)
+      } else {
+        throw new Error('登录失败')
+      }
+    }).catch(e => {
+      console.log(e)
+    })
+  }
+  // 获取新歌榜
+  @action fetchTopNew = () => {
+    // mockGetPlaylistDetail().then(res => {
+    return API.getPlaylistDetail(TOP_NEW_ID).then(res => {
+      if (res.code === 200) {
+        let playlist = tidyPlaylist(res.playlist)
+        this.playlistGroup[0] = playlist
+        // 没有登录时，自动选择一首新歌播放
+        if (!this.isAuthed) {
+          return this.changePlaylist(playlist.id)
         }
-      ],
-      togglePlaying: action(() => {
-        _this.playing = !_this.playing
-      }),
-      updateVolume: action((volume) => {
-        _this.volume = volume
-      }),
-      playPrev: action(() => {
-        let playlist = _this.playlistGroup.find(playlist => playlist.id === _this.selectedPlaylistId)
-        getSong(playlist, _this.playMode, _this.song.id, -1).then(song => {
-          _this.selectedSongId = song.id
-          _this.song = song
-        })
-      }),
-      playNext: action(() => {
-        let playlist = _this.playlistGroup.find(playlist => playlist.id === _this.selectedPlaylistId)
-        getSong(playlist, _this.playMode, _this.song.id).then(song => {
-          _this.selectedSongId = song.id
-          _this.song = song
-        })
-      }),
-      updatePlayMode: action(() => {
-        let modeKeys = Object.keys(PLAY_MODE)
-        let currentPlayMode = _this.playMode
-        let modeKeyIndex = modeKeys.findIndex(key => PLAY_MODE[key] === currentPlayMode)
-        let nextModeKeyIndex = (modeKeyIndex + 1 + modeKeys.length) % modeKeys.length
-        _this.playMode = PLAY_MODE[modeKeys[nextModeKeyIndex]]
-      }),
-      changePlaylist: action((playlistId) => {
-        if (playlistId === _this.selectedPlaylistId) {
-          return
-        }
-        _this.selectedPlaylistId = playlistId
-        return getSongOnChangePlaylist(_this)
-      }),
-      login: action((phone, password) => {
-        _this.loading = true
-        return API.cellphoneLogin(phone, password).then((res) => {
-          _this.isAuthed = true
-          let user = res.profile
-          _this.user = user
-          if (res.code === 200) {
-            return loadPlaylists(_this, user)
-          } else {
-            throw new Error('登录失败')
-          }
-        }).catch(e => {
-          console.log(e)
-        })
-      }),
-      // 获取新歌榜
-      fetchTopNew: action(() => {
-        // mockGetPlaylistDetail().then(res => {
-        return API.getPlaylistDetail(TOP_NEW_ID).then(res => {
-          if (res.code === 200) {
-            let playlist = tidyPlaylist(res.playlist)
-            _this.playlistGroup[0] = playlist
-            // 没有登录时，自动选择一首新歌播放
-            if (!_this.isAuthed) {
-              return _this.changePlaylist(playlist.id)
-            }
-          }
-        }).catch(e => {
-          console.log(e)
-        })
-      })
+      }
+    }).catch(e => {
+      console.log(e)
     })
   }
 }
@@ -180,7 +178,8 @@ function generateId () {
   return Math.random().toString().substr(3, 8)
 }
 
-function loadPlaylists (self, user) {
+function loadPlaylists (self) {
+  let user = self.user
   return Promise.all([createRecommendSongsPlaylist(user), getUserPlaylist(user)]).then(result => {
     let [recommendSongsPlaylist, userPlaylists] = result
     self.playlistGroup.push(recommendSongsPlaylist)
