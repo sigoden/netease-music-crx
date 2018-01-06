@@ -9,6 +9,7 @@
     "babel-jest": "20.0.3",
     "babel-loader": "7.1.2",
     "babel-preset-react-app": "^3.1.0",
+    "babel-plugin-transform-decorators-legacy": "^1.3.4",
     "babel-runtime": "6.26.0",
     "big-integer": "^1.6.26",
     "case-sensitive-paths-webpack-plugin": "2.1.1",
@@ -87,10 +88,14 @@
   "babel": {
     "presets": [
       "react-app"
+    ],
+    "plugins": [
+      "transform-decorators-legacy"
     ]
   },
   "eslintConfig": {
-    "extends": "react-app"
+    "extends": "react-app",
+    "globals": { "chrome": true }
   },
   "devDependencies": {
     "copy-webpack-plugin": "^4.3.1",

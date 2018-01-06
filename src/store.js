@@ -240,8 +240,7 @@ function wrapedAPI () {
         })
       })
     }
-  }
-  return {
+  } return {
     cellphoneLogin: proxy('cellphoneLogin'),
     getPlaylistDetail: proxy('getPlaylistDetail'),
     getUserPlaylist: proxy('getUserPlaylist'),
@@ -250,4 +249,6 @@ function wrapedAPI () {
   }
 }
 
-export default new Store()
+let store = new Store()
+
+export default store
