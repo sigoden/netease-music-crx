@@ -12,4 +12,4 @@ export const TOP_NEW_ID = 3779629
 export const IMAGE_CLIP = '?param=150y150'
 
 // store 中不需要存储的键
-export const OMIT_PERSIST_KEYS = ['playlistGroup']
+export const OMIT_PERSIST_KEYS = ['playlistGroup', 'audioState']

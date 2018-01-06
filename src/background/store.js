@@ -1,6 +1,7 @@
 import {
   observable,
   action,
+  observe,
   extendObservable,
   toJS,
 } from 'mobx'
@@ -15,10 +16,18 @@ import {
 } from '../constants'
 
 
+// 播放器
+let audio
+
 class Store {
   @observable playing = false
   @observable userId = null
   @observable volume = 0.5
+  @observable audioState = {
+    duration: 0,
+    currentTime: 0,
+    buffered: 0,
+  }
   @observable playMode = PLAY_MODE.LOOP
   @observable playlistGroup = [
     {
@@ -47,12 +56,31 @@ class Store {
     })
   } 
 
+  @action updateAudioCurrentTime = (currentTime) => {
+    if (audio) {
+      audio.currentTime = currentTime
+    }
+    return self.applyChange({
+      audioState: Object.assign(toJS(self.audioState), {currentTime})
+    }).then(() => {
+      if (!self.playing) {
+        return self.togglePlaying()
+      }
+    })
+  }
+
   @action togglePlaying = () => {
+    if (self.playing) {
+      audio.pause()
+    } else {
+      audio.play()
+    }
     return self.applyChange({
       playing: !self.playing
     })
   }
   @action updateVolume = (volume) => {
+    audio.volume = self.volume
     return self.applyChange({
       volume
     })
@@ -286,6 +314,68 @@ function persist (change) {
   chrome.storage.sync.set(toPersistData)
 }
 
+
 let self = new Store()
+
+observe(self, 'song', (change) => {
+  if (audio) {
+    audio.src = self.song.url
+  } else {
+    audio = new Audio(self.song.url)
+  }
+  if (self.playing) {
+    audio.autoplay = true
+  }
+  audio.onprogress = (e) => {
+    if (audio.buffered.length) {  // Player has started
+      let buffered = audio.buffered.end(audio.buffered.length - 1)
+      if (buffered >= 100) {
+        buffered = 100
+      }
+      dispatchAudioState({
+        buffered
+      })
+    }
+  }
+  audio.oncanplay = () => {
+    audio.onprogress()
+    dispatchAudioState({
+      duration: audio.duration
+    })
+  }
+  audio.onabort = () => {
+    dispatchAudioState({
+      currentTime: 0
+    })
+  }
+  audio.onend = () => {
+    dispatchAudioState({
+      currentTime: 0
+    })
+    self.playNext()
+  }
+  audio.onerror = (e) => {
+    console.log(e)
+  }
+  audio.ontimeupdate = () => {
+    dispatchAudioState({
+      currentTime: audio.currentTime
+    })
+  }
+})
+
+function dispatchAudioState (state) {
+  console.log(state)
+  let audioState = extendObservable(self.audioState, state)
+  self.applyChange({
+    audioState,
+  }).then(() => {
+    chrome.runtime.sendMessage({
+      action: 'audioState',
+      audioState: toJS(audioState)
+    })
+  })
+}
+
 
 export default self

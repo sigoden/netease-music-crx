@@ -11,34 +11,21 @@ class Player extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      currentTimeStr: '0:00',
-      durationTimeStr: '0:00',
-      percentPlayed: 0,
-      percentBuffered: 0,
       isVolumeBarVisiable: false
     }
   }
 
-  onLoadedData () {
-    let player = this.refs.player
-    this.duration = player.duration
-    this.setState({
-      durationTimeStr: formatScondTime(this.duration)
-    })
-  }
-
   moveAudioThumb (e) {
     let bb = e.currentTarget.getBoundingClientRect()
-    let player = this.refs.player
     let percent = (e.pageX - bb.x) / bb.width
-    let {playing}  = this.props.store
-    this.setState({
-      percentPlayed: percent * 100
-    })
-    player.currentTime = percent * player.duration
-    if (!playing) {
-      this.togglePlay()
-    }
+    let {
+      updateAudioCurrentTime,
+      audioState: {
+        duration
+      }
+    } = this.props.store
+    let currentTime = percent * duration
+    updateAudioCurrentTime(currentTime)
   }
 
   toggleVolumeBarVisibility () {
@@ -47,44 +34,6 @@ class Player extends Component {
     })
   }
 
-  updateVolume (e) {
-    let player = this.refs.player
-    this.props.store.updateVolume(e.target.value)
-    player.volume = e.target.value
-  }
-
-  progress (currentTime = 0) {
-    this.setState({
-      percentPlayed: (currentTime / this.duration) * 100
-    })
-    this.buffering()
-    this.passed = currentTime
-  }
-
-  buffering () {
-    let player = this.refs.player
-
-    if (player.buffered.length) {  // Player has started
-      let buffered = player.buffered.end(player.buffered.length - 1)
-
-      if (buffered >= 100) {
-        buffered = 100
-      }
-      this.setState({
-        percentBuffered: buffered
-      })
-    }
-  }
-
-  togglePlay () {
-    let {togglePlaying, playing} = this.props.store
-    togglePlaying()
-    this.refs.player[playing ? 'pause' : 'play']()
-  }
-
-  resetProgress () {
-    this.passed = 0
-  }
 
   render () {
     let {
@@ -94,8 +43,20 @@ class Player extends Component {
       playPrev,
       volume,
       playMode,
-      updatePlayMode
+      togglePlaying,
+      updateVolume,
+      updatePlayMode,
+      audioState: {
+        currentTime,
+        duration,
+        buffered,
+      },
     } = this.props.store
+    
+    let currentTimeStr = formatScondTime(currentTime)
+    let durationTimeStr = formatScondTime(duration)
+    let percentPlayed = currentTime / duration * 100
+
     return (
       <div className="player container-fluid mt-3">
         <div className="row align-items-center flex-nowrap">
@@ -115,7 +76,7 @@ class Player extends Component {
               <button className="btn btn-light rounded-circle" onClick={_ => playPrev()}>
                 <i className="fas fa-step-backward" />
               </button>
-              <button className="btn btn-light rounded-circle" onClick={_ => this.togglePlay()} >
+              <button className="btn btn-light rounded-circle" onClick={_ => togglePlaying()} >
                 {playing ?
                     (<i className="fas fa-pause" />) :
                     (<i className="fas fa-play" />)
@@ -147,7 +108,7 @@ class Player extends Component {
                   step="0.1"
                   className={classNames('progress-volume', {'d-none': !this.state.isVolumeBarVisiable})}
                   type="range"
-                  onChange={e => this.updateVolume(e)}
+                  onChange={e => updateVolume(e.target.value)}
                 />
               </div>
             </div>
@@ -155,40 +116,19 @@ class Player extends Component {
         </div>
         <div className="row align-items-center">
           <div className='curtime m-1'>
-            {this.state.currentTimeStr}
+            {currentTimeStr}
           </div>
           <div className="progress progress-audio" style={{flexGrow: 2}} onClick={e => this.moveAudioThumb(e)}>
-            <div className="progress-bar bg-secondary progress-bar-buffered " style={{width: this.state.percentBuffered + '%'}}></div>
-            <div className="progress-bar bg-primary progress-bar-played" style={{width: this.state.percentPlayed + '%'}}></div>
+            <div className="progress-bar bg-secondary progress-bar-buffered " style={{width: buffered + '%'}}></div>
+            <div className="progress-bar bg-primary progress-bar-played" style={{width: percentPlayed + '%'}}></div>
             <div className="thumb" style={{zIndex: 3}}>
               <i className="fas fa-dot-circle" />
             </div>
           </div>
           <div className='totaltime m-1'>
-            {this.state.durationTimeStr}
+            {durationTimeStr}
           </div>
         </div>
-        <audio
-          autoPlay={playing}
-          onLoadedData={e => this.onLoadedData()}
-          onAbort={e => {
-            this.passed = 0
-            this.progress()
-          }}
-          onEnded={e => {
-            this.passed = 0
-            playNext()
-          }}
-          onError={e => console.log(e)}
-          onProgress={e => this.buffering(e)}
-          onTimeUpdate={e => {
-            this.progress(e.target.currentTime);
-          }}
-          ref="player"
-          src={song.url}
-          style={{
-            display: 'none'
-          }} />
       </div>
     )
   }
@@ -201,4 +141,6 @@ function formatScondTime (timeInSeconds) {
   return minutes + ':' + ('00' + seconds).slice(-2)
 }
 
+
 export default observer(Player)
+
