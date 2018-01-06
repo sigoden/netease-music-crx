@@ -20,6 +20,7 @@ class App extends Component {
           }
         </ul>
         {!store.userId && (<Login store={store}/>)}
+        {store.errorMessage && (<div className="alert alert-danger border-0 rounded-0 py-0 errorMessage" >{store.errorMessage}</div>)}
         {
           store.song && <Player store={store} />
         }

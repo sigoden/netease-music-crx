@@ -39,7 +39,7 @@ class Login extends Component {
           </div>
         </div>
         <div className={classNames({'d-none': collapsed})}>
-          <form className="form-inline flex-nowrap mx-0 my-3" onSubmit={e => this.submit(e)}>
+          <form className="form-inline flex-nowrap mx-2 my-3" onSubmit={e => this.submit(e)}>
             <div className="form-group mb-0">
               <label className="sr-only">手机号</label>
               <input type="text" className="form-control" placeholder="手机号" onChange={e => this.formFieldUpdate('phone', e.target.value)} />

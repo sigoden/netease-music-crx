@@ -7,12 +7,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'storeAction':
       let fun = store[request.storeFunc]
       if (fun) {
-        let result = fun.apply(store, request.params)
+        let result
+        try {
+          result = fun.apply(store, request.params)
+        } catch (err) {
+          sendResponse({ok: false, errorMessage: err.message})
+        }
         if (result instanceof Promise) {
           result.then(change => {
-            console.log(request)
-            console.log(change)
             sendResponse({ok: true, change})
+          }).catch(err => {
+            sendResponse({ok: false, errorMessage: err.message})
           })
         } else {
           sendResponse({ok: true, change: result || {}})

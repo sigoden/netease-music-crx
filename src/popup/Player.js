@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import { observer } from 'mobx-react'
 import classNames from 'classnames'
+import FontAwesome from 'react-fontawesome'
 
 import './Player.css'
 import {
@@ -74,32 +75,32 @@ class Player extends Component {
           <div className="ctls d-flex ml-auto" style={{minWidth: '230px'}}>
             <div className="btns">
               <button className="btn btn-light rounded-circle" onClick={_ => playPrev()}>
-                <i className="fas fa-step-backward" />
+                <FontAwesome  name="step-backward" / >
               </button>
               <button className="btn btn-light rounded-circle" onClick={_ => togglePlaying()} >
                 {playing ?
-                    (<i className="fas fa-pause" />) :
-                    (<i className="fas fa-play" />)
+                    (<FontAwesome  name="pause" / >) :
+                    (<FontAwesome  name="play" / >)
                 }
               </button>
               <button className="btn btn-light rounded-circle" onClick={_ => playNext()}>
-                <i className="fas fa-step-forward" />
+                <FontAwesome  name="step-forward" / >
               </button>
             </div>
             <div className="divider mx-2" />
             <div className="btns">
               <button className="btn btn-light rounded-circle" onClick={_ => updatePlayMode()}>
                 {playMode === PLAY_MODE.SHUFFLE ?
-                    (<i className="fas fa-random" />) :
+                  (<FontAwesome name="random" / >) :
                     (playMode === PLAY_MODE.LOOP ?
-                      (<i className="fas fa-sync" />) :
-                      (<i className="fas fa-redo" />)
+                      (<FontAwesome name="sync" / >) :
+                      (<FontAwesome name="redo" / >)
                     )
                 }
               </button>
               <div className="volume">
                 <button className="btn btn-light rounded-circle" onClick={_ => this.toggleVolumeBarVisibility()}>
-                  <i className="fas fa-volume-down" />
+                  <FontAwesome name="volume-down" />
                 </button>
                 <input
                   min="0"
@@ -122,7 +123,7 @@ class Player extends Component {
             <div className="progress-bar bg-secondary progress-bar-buffered " style={{width: buffered + '%'}}></div>
             <div className="progress-bar bg-primary progress-bar-played" style={{width: percentPlayed + '%'}}></div>
             <div className="thumb" style={{zIndex: 3}}>
-              <i className="fas fa-dot-circle" />
+              <FontAwesome name="dot-circle" />
             </div>
           </div>
           <div className='totaltime m-1'>

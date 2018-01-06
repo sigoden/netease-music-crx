@@ -12,4 +12,7 @@ export const TOP_NEW_ID = 3779629
 export const IMAGE_CLIP = '?param=150y150'
 
 // store 中不需要存储的键
-export const OMIT_PERSIST_KEYS = ['playlistGroup', 'audioState']
+export const OMIT_PERSIST_KEYS = ['playlistGroup', 'audioState', 'errorMessage']
+
+// errorMessage 显示时长
+export const ERR_MSG_TIMEOUT = 3000

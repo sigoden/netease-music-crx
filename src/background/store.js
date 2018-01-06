@@ -29,7 +29,6 @@ class Store {
     buffered: 0,
   }
   @observable playMode = PLAY_MODE.LOOP
-  @observable errorMessage = ''
 
   @observable playlistGroup = [
     {
@@ -129,9 +128,7 @@ class Store {
           userId
         })
       } else {
-        return self.applyChange({
-          errorMessage: res.msg
-        })
+        throw new Error(res.msg)
       }
     })
   }
