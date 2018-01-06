@@ -1,32 +1,24 @@
-import { observable, computed, action, extendObservable } from 'mobx'
+import {
+  observable,
+  action,
+  extendObservable,
+  toJS,
+} from 'mobx'
+
+import * as API from './api'
 
 import {
   TOP_NEW_ID,
   IMAGE_CLIP,
-  STORAGE_KEY,
-  PLAY_MODE
+  PLAY_MODE,
+  OMIT_PERSIST_KEYS,
 } from './constants'
 
-const API = wrapedAPI()
-const DEFAULT_STORAGE_DATA = {
-  selectedPlaylistId: TOP_NEW_ID, // 上次播放的歌单
-  selectedSongId: null,  // 上次播放的歌曲
-  volume: 0.5, // 音量
-  playMode: PLAY_MODE.LOOP, //  播放模式
-  user: {}, // 用户详情 
-}
-
-let storageData = getStorageData()
-
 class Store {
-  @observable loading = false
   @observable playing = false
-  @observable user = storageData.user
-  @computed get isAuthed () {
-    return Boolean(this.user.userId)
-  }
-  @observable volume = storageData.volume
-  @observable playMode = storageData.playMode
+  @observable userId = null
+  @observable volume = 0.5
+  @observable playMode = PLAY_MODE.LOOP
   @observable playlistGroup = [
     {
       id: TOP_NEW_ID,
@@ -37,81 +29,139 @@ class Store {
       songsHash: []
     }
   ]
-  @observable selectedPlaylistId = storageData.selectedPlaylistId
-  @observable selectedSongId = storageData.selectedSongId
+  @observable selectedPlaylistId = TOP_NEW_ID
   @observable song = null
 
+  @action syncPersistData = () => {
+    return new Promise((resolve) => {
+      chrome.storage.sync.get(persistData => {
+        if (persistData) {
+          if (persistData.cookies) {
+            document.cookies = persistData.cookies
+            delete persistData.cookies
+          }
+          extendObservable(self, persistData)
+        }
+        resolve(self)
+      })
+    })
+  } 
+
   @action togglePlaying = () => {
-    this.playing = !this.playing
+    return self.applyChange({
+      playing: !self.playing
+    })
   }
   @action updateVolume = (volume) => {
-    this.volume = volume
+    return self.applyChange({
+      volume
+    })
   }
   @action playPrev = () => {
-    let playlist = this.playlistGroup.find(playlist => playlist.id === this.selectedPlaylistId)
-    getSong(playlist, this.playMode, this.song.id, -1).then(song => {
-      this.selectedSongId = song.id
-      this.song = song
+    let playlist = self.playlistGroup.find(playlist => playlist.id === self.selectedPlaylistId)
+    return getSong(playlist, self.playMode, self.song.id, -1).then(song => {
+      return self.applyChange({
+        song
+      })
     })
   }
   @action playNext = () => {
-    let playlist = this.playlistGroup.find(playlist => playlist.id === this.selectedPlaylistId)
-    getSong(playlist, this.playMode, this.song.id).then(song => {
-      this.selectedSongId = song.id
-      this.song = song
+    let playlist = self.playlistGroup.find(playlist => playlist.id === self.selectedPlaylistId)
+    return getSong(playlist, self.playMode, self.song.id).then(song => {
+      return self.applyChange({
+        song
+      })
     })
   }
   @action updatePlayMode = () => {
     let modeKeys = Object.keys(PLAY_MODE)
-    let currentPlayMode = this.playMode
+    let currentPlayMode = self.playMode
     let modeKeyIndex = modeKeys.findIndex(key => PLAY_MODE[key] === currentPlayMode)
     let nextModeKeyIndex = (modeKeyIndex + 1 + modeKeys.length) % modeKeys.length
-    this.playMode = PLAY_MODE[modeKeys[nextModeKeyIndex]]
+    let playMode = PLAY_MODE[modeKeys[nextModeKeyIndex]]
+    return self.applyChange({
+      playMode 
+    })
   }
   @action changePlaylist = (playlistId) => {
-    if (playlistId === this.selectedPlaylistId) {
-      return
-    }
-    this.selectedPlaylistId = playlistId
-    return getSongOnChangePlaylist(this)
+    return getSongOnChangePlaylist(self).then(song => {
+      return self.applyChange({
+        selectedPlaylistId: playlistId,
+        song
+      })
+    })
   }
   @action login = (phone, password) => {
-    this.loading = true
     return API.cellphoneLogin(phone, password).then((res) => {
-      this.isAuthed = true
-      let {userId} = res.profile
-      extendObservable(this.user, {userId, phone, password})
       if (res.code === 200) {
-        return loadPlaylists(this)
+        let {userId} = res.profile
+        return self.applyChange({
+          userId
+        })
       } else {
         throw new Error('登录失败')
       }
-    }).catch(e => {
-      console.log(e)
+    })
+  }
+  @action loadRecommandAndUserPlaylists = () => {
+    return loadRecommandAndUserPlaylists(self).then(playlists => {
+      return self.applyChange({
+        playlistGroup: [...self.playlistGroup, ...playlists]
+      })
     })
   }
   // 获取新歌榜
   @action fetchTopNew = () => {
-    // mockGetPlaylistDetail().then(res => {
     return API.getPlaylistDetail(TOP_NEW_ID).then(res => {
       if (res.code === 200) {
         let playlist = tidyPlaylist(res.playlist)
-        this.playlistGroup[0] = playlist
-        // 没有登录时，自动选择一首新歌播放
-        if (!this.isAuthed) {
-          return this.changePlaylist(playlist.id)
-        }
+        return self.applyChange({
+          playlistGroup: [playlist, ...self.playlistGroup.slice(1)]
+        })
+      } else {
+        throw new Error('获取新歌榜失败')
       }
-    }).catch(e => {
-      console.log(e)
     })
   }
-}
+  // popup 获取初始化数据
+  @action popupInit () {
+    return Promise.resolve(toJS(self))
+  }
+  /**
+   * - 更新 self
+   * - 持久化
+   * - 通知 delegatedStore 变更 (返回值)
+   */
+  applyChange (change) {
+    extendObservable(self, change)
+    persist(change)
+    return Promise.resolve(change)
+  }
 
-function getStorageData () {
-  let storageRaw = localStorage.getItem(STORAGE_KEY) 
-  let storageObj = storageRaw ? JSON.parse(storageRaw) : {}
-  return Object.assign({}, DEFAULT_STORAGE_DATA, storageObj)
+  bootstrap () {
+    return self.syncPersistData().then(() => {
+      return self.fetchTopNew().then(() => {
+        if (self.playlistGroup.length === 1) {
+          return self.changePlaylist(self.playlistGroup[0].id)
+        }
+      })
+    }).then(() => {
+      if (self.userId) {
+        return API.loginRefresh().then(res => {
+          console.log(res)
+          if (res.code === 200) {
+            return self.loadRecommandAndUserPlaylists(self)
+          } else if (res.code === 301) {
+            return self.applyChange({
+              userId: null,
+              cookies: [],
+              selectedPlaylistId: TOP_NEW_ID
+            })
+          }
+        })
+      }
+    })
+  }
 }
 
 function tidyPlaylist (playlist) {
@@ -165,9 +215,9 @@ function shuffleArray (array) {
   return _array
 }
 
-function createRecommendSongsPlaylist (user) {
+function createRecommendSongsPlaylist (userId) {
   let playlist = {id: generateId(), creator: '网易云音乐', name: '每日推荐歌曲'}
-  return getRecommendSongs(user.userId).then(songs => {
+  return getRecommendSongs(userId).then(songs => {
     playlist.tracks = songs
     playlist.coverImgUrl = songs[0].al.picUrl
     return tidyPlaylist(playlist)
@@ -178,14 +228,13 @@ function generateId () {
   return Math.random().toString().substr(3, 8)
 }
 
-function loadPlaylists (self) {
-  let user = self.user
-  return Promise.all([createRecommendSongsPlaylist(user), getUserPlaylist(user)]).then(result => {
+function loadRecommandAndUserPlaylists (self) {
+  let userId = self.userId
+  return Promise.all([createRecommendSongsPlaylist(userId), getUserPlaylist(userId)]).then(result => {
     let [recommendSongsPlaylist, userPlaylists] = result
-    self.playlistGroup.push(recommendSongsPlaylist)
-    userPlaylists.forEach(playlist => {
-      self.playlistGroup.push(playlist)
-    })
+    return {
+      playlistGroup: [recommendSongsPlaylist, ...userPlaylists]
+    }
   })
 }
 
@@ -202,8 +251,8 @@ function getRecommendSongs (userId) {
   })
 }
 
-function getUserPlaylist (user) {
-  return API.getUserPlaylist(user.userId).then(res => {
+function getUserPlaylist (userId) {
+  return API.getUserPlaylist(userId).then(res => {
     if (res.code === 200) {
       return Promise.all(res.playlist.map(playlist => {
         return API.getPlaylistDetail(playlist.id)
@@ -218,36 +267,20 @@ function getUserPlaylist (user) {
 
 function getSongOnChangePlaylist (self, songId) {
   let playlist = self.playlistGroup.find(playlist => playlist.id === self.selectedPlaylistId)
-  return getSong(playlist, self.playMode, songId).then(song => {
-    self.selectedSongId = song.id
-    self.song = song
-  })
+  return getSong(playlist, self.playMode, songId)
 }
 
-// popup 存在跨域，所以将请求抛给 background 中转
-function wrapedAPI () {
-  function proxy (func) {
-    return function () {
-      let args = Array.from(arguments) 
-      return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({
-          action: 'weapi',
-          func,
-          args
-        }, (res) => {
-          return resolve(res)
-        })
-      })
-    }
-  } return {
-    cellphoneLogin: proxy('cellphoneLogin'),
-    getPlaylistDetail: proxy('getPlaylistDetail'),
-    getUserPlaylist: proxy('getUserPlaylist'),
-    getSongUrls: proxy('getSongUrls'),
-    getRecommendSongs: proxy('getRecommendSongs'),
-  }
+function persist (change) {
+  let toPersistDataKeys = Object.keys(change)
+    .filter(key => OMIT_PERSIST_KEYS.indexOf(key) === -1)
+  if (toPersistDataKeys.length === 0) return
+  let toPersistData = toPersistDataKeys.reduce((acc, key) => {
+    acc[key] = change[key]
+    return acc
+  }, {})
+  chrome.storage.sync.set(toPersistData)
 }
 
-let store = new Store()
+let self = new Store()
 
-export default store
+export default self

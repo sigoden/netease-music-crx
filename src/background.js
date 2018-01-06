@@ -1,12 +1,17 @@
-import * as API from './api'
+import store  from './store'
+
+store.bootstrap()
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.action) {
-    case 'weapi':
-      let {func, args} = request
-      API[func].apply(API, args).then(res => {
-        sendResponse(res)
-      })
+    case 'storeAction':
+      console.log(request)
+      let fun = store[request.storeFunc]
+      if (fun) {
+        fun.apply(store, request.params).then(change => {
+          sendResponse({ok: true, change})
+        })
+      }
       return true
     default:
       return
@@ -22,6 +27,9 @@ chrome.webRequest.onHeadersReceived.addListener((details) => {
         cookies.push(header.value)
         return cookies
       }, [])
-    document.cookies = cookies
+    if (cookies.length > 0) {
+      document.cookies = cookies
+      chrome.storage.sync.set({cookies})
+    }
   }
 },  {urls: ["https://music.163.com/weapi/login/*"]}, ['responseHeaders'])

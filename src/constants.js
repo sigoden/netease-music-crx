@@ -6,11 +6,10 @@ export const PLAY_MODE = {
 }
 
 // 网易新歌榜的歌单 ID
-export const TOP_NEW_ID = '3779629' 
+export const TOP_NEW_ID = 3779629
 
 // 剪裁图片
 export const IMAGE_CLIP = '?param=150y150'
 
-// localStorage 键名
-export const STORAGE_KEY = 'data'
-
+// store 中不需要存储的键
+export const OMIT_PERSIST_KEYS = ['playlistGroup']

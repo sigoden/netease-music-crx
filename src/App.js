@@ -6,10 +6,6 @@ import Login from './Login'
 import './App.css'
 
 class App extends Component {
-  componentDidMount () {
-    let {fetchTopNew} = this.props.store
-    fetchTopNew()
-  }
   render() {
     let {store} = this.props
     return (
@@ -23,7 +19,7 @@ class App extends Component {
             })
           }
         </ul>
-        {!store.isAuthed && (<Login store={store}/>)}
+        {!store.userId && (<Login store={store}/>)}
         {
           store.song && <Player store={store} />
         }

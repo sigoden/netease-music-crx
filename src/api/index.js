@@ -20,7 +20,6 @@ export function getUserPlaylist (uid) {
     offset: 0,
     uid,
     limit: 1000,
-    csrf_token: ''
   }
   return requester.getUserPlaylist(data)
 }
@@ -33,7 +32,6 @@ export function getPlaylistDetail (id) {
     total: true,
     limit: 1000,
     n: 1000,
-    csrf_token: ''
   }
   return requester.getPlaylistDetail(data)
 }
@@ -45,7 +43,6 @@ export function getRecommendSongs () {
     offset: 0,
     total: true,
     limit: 20,
-    csrf_token: ''
   }
   return requester.getRecommendSongs(data)
 }
@@ -57,9 +54,14 @@ export function getSongDetail (ids) {
   const data = {
     c: JSON.stringify(idsHash),
     ids: idsStringify,
-    csrf_token: ''
   }
   return requester.getSongDetail(data)
+}
+
+// 刷新登录态
+export function loginRefresh () {
+  const data = {}
+  return requester.loginRefresh(data)
 }
 
 
@@ -68,12 +70,12 @@ export function getSongUrls (ids) {
   const data = {
     ids,
     br: 999000,
-    csrf_token: ''
   }
   return requester.getSongUrls(data)
 }
 
 function createRequester () {
+  let csrf
   function createRequest(reqInfo) {
     let {
       method = 'post',
@@ -81,19 +83,35 @@ function createRequester () {
       url,
       data
     } = reqInfo
-    let queryParams = encodeQueryParams(createQueryParams(data))
-    url = baseURL + url + '?' + queryParams
+    url = baseURL + url
+    if (csrf) {
+      url += '?csrf_token=' + csrf
+      data.csrf_token = csrf
+    }
     return fetch(url, {
       method,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        'Cookie': document.cookies,
+      },
+      body: createQueryParams(data)
     }).then(res => {
       return res.json()
     })
   }
-
   return {
+    csrf: (_csrf) => {
+      csrf = _csrf
+    },
     cellphoneLogin: (data) => {
       return createRequest({
         url: '/login/cellphone',
+        data
+      })
+    },
+    loginRefresh: (data) => {
+      return createRequest({
+        url: '/login/token/refresh',
         data
       })
     },
@@ -111,7 +129,7 @@ function createRequester () {
     },
     getRecommendSongs: (data) => {
       return createRequest({
-        url: '/v1/discovery/recommend/songs',
+        url: '/v2/discovery/recommend/songs',
         data
       })
     },
@@ -132,15 +150,8 @@ function createRequester () {
 
 function createQueryParams (data) {
   const cryptoReq = encrypt.encryptData(data)
-  return {
-    params: cryptoReq.params,
-    encSecKey: cryptoReq.encSecKey
-  }
-}
-
-function encodeQueryParams (params) {
-  let esc = encodeURIComponent
-  return Object.keys(params)
-    .map(k => esc(k) + '=' + esc(params[k]))
-    .join('&')
+  let body = new URLSearchParams()
+  body.append('params', cryptoReq.params)
+  body.append('encSecKey', cryptoReq.encSecKey)
+  return body
 }
