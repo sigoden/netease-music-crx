@@ -38,3 +38,12 @@ chrome.webRequest.onHeadersReceived.addListener((details) => {
     }
   }
 },  {urls: ["https://music.163.com/weapi/login/*"]}, ['responseHeaders'])
+
+chrome.contextMenus.removeAll()
+chrome.contextMenus.create({
+  title: "注销",
+  contexts: ["browser_action"],
+  onclick: function () {
+    store.logout()
+  }
+})

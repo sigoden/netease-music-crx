@@ -22,13 +22,15 @@ let audio
 class Store {
   @observable playing = false
   @observable userId = null
-  @observable volume = 0.5
+  @observable volume = 1
   @observable audioState = {
     duration: 0,
     currentTime: 0,
     buffered: 0,
   }
   @observable playMode = PLAY_MODE.LOOP
+  @observable errorMessage = ''
+
   @observable playlistGroup = [
     {
       id: TOP_NEW_ID,
@@ -127,7 +129,9 @@ class Store {
           userId
         })
       } else {
-        throw new Error('登录失败')
+        return self.applyChange({
+          errorMessage: res.msg
+        })
       }
     })
   }
@@ -154,6 +158,18 @@ class Store {
   // popup 获取初始化数据
   @action popupInit () {
     return Promise.resolve(toJS(self))
+  }
+  @action logout () {
+    audio.pause()
+    document.cookie = ''
+    return self.applyChange({
+      playing: false,
+      cookies: '',
+      userId: null,
+      playlistGroup: self.playlistGroup.slice(0, 1),
+    }).then(() => {
+      return self.bootstrap()
+    })
   }
   /**
    * - 更新 self
@@ -300,6 +316,10 @@ function getUserPlaylist (userId) {
 
 function getSongOnChangePlaylist (self, songId) {
   let playlist = self.playlistGroup.find(playlist => playlist.id === self.selectedPlaylistId)
+  if (!playlist)  {
+    playlist = self.playlistGroup[0]
+    songId = TOP_NEW_ID
+  }
   return getSong(playlist, self.playMode, songId)
 }
 
@@ -365,7 +385,6 @@ observe(self, 'song', (change) => {
 })
 
 function dispatchAudioState (state) {
-  console.log(state)
   let audioState = extendObservable(self.audioState, state)
   self.applyChange({
     audioState,

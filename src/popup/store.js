@@ -15,6 +15,7 @@ const ACTIONS = [
   'login',
   'fetchTopNew',
   'popupInit',
+  'loadRecommandAndUserPlaylists',
   'updateAudioCurrentTime',
 ]
 
@@ -30,8 +31,7 @@ for (let action of ACTIONS) {
           if (typeof response.change === 'object') {
             extendObservable(store, response.change)
           } 
-          resolve()
-          return
+          return resolve()
         }
         reject()
       })
@@ -42,7 +42,6 @@ for (let action of ACTIONS) {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.action) {
     case 'audioState':
-      console.log(request.audioState)
       extendObservable(store.audioState, request.audioState)
       break
     default:

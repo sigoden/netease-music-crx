@@ -17,10 +17,12 @@ class Login extends Component {
     })
   }
   submit (e) {
-    let {login} = this.props.store
-    let {phone, password} = this.state
-    login(phone, password)
     e.preventDefault()
+    let {login, loadRecommandAndUserPlaylists} = this.props.store
+    let {phone, password} = this.state
+    return login(phone, password).then(() => {
+      return loadRecommandAndUserPlaylists()
+    })
   }
   render () {
     let {collapsed} = this.state

@@ -3,6 +3,6 @@
 }
 
 .app .list-group {
-  height: 488px;
+  max-height: 488px;
   overflow-y: scroll;
 }

@@ -13,7 +13,7 @@
   "icons": {
     "128": "./static/img/icon-128.png"
   },
-  "permissions": ["storage", "webRequest", "https://music.163.com/"],
+  "permissions": ["storage", "webRequest", "https://music.163.com/", "contextMenus"],
   "update_url": "http://clients2.google.com/service/update2/crx",
   "manifest_version": 2,
   "content_security_policy": "script-src 'self'; object-src 'self'"
