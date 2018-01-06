@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import React, { Component } from 'react'
 import { observer } from 'mobx-react'
 import classNames from 'classnames'
 
 import './Player.css'
 import {
   PLAY_MODE
-} from './constants'
+} from '../constants'
 
 class Player extends Component {
   constructor (props) {

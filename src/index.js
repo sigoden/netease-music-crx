@@ -1,8 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import store from './delegatedStore'
+import App from './popup/App';
+import store from './popup/store'
 
 store.popupInit().then(() => {
   ReactDOM.render(<App store={store} />, document.getElementById('root'));

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component } from 'react'
 import { observer } from 'mobx-react'
 import Player from './Player'
 import PlayList from './PlayList'

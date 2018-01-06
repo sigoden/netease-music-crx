@@ -12,7 +12,7 @@ import {
   IMAGE_CLIP,
   PLAY_MODE,
   OMIT_PERSIST_KEYS,
-} from './constants'
+} from '../constants'
 
 
 class Store {
@@ -141,7 +141,7 @@ class Store {
   bootstrap () {
     return self.syncPersistData().then(() => {
       return self.fetchTopNew().then(() => {
-        if (self.playlistGroup.length === 1) {
+        if (!self.cookies) {
           return self.changePlaylist(self.playlistGroup[0].id)
         }
       })
@@ -151,11 +151,11 @@ class Store {
           if (res.code === 200) {
             return self.loadRecommandAndUserPlaylists(self)
           } else if (res.code === 301) {
-            // return self.applyChange({
-            //   userId: null,
-            //   cookies: null,
-            //   selectedPlaylistId: TOP_NEW_ID
-            // })
+            return self.applyChange({
+              userId: null,
+              cookies: null,
+              selectedPlaylistId: TOP_NEW_ID
+            })
           }
         })
       }
