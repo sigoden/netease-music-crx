@@ -6,8 +6,9 @@
 
 .player .progress-audio {
   position: relative;
-  height: .5rem;
+  height: .4rem;
   overflow: inherit;
+  background: #e9ecefa6;
 }
 
 .player .thumb {
@@ -18,13 +19,19 @@
   cursor: pointer;
 }
 
-.progress .progress-bar-played {
-  z-index: 2;
+.progress-audio .thumb {
+  color: red;
 }
 
-.progress .progress-bar-buffered {
+.progress-audio .progress-bar-played {
+  z-index: 2;
+  background: red;
+}
+
+.progress-audio .progress-bar-buffered {
   position: absolute;
-  height: .5rem;
+  height: .4rem;
+  background: #dadada;
 }
 
 

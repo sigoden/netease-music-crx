@@ -50,7 +50,7 @@ class Player extends Component {
       audioState: {
         currentTime,
         duration,
-        buffered,
+        loadPercentage,
       },
     } = this.props.store
     
@@ -60,8 +60,8 @@ class Player extends Component {
 
     return (
       <div className="player container-fluid mt-3">
-        <div className="row align-items-center flex-nowrap">
-          <div className="media">
+        <div className="row align-items-center">
+          <div className="media" style={{maxWidth: '250px'}}>
             <img src={song.picUrl} alt="album pic" className="rounded img-thumbnail p-0 mr-2" width="64" />
             <div className="info media-body" style={{minWidth: 0}}>
               <p className="name font-weight-bold text-truncate">
@@ -120,10 +120,10 @@ class Player extends Component {
             {currentTimeStr}
           </div>
           <div className="progress progress-audio" style={{flexGrow: 2}} onClick={e => this.moveAudioThumb(e)}>
-            <div className="progress-bar bg-secondary progress-bar-buffered " style={{width: buffered + '%'}}></div>
-            <div className="progress-bar bg-primary progress-bar-played" style={{width: percentPlayed + '%'}}></div>
+            <div className="progress-bar progress-bar-buffered " style={{width: loadPercentage + '%'}}></div>
+            <div className="progress-bar progress-bar-played" style={{width: percentPlayed + '%'}}></div>
             <div className="thumb" style={{zIndex: 3}}>
-              <FontAwesome name="dot-circle" />
+              <FontAwesome name="circle" />
             </div>
           </div>
           <div className='totaltime m-1'>

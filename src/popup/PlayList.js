@@ -1,8 +1,6 @@
 import React, { Component } from 'react'
 import { observer } from 'mobx-react'
-import classNames from 'classnames'
-
-import './PlayList.css'
+import FontAwesome from 'react-fontawesome'
 
 class PlayList extends Component {
   render() {
@@ -10,7 +8,7 @@ class PlayList extends Component {
     let {changePlaylist} = this.props.store
     let {id, coverImgUrl, name, creator, songsCount} = this.props.item
     return (
-      <div className={classNames('playlist container-fluid list-group-item p-0', {'list-group-item-success': isPlaying})} onClick={_ => changePlaylist(id)}>
+      <div className='playlist container-fluid list-group-item p-1' onClick={_ => changePlaylist(id)}>
         <div className="d-flex align-items-center">
           <div className="media">
             <img src={coverImgUrl} alt="album pic" className="rounded img-thumbnail p-0 mr-2" width="64" />
@@ -18,11 +16,16 @@ class PlayList extends Component {
               <p className="name font-weight-bold text-truncate">
                 {name}
               </p>
-              <p className="m-0 text-muted">
+              <p className="m-0 text-muted text-truncate">
                 {songsCount}首 by {creator}
               </p>
             </div>
           </div>
+          {isPlaying && 
+              <div className="indicator ml-auto">
+                <FontAwesome  name="music" / >
+              </div>
+          }
         </div>
       </div>
     )

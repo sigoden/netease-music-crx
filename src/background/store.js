@@ -26,7 +26,7 @@ class Store {
   @observable audioState = {
     duration: 0,
     currentTime: 0,
-    buffered: 0,
+    loadPercentage: 0,
   }
   @observable playMode = PLAY_MODE.LOOP
 
@@ -87,16 +87,16 @@ class Store {
     })
   }
   @action playPrev = () => {
-    let playlist = self.playlistGroup.find(playlist => playlist.id === self.selectedPlaylistId)
-    return getSong(playlist, self.playMode, self.song.id, -1).then(song => {
+    let {playlist, songId} = safeFindPlaylistAndSong(self)
+    return getSong(playlist, self.playMode, songId, -1).then(song => {
       return self.applyChange({
         song
       })
     })
   }
   @action playNext = () => {
-    let playlist = self.playlistGroup.find(playlist => playlist.id === self.selectedPlaylistId)
-    return getSong(playlist, self.playMode, self.song.id).then(song => {
+    let {playlist, songId} = safeFindPlaylistAndSong(self)
+    return getSong(playlist, self.playMode, songId).then(song => {
       return self.applyChange({
         song
       })
@@ -191,7 +191,7 @@ class Store {
         return API.loginRefresh().then(res => {
           if (res.code === 200) {
             return self.loadRecommandAndUserPlaylists(self)
-          } else if (res.code === 301) {
+          } else if (res.code === 301) { // cookie 失效
             return self.applyChange({
               userId: null,
               cookies: null,
@@ -264,7 +264,7 @@ function shuffleArray (array) {
 }
 
 function createRecommendSongsPlaylist (userId) {
-  let playlist = {id: generateId(), creator: '网易云音乐', name: '每日推荐歌曲'}
+  let playlist = {id: generateId(), creator: {nickname: '网易云音乐'}, name: '每日推荐歌曲'}
   return getRecommendSongs(userId).then(songs => {
     playlist.tracks = songs
     playlist.coverImgUrl = songs[0].al.picUrl
@@ -311,13 +311,19 @@ function getUserPlaylist (userId) {
   })
 }
 
-function getSongOnChangePlaylist (self, songId) {
+function getSongOnChangePlaylist (self, _songId) {
+  let {playlist, songId} = safeFindPlaylistAndSong(self, _songId)
+  return getSong(playlist, self.playMode, songId)
+}
+
+function safeFindPlaylistAndSong (self, songId) {
+  songId = songId || self.song.id
   let playlist = self.playlistGroup.find(playlist => playlist.id === self.selectedPlaylistId)
   if (!playlist)  {
     playlist = self.playlistGroup[0]
     songId = TOP_NEW_ID
   }
-  return getSong(playlist, self.playMode, songId)
+  return {playlist, songId}
 }
 
 function persist (change) {
@@ -335,6 +341,7 @@ function persist (change) {
 let self = new Store()
 
 observe(self, 'song', (change) => {
+  console.log(change)
   if (audio) {
     audio.src = self.song.url
   } else {
@@ -343,14 +350,12 @@ observe(self, 'song', (change) => {
   if (self.playing) {
     audio.autoplay = true
   }
-  audio.onprogress = (e) => {
-    if (audio.buffered.length) {  // Player has started
-      let buffered = audio.buffered.end(audio.buffered.length - 1)
-      if (buffered >= 100) {
-        buffered = 100
-      }
+  audio.onprogress = () => {
+    if (audio.buffered.length) {
+      let loadPercentage = (audio.buffered.end(audio.buffered.length - 1) / audio.duration) * 100
+      console.log(loadPercentage)
       dispatchAudioState({
-        buffered
+        loadPercentage
       })
     }
   }
@@ -365,7 +370,7 @@ observe(self, 'song', (change) => {
       currentTime: 0
     })
   }
-  audio.onend = () => {
+  audio.onended = () => {
     dispatchAudioState({
       currentTime: 0
     })

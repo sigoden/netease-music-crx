@@ -6,3 +6,7 @@
   max-height: 488px;
   overflow-y: scroll;
 }
+
+.playlist-group {
+  border-bottom: 1px solid #dfdfdf;
+}

@@ -22,7 +22,7 @@ class Login extends Component {
     let {phone, password} = this.state
     return login(phone, password).then(() => {
       return loadRecommandAndUserPlaylists()
-    })
+    }).catch(e => {})
   }
   render () {
     let {collapsed} = this.state

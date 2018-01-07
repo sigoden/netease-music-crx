@@ -10,7 +10,7 @@ class App extends Component {
     let {store} = this.props
     return (
       <div className="app">
-        <ul className="list-group">
+        <ul className="list-group playlist-group">
           {
             store.playlistGroup.map(item => {
               return (
