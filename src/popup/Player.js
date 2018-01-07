@@ -67,7 +67,7 @@ class Player extends Component {
               <p className="name font-weight-bold text-truncate">
                 {song.name}
               </p>
-              <p className="artist m-0 text-muted">
+              <p className="artist m-0 text-muted text-truncate">
                 {song.artists}
               </p>
             </div>

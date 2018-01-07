@@ -4,7 +4,7 @@
 
 ## 安装
 
- - 在 [Chrome 网上应用店](https://chrome.google.com/webstore/detail/idhbeneimemgjognhjakkgjjkddijiei)安装
+ - 在 [Chrome 网上应用店](https://chrome.google.com/webstore/detail/ekmamdknmdolmmjbgpmnkiobcnihdhhf)安装
  - [下载 .crx 安装包](https://github.com/sigoden/netease-music-crx/releases/latest)手动安装
 
 **注意**：非官方渠道的 Chrome 插件版网易云音乐可能会被嵌入恶意代码，所以请一定使用以上两种方式安装。

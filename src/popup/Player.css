@@ -6,7 +6,7 @@
 
 .player .progress-audio {
   position: relative;
-  height: .4rem;
+  height: .5rem;
   overflow: inherit;
   background: #e9ecefa6;
 }
@@ -30,7 +30,7 @@
 
 .progress-audio .progress-bar-buffered {
   position: absolute;
-  height: .4rem;
+  height: .5rem;
   background: #dadada;
 }
 
