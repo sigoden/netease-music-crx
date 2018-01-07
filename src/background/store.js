@@ -81,7 +81,7 @@ class Store {
     })
   }
   @action updateVolume = (volume) => {
-    audio.volume = self.volume
+    audio.volume = volume
     return self.applyChange({
       volume
     })
@@ -341,7 +341,6 @@ function persist (change) {
 let self = new Store()
 
 observe(self, 'song', (change) => {
-  console.log(change)
   if (audio) {
     audio.src = self.song.url
   } else {
@@ -353,7 +352,6 @@ observe(self, 'song', (change) => {
   audio.onprogress = () => {
     if (audio.buffered.length) {
       let loadPercentage = (audio.buffered.end(audio.buffered.length - 1) / audio.duration) * 100
-      console.log(loadPercentage)
       dispatchAudioState({
         loadPercentage
       })
