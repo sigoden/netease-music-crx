@@ -93,8 +93,8 @@ class Player extends Component {
                 {playMode === PLAY_MODE.SHUFFLE ?
                   (<FontAwesome name="random" / >) :
                     (playMode === PLAY_MODE.LOOP ?
-                      (<FontAwesome name="sync" / >) :
-                      (<FontAwesome name="redo" / >)
+                      (<FontAwesome name="refresh" / >) :
+                      (<FontAwesome name="repeat" / >)
                     )
                 }
               </button>
