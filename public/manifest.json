@@ -1,7 +1,8 @@
 {
   "name": "网易云音乐",
-  "description": "网易云音乐是一款专注于发现与分享的音乐产品，依托专业音乐人、DJ、好友推荐及社交功能，为用户打造全新的音乐生活。",
+  "description": "让您不需要打开新窗口，即可听网易云音乐",
   "version": "1.0.0",
+  "author": "sigoden@gmail.com",
   "background": {
     "persistent": true,
     "page": "background.html"

@@ -1,5 +1,6 @@
 {
-  "name": "code",
+  "name": "netease-music-chrome",
+  "description": "netease cloud music chrome extensions",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
