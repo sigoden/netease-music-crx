@@ -1,7 +1,7 @@
 {
-  "name": "netease-music-chrome",
+  "name": "netease-music-crx",
   "description": "netease cloud music chrome extensions",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
     "autoprefixer": "7.1.6",
@@ -54,7 +54,7 @@
   "scripts": {
     "start": "node scripts/start.js",
     "build": "GENERATE_SOURCEMAP=false PUBLIC_URL=. node scripts/build.js",
-    "test": "node scripts/test.js --env=jsdom"
+    "dist": "npm run build && node scripts/dist.js"
   },
   "jest": {
     "collectCoverageFrom": [
@@ -106,6 +106,8 @@
   },
   "devDependencies": {
     "copy-webpack-plugin": "^4.3.1",
-    "write-file-webpack-plugin": "^4.2.0"
+    "recursive-readdir": "^2.2.1",
+    "write-file-webpack-plugin": "^4.2.0",
+    "yazl": "^2.4.3"
   }
 }

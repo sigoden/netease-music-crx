@@ -317,7 +317,7 @@ function getSongOnChangePlaylist (self, _songId) {
 }
 
 function safeFindPlaylistAndSong (self, songId) {
-  songId = songId || self.song.id
+  songId = songId || (self.song ? self.song.id : TOP_NEW_ID)
   let playlist = self.playlistGroup.find(playlist => playlist.id === self.selectedPlaylistId)
   if (!playlist)  {
     playlist = self.playlistGroup[0]

@@ -6,7 +6,6 @@
 # testing
 /coverage
 
-# production
 /build
 
 # misc
@@ -21,3 +20,5 @@ yarn-debug.log*
 yarn-error.log*
 
 .tern-port
+
+/dist

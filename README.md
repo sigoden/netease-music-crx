@@ -1,13 +1,13 @@
 # 网易云音乐 Chrome 插件版
 
-方便自在听网易云音乐的 Chrome 扩展程序
+一款可以让您方便快捷地收听网易云音乐 的 Chrome 扩展程序
 
 ## 安装
 
  - 在 [Chrome 网上应用店](https://chrome.google.com/webstore/detail/idhbeneimemgjognhjakkgjjkddijiei)安装
  - [下载 .crx 安装包](https://github.com/sigoden/netease-music-crx/releases/latest)手动安装
 
-**注意**：非官方渠道的划词翻译可能会被嵌入恶意代码，所以请一定使用以上两种方式安装。
+**注意**：非官方渠道的 Chrome 插件版网易云音乐可能会被嵌入恶意代码，所以请一定使用以上两种方式安装。
 
 ## 相关链接
 
