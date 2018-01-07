@@ -4,7 +4,7 @@
 
 .app .list-group {
   max-height: 488px;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 .playlist-group {
