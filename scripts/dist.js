@@ -1,31 +1,27 @@
+#!/usr/bin/env node
+
+require('crx')
+
 const fs = require('fs')
+const PEM_FILE = process.env.PEM_FILE || './build.pem'
 const path = require('path')
 const paths = require('../config/paths')
-const recursive = require('recursive-readdir')
-const yazl = require('yazl')
-
 const manifest = require(path.join(paths.appBuild, 'manifest.json'))
-const outputFilePath = path.join(paths.appDist, `netease-music-crx_v${manifest.version}.zip`)
+const outputFile = path.join(paths.appDist, `netease-music-crx_v${manifest.version}`)
+const cp = require('child_process');
 
-let zipfile = new yazl.ZipFile()
-recursive(paths.appBuild, function (err, files) {
+if (!fs.existsSync(PEM_FILE)) {
+  console.error(`Invalid pem files: ${PEM_FILE}`)
+  process.exit(1)
+}
+
+const cmd = `npx crx pack ${paths.appBuild} -o ${outputFile}.crx --zip-output ${outputFile}.zip -p ${PEM_FILE}`
+cp.exec(cmd, function(err, stdout, stderr) {
   if (err) throw err
-  function toRelative(file)  {
-    return file.substr(paths.appBuild.length + 1)
+  if (stderr) {
+    console.error(stdout);
   }
-  console.log('Contents:')
-  files.forEach(file => {
-    let relativeFilePath = toRelative(file)
-    console.log('  ' + relativeFilePath)
-    zipfile.addFile(file, relativeFilePath)
-  })
-  
-  zipfile.outputStream
-    .pipe(fs.createWriteStream(outputFilePath))
-    .on('close', function() {
-      console.log(`Generate:\n  ${outputFilePath}`)
-    })
-
-  zipfile.end()
+  if (stdout) {
+    console.log(stdout);
+  }
 })
-
