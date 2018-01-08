@@ -214,20 +214,22 @@ class Store {
 
 function tidyPlaylist (playlist) {
   let {id, creator: {nickname: creator}, name, coverImgUrl, tracks} = playlist
-  let songsHash = tracksToSongsHash(tracks)
-  let normalSongsIndex = Object.keys(songsHash).map(index => Number(index))
+  let {songsIndex: normalSongsIndex, songsHash}= tracksToSongs(tracks)
   let shuffleSongsIndex = shuffleArray(normalSongsIndex)
   return {id: Number(id), creator, name, songsCount: normalSongsIndex.length, coverImgUrl: coverImgUrl + IMAGE_CLIP, songsHash, normalSongsIndex, shuffleSongsIndex}
 }
 
-function tracksToSongsHash (tracks) {
-  return tracks.map(track => {
-    let {id, al: {name, picUrl}, ar} = track
+function tracksToSongs (tracks) {
+  let songs = tracks.map(track => {
+    let {id, name, al: {picUrl}, ar} = track
     return {id, name, picUrl: picUrl + IMAGE_CLIP, artists: compactArtists(ar)}
-  }).reduce((songsHash, song) => {
+  })
+  let songsHash = songs.reduce((songsHash, song) => {
     songsHash[song.id] = song
     return songsHash
   }, {})
+  let songsIndex = songs.map(song => song.id)
+  return {songsIndex, songsHash}
 }
 
 function compactArtists (artists) {
