@@ -243,7 +243,13 @@ function getSong (playlist, playMode, currentSongId, dir = 1) {
   let currentSongIndex = songsIndex.findIndex(index => index === currentSongId)
   let nextSongIndex = currentSongIndex === -1 ? 0 : (len + currentSongIndex + dir) % len
   let song = songsHash[songsIndex[nextSongIndex]]
-  return updateSongWithUrl(song)
+  return updateSongWithUrl(song).then(song => { 
+    // some song have no valid url, need to be skipped
+    if (!song.url) {
+      return getSong(playlist, playMode, song.id, dir)
+    }
+    return song
+  })
 }
 
 function updateSongWithUrl (song) {
@@ -397,6 +403,5 @@ function dispatchAudioState (state) {
     })
   })
 }
-
 
 export default self
