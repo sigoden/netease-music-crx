@@ -36,7 +36,13 @@ const WARN_AFTER_BUNDLE_GZIP_SIZE = 512 * 1024;
 const WARN_AFTER_CHUNK_GZIP_SIZE = 1024 * 1024;
 
 // Warn and crash if required files are missing
-if (!checkRequiredFiles([paths.appHtml, paths.appIndexJs, paths.appBackgroundHtml, paths.appBackgroundJs])) {
+if (!checkRequiredFiles([
+  paths.appHtml,
+  paths.appIndexJs,
+  paths.appBackgroundHtml,
+  paths.appBackgroundJs,
+  paths.appManifest,
+])) {
   process.exit(1);
 }
 
@@ -49,6 +55,7 @@ measureFileSizesBeforeBuild(paths.appBuild)
     fs.emptyDirSync(paths.appBuild);
     // Merge with the public folder
     copyPublicFolder();
+    copyMainfest();
     // Start the webpack build
     return build(previousFileSizes);
   })
@@ -145,6 +152,13 @@ function build(previousFileSizes) {
 function copyPublicFolder() {
   fs.copySync(paths.appPublic, paths.appBuild, {
     dereference: true,
-    filter: file => file !== paths.appHtml && file !== paths.appBackgroundHtml,
+    filter: file => file !== paths.appHtml && file !== paths.appBackgroundHtml && file !== paths.appManifest,
   });
+}
+
+function copyMainfest() {
+  let manifest = require(paths.appManifest);
+  let pkg = require(paths.appPackageJson);
+  manifest.version = pkg.version 
+  fs.writeFileSync(path.join(paths.appBuild, 'manifest.json'), JSON.stringify(manifest));
 }
