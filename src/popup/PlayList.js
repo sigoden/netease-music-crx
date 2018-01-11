@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import { observer } from 'mobx-react'
-import FontAwesome from 'react-fontawesome'
 
 class PlayList extends Component {
   render() {
@@ -23,7 +22,7 @@ class PlayList extends Component {
           </div>
           {isPlaying && 
               <div className="indicator ml-auto">
-                <FontAwesome  name="music" / >
+                <span className="icon-music" / >
               </div>
           }
         </div>
