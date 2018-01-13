@@ -48,6 +48,7 @@ for (let action of ACTIONS) {
         storeFunc: action,
         params,
       }, response => {
+        // console.log(response)
         if (response.ok) {
           if (typeof response.change === 'object') {
             extendObservable(store, response.change)

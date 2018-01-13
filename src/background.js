@@ -17,7 +17,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (result instanceof Promise) {
           result.then(change => {
             let message = ''
-            if (change.message) {
+            if (change && change.message) {
               message = change.message
               delete change.message
             }
