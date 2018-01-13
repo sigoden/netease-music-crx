@@ -2,6 +2,8 @@ import React, { Component } from 'react'
 import { observer } from 'mobx-react'
 import classNames from 'classnames'
 
+import "./Login.css"
+
 class Login extends Component {
   constructor (props) {
     super(props)
@@ -38,7 +40,7 @@ class Login extends Component {
             获取每日推荐和我的歌单
           </div>
         </div>
-        <div className={classNames({'d-none': collapsed})}>
+        <div className={classNames('login-form', {'d-none': collapsed})}>
           <form className="form-inline flex-nowrap mx-2 my-3" onSubmit={e => this.submit(e)}>
             <div className="form-group mb-0">
               <label className="sr-only">手机号</label>

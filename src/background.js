@@ -16,7 +16,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
         if (result instanceof Promise) {
           result.then(change => {
-            sendResponse({ok: true, change})
+            let message = ''
+            if (change.message) {
+              message = change.message
+              delete change.message
+            }
+            sendResponse({ok: true, change, message})
           }).catch(err => {
             sendResponse({ok: false, errorMessage: err.message})
           })

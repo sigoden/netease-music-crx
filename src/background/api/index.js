@@ -89,6 +89,16 @@ export function getSongUrls (ids) {
   return requester.getSongUrls(data)
 }
 
+// 喜欢音乐
+export function likeSong (id, isLike) {
+  const data = {
+    trackId: id,
+    like: isLike,
+  }
+  return requester.likeSong(data)
+}
+
+
 function createRequester () {
   function createRequest(reqInfo) {
     let {
@@ -98,12 +108,12 @@ function createRequester () {
       data
     } = reqInfo
     url = baseURL + url
-    url += '?csrf_token=' + csrf
+    url += (isAlreadyExistQuerystring(url) ? '&' : '?') + 'csrf_token=' + csrf
     data.csrf_token = csrf
     return fetch(url, {
       method,
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
       },
       credentials: 'same-origin',
       body: createQueryParams(data),
@@ -153,8 +163,21 @@ function createRequester () {
         url: '/song/enhance/player/url',
         data
       })
+    },
+    likeSong: (data) => {
+      const alg = 'itembased'
+      const time = 25
+      let urlWithQuery = `/radio/like?alg=${alg}&trackId=${data.trackId}&like=${data.like}&time=${time}`
+      return createRequest({
+        url: urlWithQuery,
+        data
+      })
     }
   }
+}
+
+function isAlreadyExistQuerystring(url) {
+  return url.indexOf('?') > -1
 }
 
 function createQueryParams (data) {

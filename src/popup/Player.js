@@ -37,6 +37,7 @@ class Player extends Component {
 
   render () {
     let {
+      userId,
       playing,
       song,
       playNext,
@@ -46,6 +47,7 @@ class Player extends Component {
       togglePlaying,
       updateVolume,
       updatePlayMode,
+      likeSong,
       audioState: {
         currentTime,
         duration,
@@ -71,7 +73,7 @@ class Player extends Component {
               </p>
             </div>
           </div>
-          <div className="ctls d-flex ml-auto" style={{minWidth: '230px'}}>
+          <div className="ctls d-flex ml-auto" style={{minWidth: userId ? '260px' : '230px'}}>
             <div className="btns">
               <button className="btn btn-light rounded-circle" onClick={_ => playPrev()}>
                 <span className="icon-step-backward" / >
@@ -87,7 +89,12 @@ class Player extends Component {
               </button>
             </div>
             <div className="divider mx-2" />
-            <div className="btns">
+            <div className="btns mr-1">
+              {userId && (
+                <button className="btn btn-light rounded-circle">
+                  <span className="icon-heart" onClick={_ => likeSong()} />
+                </button>
+              )}
               <button className="btn btn-light rounded-circle" onClick={_ => updatePlayMode()}>
                 {playMode === PLAY_MODE.SHUFFLE ?
                   (<span className="icon-random" / >) :

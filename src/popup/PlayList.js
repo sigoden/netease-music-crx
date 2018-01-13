@@ -1,6 +1,8 @@
 import React, { Component } from 'react'
 import { observer } from 'mobx-react'
 
+import "./PlayList.css"
+
 class PlayList extends Component {
   render() {
     let isPlaying = this.props.isPlaying
@@ -8,7 +10,7 @@ class PlayList extends Component {
     let {id, coverImgUrl, name, creator, songsCount} = this.props.item
     return (
       <div className='playlist container-fluid list-group-item p-1' onClick={_ => changePlaylist(id)}>
-        <div className="d-flex align-items-center">
+        <div className="d-flex align-items-end">
           <div className="media">
             <img src={coverImgUrl} alt="album pic" className="rounded img-thumbnail p-0 mr-2" width="64" />
             <div className="info media-body" style={{minWidth: 0}}>
@@ -21,8 +23,14 @@ class PlayList extends Component {
             </div>
           </div>
           {isPlaying && 
-              <div className="indicator ml-auto">
-                <span className="icon-music" / >
+              <div className="indicator ml-auto mr-1 mb-1">
+                <ul className="grafica">
+                  <li><span>&nbsp;</span></li>
+                  <li><span>&nbsp;</span></li>
+                  <li><span>&nbsp;</span></li>
+                  <li><span>&nbsp;</span></li>
+                  <li><span>&nbsp;</span></li>
+                </ul>
               </div>
           }
         </div>

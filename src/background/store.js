@@ -23,6 +23,7 @@ class Store {
   @observable playing = false
   @observable userId = null
   @observable volume = 1
+
   @observable audioState = {
     duration: 0,
     currentTime: 0,
@@ -120,6 +121,20 @@ class Store {
       })
     })
   }
+  @action likeSong = () => {
+    if (!self.song) return Promise.reject("选中歌曲")
+    return API.likeSong(self.song.id, true).then(res => {
+      if (res.code === 200) {
+        return updateLikeSongsPlaylist().then(playlistGroup => {
+          return self.applyChange({
+            playlistGroup
+          }, '收藏成功')
+        })
+      } else {
+        throw new Error('收藏到我喜欢的音乐失败')
+      }
+    })
+  }
   @action login = (phone, password) => {
     return API.cellphoneLogin(phone, password).then((res) => {
       if (res.code === 200) {
@@ -173,9 +188,12 @@ class Store {
    * - 持久化
    * - 通知 delegatedStore 变更 (返回值)
    */
-  applyChange (change) {
+  applyChange (change, message) {
     extendObservable(self, change)
     persist(change)
+    if (message) {
+      change.message = message
+    }
     return Promise.resolve(change)
   }
 
@@ -332,6 +350,20 @@ function safeFindPlaylistAndSong (self, songId) {
     songId = TOP_NEW_ID
   }
   return {playlist, songId}
+}
+
+function updateLikeSongsPlaylist () {
+  let likeSongPlaylistIndex = 2
+  let playlistId = self.playlistGroup[likeSongPlaylistIndex].id
+  return API.getPlaylistDetail(playlistId).then(res => {
+    if (res.code === 200) {
+      let playlist = tidyPlaylist(res.playlist)
+      self.playlistGroup[likeSongPlaylistIndex] = playlist
+      return self.playlistGroup
+    } else {
+      throw new Error('刷新喜欢的音乐歌单失败')
+    }
+  })
 }
 
 function persist (change) {

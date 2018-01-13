@@ -4,22 +4,25 @@ import {observable, observe, extendObservable} from 'mobx'
 // 而 popup 页面需要同步 background 页面的状态
 
 class Store {
-  @observable errorMessage = ''
+  @observable message = ''
+
+  @observable msgIsError = true
 }
 
 const store = new Store()
 
-const ERR_MSG_TIMEOUT = 3000
-
-let errorMessageT
-observe(store, 'errorMessage', () => {
-  if (store.errorMessage) {
-    clearTimeout(errorMessageT)
-    errorMessageT = setTimeout(() => {
-      store.errorMessage = ''
-    }, ERR_MSG_TIMEOUT)
+const MSG_TIMEOUT = 3000
+let messageT
+observe(store, 'message', () => {
+  if (store.message) {
+    clearTimeout(messageT)
+    messageT = setTimeout(() => {
+      store.msgIsError = true
+      store.message = ''
+    }, MSG_TIMEOUT)
   }
 })
+
 
 const ACTIONS = [
   'togglePlaying',
@@ -33,11 +36,13 @@ const ACTIONS = [
   'popupInit',
   'loadRecommandAndUserPlaylists',
   'updateAudioCurrentTime',
+  'likeSong',
 ]
 
 for (let action of ACTIONS) {
   store[action] = (...params) => {
     return new Promise((resolve, reject) => {
+      // console.log(action, params)
       chrome.runtime.sendMessage({
         action: 'storeAction',
         storeFunc: action,
@@ -47,9 +52,16 @@ for (let action of ACTIONS) {
           if (typeof response.change === 'object') {
             extendObservable(store, response.change)
           } 
+          if (response.message) {
+            store.message = response.message
+            store.msgIsError = false
+          }
           return resolve()
         }
-        store.errorMessage = response.errorMessage
+        if (response.errorMessage) {
+            store.message = response.errorMessage
+            store.msgIsError = true
+        }
         reject()
       })
     })

@@ -1,12 +1,16 @@
 .app {
-  width: 500px;
-}
-
-.app .list-group {
-  max-height: 488px;
-  overflow-y: auto;
+  width: 550px;
 }
 
 .playlist-group {
+  max-height: 440px;
+  overflow-y: auto;
+}
+.playlist-group {
   border-bottom: 1px solid #dfdfdf;
+}
+
+.btn {
+  padding: 0.6rem 0.7rem;
+  line-height: 0.9;
 }
