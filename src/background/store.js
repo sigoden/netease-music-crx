@@ -8,13 +8,21 @@ import {
 
 import * as API from './api'
 
-import {
-  TOP_NEW_ID,
-  IMAGE_CLIP,
-  PLAY_MODE,
-  OMIT_PERSIST_KEYS,
-} from '../constants'
+// 网易新歌榜的歌单 ID
+const TOP_NEW_ID = 3779629
 
+// 剪裁图片
+const IMAGE_CLIP = '?param=150y150'
+
+// store 中不需要存储的键
+const OMIT_PERSIST_KEYS = ['playlistGroup', 'audioState', 'errorMessage']
+
+// 播放模式
+const PLAY_MODE = {
+  LOOP: 'LOOP', // 循环
+  SHUFFLE: 'SHUFFLE', // 随机
+  ONE: 'ONE' // 单曲循环
+}
 
 // 播放器
 let audio

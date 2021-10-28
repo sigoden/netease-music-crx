@@ -3,9 +3,13 @@ import { observer } from 'mobx-react'
 import classNames from 'classnames'
 
 import './Player.css'
-import {
-  PLAY_MODE
-} from '../constants'
+
+// 播放模式
+const PLAY_MODE = {
+  LOOP: 'LOOP', // 循环
+  SHUFFLE: 'SHUFFLE', // 随机
+  ONE: 'ONE' // 单曲循环
+}
 
 class Player extends Component {
   constructor (props) {

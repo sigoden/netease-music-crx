@@ -9,13 +9,13 @@
     "page": "background.html"
   },
   "browser_action": {
-    "default_popup": "index.html",
-    "default_icon": "static/img/icon-34.png"
+    "default_popup": "popup.html",
+    "default_icon": "icon-34.png"
   },
   "icons": {
-    "128": "static/img/icon-128.png",
-    "48" : "static/img/icon-128.png",
-    "16" : "static/img/icon-128.png"
+    "128": "icon-128.png",
+    "48" : "icon-128.png",
+    "16" : "icon-128.png"
   },
   "permissions": ["storage", "webRequest", "https://music.163.com/", "contextMenus"],
   "update_url": "http://clients2.google.com/service/update2/crx",
