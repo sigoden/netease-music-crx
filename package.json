@@ -19,7 +19,8 @@
     "mobx-react": "^4.3.5",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "stream-browserify": "^3.0.0"
+    "stream-browserify": "^3.0.0",
+    "valtio": "^1.2.5"
   },
   "devDependencies": {
     "@babel/core": "^7.15.8",
