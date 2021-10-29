@@ -25,7 +25,7 @@ export const STORE_PROPS = {
       name: '云音乐新歌榜',
       songsCount: 0,
       coverImgUrl: 'http://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg?param=150y150',
-      songsHash: {},
+      songsMap: {},
       normalSongsIndex: [],
       shuffleSongsIndex: []
     }

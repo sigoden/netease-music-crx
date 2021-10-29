@@ -67,8 +67,8 @@ export default function Player () {
         <Avatar src={song.picUrl} alt='album pic' />
         <Grid container direction='column' sx={{ mx: 1 }}>
           <Grid item sx={{ display: 'flex' }}>
-            <Box sx={{ maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.name}</Box>
-            <Box sx={{ ml: 2, maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.artists}</Box>
+            <Box sx={{ maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.name}</Box>
+            <Box sx={{ ml: 2, maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.artists}</Box>
           </Grid>
           <Grid item alignItems='center' sx={{ display: 'flex' }}>
             <Box sx={{ width: '100%', mx: 1 }}>

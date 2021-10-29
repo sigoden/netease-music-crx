@@ -25,16 +25,20 @@ export default function PlayList () {
   let songs = []
   if (snap.selectedPlaylistId) {
     const selectedPlaylist = snap.playlistGroup.find(playlist => playlist.id === snap.selectedPlaylistId)
-    songs = selectedPlaylist?.normalSongsIndex.map(idx => selectedPlaylist.songsHash[idx]) || []
+    songs = selectedPlaylist?.normalSongsIndex.map(idx => selectedPlaylist.songsMap[idx]) || []
   }
   return (
     <Grid container>
-      <Grid item xs={3} sx={{ background: theme.palette.background.playlist }}>
+      <Grid item xs={4} sx={{ background: theme.palette.background.playlist }}>
         <List sx={{ maxHeight: 400, overflowY: 'auto', py: 0 }}>
         {snap.playlistGroup.map(playlist => {
           const selected = playlist.id === snap.selectedPlaylistId
           return (
-            <ListItemButton key={playlist.id} selected={selected}>
+            <ListItemButton
+              key={playlist.id}
+              selected={selected}
+              onClick={_ => store.changePlaylist(playlist.id)}
+            >
               <ListItemIcon sx={{ minWidth: 30 }}>
                 <Avatar src={playlist.coverImgUrl} sx={{ width: 24, height: 24 }} />
               </ListItemIcon>
@@ -44,7 +48,7 @@ export default function PlayList () {
         })}
         </List>
       </Grid>
-      <Grid item xs={9} sx={{ maxHeight: 400, overflowY: 'auto' }}>
+      <Grid item xs={8} sx={{ maxHeight: 400, overflowY: 'auto' }}>
         {songs.length > 0 &&
           <Table stickyHeader size="small">
             <TableHead sx={{ height: '48px' }}>
@@ -61,7 +65,7 @@ export default function PlayList () {
                   selected={song.id === snap.song.id}
                   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                 >
-                  <TableCell component="th" scope="row" sx={{ maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                  <TableCell component="th" scope="row" sx={{ maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', padding: '4px 16px' }}>
                     <IconButton onClick={() => store.playSong(song.id)}>
                       <PlayArrowIcon />
                     </IconButton>

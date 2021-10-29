@@ -1,7 +1,5 @@
 import * as encrypt from './encrypt'
 
-import { parse as parseCookie } from 'cookie'
-
 // 网易 API 请求路径前缀
 const API_PREFIX = 'https://music.163.com'
 
@@ -17,13 +15,15 @@ function createRequester () {
       data
     } = reqInfo
     url = baseURL + url
+    url += (url.indexOf('?') > -1 ? '&' : '?') + 'csrf_token=' + csrf
     data.csrf_token = csrf
     return fetch(url, {
       method,
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        Cookie: document.cookie
       },
-      credentials: 'same-origin',
+      credentials: 'include',
       body: createQueryParams(data)
     }).then(res => {
       return res.json()
@@ -33,8 +33,8 @@ function createRequester () {
     setCookie (_cookies) {
       document.cookie = _cookies
       if (_cookies) {
-        const _cookiesObj = parseCookie(_cookies)
-        csrf = _cookiesObj.__csrf
+        const csrfToken = (_cookies || '').match(/_csrf=([^(;|$)]+)/)
+        csrf = csrfToken ? csrfToken[1] : ''
       } else {
         csrf = ''
       }
@@ -101,7 +101,7 @@ function createRequester () {
         data: {
           offset: 0,
           total: true,
-          limit: 20
+          limit: 50
         }
       })
     },

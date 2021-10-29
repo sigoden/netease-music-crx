@@ -6,17 +6,18 @@ import { STORE_PROPS, TOP_NEW_ID, PLAY_MODE, log } from '../utils'
 // 剪裁图片
 const IMAGE_CLIP = '?param=150y150'
 // store 中不需要存储的键
-const OMIT_PERSIST_KEYS = ['playlistGroup', 'audioState', 'errorMessage', 'playing']
+const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId', 'cookies']
 
 // 播放器
 let audio
 
 const store = proxy({
-  cookies: null,
+  cookies: '',
   ...STORE_PROPS,
   syncPersistData () {
     return new Promise((resolve) => {
       chrome.storage.sync.get(persistData => {
+        log('persistData', persistData)
         if (persistData) {
           if (persistData.cookies) {
             api.setCookie(persistData.cookies)
@@ -76,8 +77,8 @@ const store = proxy({
     if (!playlist) {
       playlist = store.playlistGroup[0]
     }
-    const songId = PLAY_MODE.SHUFFLE ? playlist.shuffleSongsIndex[0] : playlist.normalSongsIndex[0]
-    const song = await getSong(playlist, store.playMode, songId)
+    const songId = store.playMode === PLAY_MODE.SHUFFLE ? playlist.shuffleSongsIndex[0] : playlist.normalSongsIndex[0]
+    const song = await getSong(playlist, store.playMode, songId, 0)
     return store.applyChange({
       selectedPlaylistId: playlistId,
       song
@@ -152,22 +153,22 @@ const store = proxy({
     await store.syncPersistData()
     await store.fetchTopNew()
     if (store.userId) {
-      const res = await api.loginRefresh()
-      if (res.code === 200) {
-        await loadAllPlaylists()
-      } else if (res.code === 301) { // cookie 失效
-        store.applyChange({
-          userId: null,
-          cookies: null,
-          selectedPlaylistId: TOP_NEW_ID
-        })
-      }
+      // const res = await api.loginRefresh()
+      // if (res.code === 200) {
+      await store.loadPlaylists()
+      await store.changePlaylist(store.playlistGroup[0].id)
+      // } else if (res.code === 301) { // cookie 失效
+      //   store.applyChange({
+      //     userId: null,
+      //     cookies: null,
+      //     selectedPlaylistId: TOP_NEW_ID
+      //   })
+      // }
     } else {
       await store.changePlaylist(store.playlistGroup[0].id)
     }
   },
   setCookie (cookies) {
-    chrome.storage.sync.set({ cookies })
     api.setCookie(cookies)
     return store.applyChange({ cookies })
   }
@@ -175,9 +176,18 @@ const store = proxy({
 
 function normalizePlaylist (playlist) {
   const { id, creator: { nickname: creator }, name, coverImgUrl, tracks } = playlist
-  const { songsIndex: normalSongsIndex, songsHash } = tracksToSongs(tracks)
+  const { songsIndex: normalSongsIndex, songsMap } = tracksToSongs(tracks)
   const shuffleSongsIndex = shuffleArray(normalSongsIndex)
-  return { id: Number(id), creator, name, songsCount: normalSongsIndex.length, coverImgUrl: coverImgUrl + IMAGE_CLIP, songsHash, normalSongsIndex, shuffleSongsIndex }
+  return {
+    id: Number(id),
+    creator,
+    name,
+    songsCount: normalSongsIndex.length,
+    coverImgUrl: coverImgUrl + IMAGE_CLIP,
+    songsMap,
+    normalSongsIndex,
+    shuffleSongsIndex
+  }
 }
 
 function tracksToSongs (tracks) {
@@ -185,12 +195,12 @@ function tracksToSongs (tracks) {
     const { id, name, al: { picUrl }, ar, dt } = track
     return { id, name, picUrl: picUrl + IMAGE_CLIP, artists: compactArtists(ar), duration: dt }
   })
-  const songsHash = songs.reduce((songsHash, song) => {
-    songsHash[song.id] = song
-    return songsHash
+  const songsMap = songs.reduce((songsMap, song) => {
+    songsMap[song.id] = song
+    return songsMap
   }, {})
   const songsIndex = songs.map(song => song.id)
-  return { songsIndex, songsHash }
+  return { songsIndex, songsMap }
 }
 
 function compactArtists (artists) {
@@ -198,12 +208,12 @@ function compactArtists (artists) {
 }
 
 function getSong (playlist, playMode, currentSongId, dir = 1) {
-  const { songsHash, shuffleSongsIndex, normalSongsIndex } = playlist
+  const { songsMap, shuffleSongsIndex, normalSongsIndex } = playlist
   const songsIndex = playMode === PLAY_MODE.SHUFFLE ? shuffleSongsIndex : normalSongsIndex
   const len = songsIndex.length
   const currentSongIndex = songsIndex.findIndex(index => index === currentSongId)
   const nextSongIndex = currentSongIndex === -1 ? 0 : (len + currentSongIndex + dir) % len
-  const song = songsHash[songsIndex[nextSongIndex]]
+  const song = songsMap[songsIndex[nextSongIndex]]
   return updateSongWithUrl(song).then(song => {
     // some song have no valid url, need to be skipped
     if (!song.url) {
@@ -232,19 +242,6 @@ function shuffleArray (array) {
   return _array
 }
 
-function loadRecommandSongsPlaylist (userId) {
-  const playlist = { id: generateId(), creator: { nickname: '网易云音乐' }, name: '每日推荐歌曲' }
-  return loadRecommandSongs(userId).then(songs => {
-    playlist.tracks = songs
-    playlist.coverImgUrl = songs[0].al.picUrl
-    return normalizePlaylist(playlist)
-  })
-}
-
-function generateId () {
-  return Number(Math.random().toString().substr(3, 8))
-}
-
 function loadAllPlaylists () {
   const { userId } = store
   return Promise.all([loadRecommandSongsPlaylist(userId), loadUserPlaylist(userId)]).then(result => {
@@ -253,12 +250,21 @@ function loadAllPlaylists () {
   })
 }
 
+function loadRecommandSongsPlaylist (userId) {
+  const playlist = { id: randomId(), creator: { nickname: '网易云音乐' }, name: '每日推荐歌曲' }
+  return loadRecommandSongs(userId).then(songs => {
+    playlist.tracks = songs
+    playlist.coverImgUrl = songs[0].al.picUrl
+    return normalizePlaylist(playlist)
+  })
+}
+
 function loadRecommandSongs (userId) {
   return api.getRecommendSongs(userId).then(res => {
     if (res.code === 200) {
       return res.recommend.map(song => {
-        const { id, album: al, artists: ar } = song
-        return { id, al, ar }
+        const { id, name, album: al, artists: ar, duration } = song
+        return { id, name, al, ar, dt: duration }
       })
     } else {
       throw new Error('获取推荐音乐失败')
@@ -306,9 +312,13 @@ function updateLikeSongsPlaylist () {
   })
 }
 
+function randomId () {
+  return Number(Math.random().toString().substr(3, 8))
+}
+
 function persist (change) {
   const toPersistDataKeys = Object.keys(change)
-    .filter(key => OMIT_PERSIST_KEYS.indexOf(key) === -1)
+    .filter(key => PERSIST_KEYS.indexOf(key) > -1)
   if (toPersistDataKeys.length === 0) return
   const toPersistData = toPersistDataKeys.reduce((acc, key) => {
     acc[key] = change[key]

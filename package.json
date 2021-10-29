@@ -17,8 +17,6 @@
     "@mui/material": "^5.0.6",
     "big-integer": "^1.6.50",
     "buffer": "^6.0.3",
-    "classnames": "^2.3.1",
-    "cookie": "^0.4.1",
     "crypto-browserify": "^3.12.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
