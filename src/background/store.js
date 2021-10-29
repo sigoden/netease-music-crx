@@ -87,7 +87,9 @@ const store = proxy({
   async likeSong () {
     const { song } = store
     if (!song) throw new Error('无选中歌曲')
-    const res = await api.likeSong(song.id, true)
+    const playlistId = store.playlistGroup[2]?.id
+    if (!playlistId) throw new Error('无法收藏')
+    const res = await api.likeSong(playlistId, song.id)
     if (res.code === 200) {
       const playlistGroup = await updateLikeSongsPlaylist()
       return store.applyChange({ playlistGroup, message: '收藏成功' })

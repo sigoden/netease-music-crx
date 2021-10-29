@@ -128,14 +128,14 @@ function createRequester () {
       })
     },
     // 喜欢音乐
-    likeSong (id, isLike) {
+    likeSong (playlistId, songId) {
       return createRequest({
-        url: '/weapi/radio/like',
+        url: '/weapi/playlist/manipulate/tracks',
         data: {
-          alg: 'itembased',
-          trackId: id,
-          like: isLike,
-          time: '3'
+          tracks: '[object Object]',
+          pid: playlistId,
+          trackIds: `[${songId}]`,
+          op: 'add'
         }
       })
     }
