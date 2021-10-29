@@ -2724,11 +2724,6 @@ hmac-drbg@^1.0.1:
     minimalistic-assert "^1.0.0"
     minimalistic-crypto-utils "^1.0.1"
 
-hoist-non-react-statics@^2.3.1:
-  version "2.5.5"
-  resolved "https://registry.yarnpkg.com/hoist-non-react-statics/-/hoist-non-react-statics-2.5.5.tgz#c5903cf409c0dfd908f388e619d86b9c1174cb47"
-  integrity sha512-rqcy4pJo55FTTLWt+bU8ukscqHeE/e9KWvsOW2b/a3afxQZhwkQdT1rPPCJ0rYXdj4vNcasY8zHTH+jF/qStxw==
-
 hoist-non-react-statics@^3.3.0:
   version "3.3.2"
   resolved "https://registry.yarnpkg.com/hoist-non-react-statics/-/hoist-non-react-statics-3.3.2.tgz#ece0acaf71d62c2969c2ec59feff42a4b1a85b45"
@@ -3321,18 +3316,6 @@ mkdirp@^0.5.5:
   dependencies:
     minimist "^1.2.5"
 
-mobx-react@^4.3.5:
-  version "4.4.3"
-  resolved "https://registry.yarnpkg.com/mobx-react/-/mobx-react-4.4.3.tgz#baa9ec41165ee35ae7b9df19bca10190f36f117e"
-  integrity sha1-uqnsQRZe41rnud8ZvKEBkPNvEX4=
-  dependencies:
-    hoist-non-react-statics "^2.3.1"
-
-mobx@^3.4.1:
-  version "3.6.2"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-3.6.2.tgz#fb9f5ff5090539a1ad54e75dc4c098b602693320"
-  integrity sha512-Dq3boJFLpZEvuh5a/MbHLUIyN9XobKWIb0dBfkNOJffNkE3vtuY0C9kSDVpfH8BB0BPkVw8g22qCv7d05LEhKg==
-
 ms@2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.0.0.tgz#5608aeadfc00be6c2901df5f9861788de0d597c8"
@@ -3746,6 +3729,11 @@ proxy-addr@~2.0.5:
   dependencies:
     forwarded "0.2.0"
     ipaddr.js "1.9.1"
+
+proxy-compare@2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/proxy-compare/-/proxy-compare-2.0.2.tgz#343e624d0ec399dfbe575f1d365d4fa042c9fc69"
+  integrity sha512-3qUXJBariEj3eO90M3Rgqq3+/P5Efl0t/dl9g/1uVzIQmO3M+ql4hvNH3mYdu8H+1zcKv07YvL55tsY74jmH1A==
 
 public-encrypt@^4.0.0:
   version "4.0.3"
@@ -4458,6 +4446,13 @@ uuid@^3.4.0:
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.4.0.tgz#b23e4358afa8a202fe7a100af1f5f883f02007ee"
   integrity sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A==
+
+valtio@^1.2.5:
+  version "1.2.5"
+  resolved "https://registry.yarnpkg.com/valtio/-/valtio-1.2.5.tgz#c09a700c54ff7e0942611b9c25e006a5b2193733"
+  integrity sha512-2r6ijmG5+YfS+sfEkoHB6C1czgn7MXzxPwY/3u0t/wmsr2N4B1yF57i0J/hBOCYkdYkbsYfBRVi7xRK+CAEsyA==
+  dependencies:
+    proxy-compare "2.0.2"
 
 vary@~1.1.2:
   version "1.1.2"

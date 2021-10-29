@@ -2,48 +2,19 @@ import { proxy } from 'valtio'
 import { subscribeKey } from 'valtio/utils'
 import api from './api'
 
-// 网易新歌榜的歌单 ID
-const TOP_NEW_ID = 3779629
-
+import { STORE_PROPS, TOP_NEW_ID, PLAY_MODE } from '../constants'
 // 剪裁图片
 const IMAGE_CLIP = '?param=150y150'
-
 // store 中不需要存储的键
 const OMIT_PERSIST_KEYS = ['playlistGroup', 'audioState', 'errorMessage', 'playing']
 
-// 播放模式
-const PLAY_MODE = {
-  LOOP: 'LOOP', // 循环
-  SHUFFLE: 'SHUFFLE', // 随机
-  ONE: 'ONE' // 单曲循环
-}
 
 // 播放器
 let audio
 
 const store = proxy({
-  playing: false,
-  userId: null,
-  volume: 1,
   cookies: null,
-  audioState: {
-    duration: 0,
-    currentTime: 0,
-    loadPercentage: 0,
-  },
-  playMode: PLAY_MODE.LOOP,
-  playlistGroup: [
-    {
-      id: TOP_NEW_ID,
-      creator: '网易云音乐',
-      name: '云音乐新歌榜',
-      coverImgUrl: 'http://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg?param=150y150',
-      shuffleSongsIndex: [],
-      songsHash: []
-    }
-  ],
-  selectedPlaylistId: TOP_NEW_ID,
-  song: null,
+  ...STORE_PROPS,
   syncPersistData() {
     return new Promise((resolve) => {
       chrome.storage.sync.get(persistData => {
@@ -123,7 +94,7 @@ const store = proxy({
       throw new Error(res.msg)
     }
   },
-  async loadRecommandAndUserPlaylists() {
+  async loadPlaylists() {
     const playlists = await loadAllPlaylists()
     return store.applyChange({
       playlistGroup: [...store.playlistGroup, ...playlists]
@@ -187,8 +158,6 @@ const store = proxy({
     return store.applyChange({cookies})
   }
 })
-
-export default store
 
 function tidyPlaylist (playlist) {
   let {id, creator: {nickname: creator}, name, coverImgUrl, tracks} = playlist
@@ -392,3 +361,5 @@ function updateAudioState (state) {
     audioState: newAudioState,
   })
 }
+
+export default store
