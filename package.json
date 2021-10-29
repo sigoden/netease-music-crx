@@ -5,7 +5,8 @@
   "version": "1.1.0",
   "scripts": {
     "build": "node scripts/build.js",
-    "start": "node scripts/webserver.js"
+    "start": "node scripts/webserver.js",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@hot-loader/react-dom": "^17.0.1",
@@ -22,13 +23,23 @@
   },
   "devDependencies": {
     "@babel/core": "^7.15.8",
-    "@babel/plugin-proposal-decorators": "^7.15.8",
+    "@babel/eslint-parser": "^7.15.8",
     "@babel/preset-env": "^7.15.8",
     "@babel/preset-react": "^7.14.5",
     "babel-loader": "^8.2.3",
     "babel-preset-react-app": "^10.0.0",
     "copy-webpack-plugin": "^9.0.1",
     "css-loader": "^6.5.0",
+    "eslint": "^8.1.0",
+    "eslint-config-react-app": "^6.0.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-flowtype": "^8.0.3",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.1",
+    "eslint-plugin-react": "^7.26.1",
+    "eslint-plugin-react-hooks": "^4.2.0",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.5.0",
     "react-hot-loader": "^4.13.0",

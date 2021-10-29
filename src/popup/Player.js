@@ -6,23 +6,23 @@ import { PLAY_MODE } from '../constants'
 
 import './Player.css'
 
-export default function Player() {
+export default function Player () {
   const snap = useSnapshot(store)
   const [state, setState] = useState({
     isVolumeBarVisiable: false
   })
   const moveAudioThumb = (e) => {
-    let bb = e.currentTarget.getBoundingClientRect()
-    let percent = (e.pageX - bb.x) / bb.width
-    let { audioState: { duration } } = snap
-    let currentTime = percent * duration
+    const bb = e.currentTarget.getBoundingClientRect()
+    const percent = (e.pageX - bb.x) / bb.width
+    const { audioState: { duration } } = snap
+    const currentTime = percent * duration
     snap.updateAudioTime(currentTime)
   }
   const toggleVolumeBarVisibility = () => {
     setState({ isVolumeBarVisiable: !state.isVolumeBarVisiable })
   }
 
-  let {
+  const {
     userId,
     playing,
     song,
@@ -37,20 +37,20 @@ export default function Player() {
     audioState: {
       currentTime,
       duration,
-      loadPercentage,
-    },
+      loadPercentage
+    }
   } = snap
 
-  let currentTimeStr = formatScondTime(currentTime)
-  let durationTimeStr = formatScondTime(duration)
-  let percentPlayed = currentTime / duration * 100
+  const currentTimeStr = formatScondTime(currentTime)
+  const durationTimeStr = formatScondTime(duration)
+  const percentPlayed = currentTime / duration * 100
 
   return (
     <div className="player container-fluid mt-3">
       <div className="row align-items-center">
-        <div className="media" style={{maxWidth: '250px'}}>
+        <div className="media" style={{ maxWidth: '250px' }}>
           <img src={song.picUrl} alt="album pic" className="rounded img-thumbnail p-0 mr-2" width="64" />
-          <div className="info media-body" style={{minWidth: 0}}>
+          <div className="info media-body" style={{ minWidth: 0 }}>
             <p className="name font-weight-bold text-truncate">
               {song.name}
             </p>
@@ -59,15 +59,15 @@ export default function Player() {
             </p>
           </div>
         </div>
-        <div className="ctls d-flex ml-auto" style={{minWidth: userId ? '260px' : '230px'}}>
+        <div className="ctls d-flex ml-auto" style={{ minWidth: userId ? '260px' : '230px' }}>
           <div className="btns">
             <button className="btn btn-light rounded-circle" onClick={_ => playPrev()}>
               <span className="icon-step-backward" / >
             </button>
             <button className="btn btn-light rounded-circle" onClick={_ => togglePlaying()} >
-              {playing ?
-                  (<span className="icon-pause" / >) :
-                  (<span className="icon-play" / >)
+              {playing
+                ? (<span className="icon-pause" / >)
+                : (<span className="icon-play" / >)
               }
             </button>
             <button className="btn btn-light rounded-circle" onClick={_ => playNext()}>
@@ -82,11 +82,11 @@ export default function Player() {
               </button>
             )}
             <button className="btn btn-light rounded-circle" onClick={_ => updatePlayMode()}>
-              {playMode === PLAY_MODE.SHUFFLE ?
-                (<span className="icon-random" / >) :
-                  (playMode === PLAY_MODE.LOOP ?
-                    (<span className="icon-loop" / >) :
-                    (<span className="icon-one" / >)
+              {playMode === PLAY_MODE.SHUFFLE
+                ? (<span className="icon-random" / >)
+                : (playMode === PLAY_MODE.LOOP
+                    ? (<span className="icon-loop" / >)
+                    : (<span className="icon-one" / >)
                   )
               }
             </button>
@@ -99,7 +99,7 @@ export default function Player() {
                 max="1"
                 value={volume}
                 step="0.1"
-                className={classNames('progress-volume', {'d-none': !state.isVolumeBarVisiable})}
+                className={classNames('progress-volume', { 'd-none': !state.isVolumeBarVisiable })}
                 type="range"
                 onChange={e => updateVolume(e.target.value)}
               />
@@ -111,10 +111,10 @@ export default function Player() {
         <div className='curtime m-1'>
           {currentTimeStr}
         </div>
-        <div className="progress progress-audio" style={{flexGrow: 2}} onClick={e => moveAudioThumb(e)}>
-          <div className="progress-bar progress-bar-buffered " style={{width: loadPercentage + '%'}}></div>
-          <div className="progress-bar progress-bar-played" style={{width: percentPlayed + '%'}}></div>
-          <div className="thumb" style={{zIndex: 3}}>
+        <div className="progress progress-audio" style={{ flexGrow: 2 }} onClick={e => moveAudioThumb(e)}>
+          <div className="progress-bar progress-bar-buffered " style={{ width: loadPercentage + '%' }}></div>
+          <div className="progress-bar progress-bar-played" style={{ width: percentPlayed + '%' }}></div>
+          <div className="thumb" style={{ zIndex: 3 }}>
             <span className="icon-circle" />
           </div>
         </div>
@@ -128,7 +128,7 @@ export default function Player() {
 
 // 格式化秒 90 -> 1:30
 function formatScondTime (timeInSeconds) {
-  let minutes = Math.floor(timeInSeconds / 60)
-  let seconds = (timeInSeconds % 60).toFixed()
+  const minutes = Math.floor(timeInSeconds / 60)
+  const seconds = (timeInSeconds % 60).toFixed()
   return minutes + ':' + ('00' + seconds).slice(-2)
 }

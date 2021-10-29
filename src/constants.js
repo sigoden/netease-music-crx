@@ -15,7 +15,7 @@ export const STORE_PROPS = {
   audioState: {
     duration: 0,
     currentTime: 0,
-    loadPercentage: 0,
+    loadPercentage: 0
   },
   playMode: PLAY_MODE.LOOP,
   playlistGroup: [
@@ -29,5 +29,5 @@ export const STORE_PROPS = {
     }
   ],
   selectedPlaylistId: TOP_NEW_ID,
-  song: null,
+  song: null
 }

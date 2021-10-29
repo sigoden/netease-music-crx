@@ -1,30 +1,30 @@
-import store  from './store'
+import store from './store'
 
 const contextMenus = [
   {
-    title: "注销",
-    contexts: ["browser_action"],
+    title: '注销',
+    contexts: ['browser_action'],
     onclick: function () {
       store.logout()
     }
   },
   {
-    title: "播放/暂停",
-    contexts: ["browser_action"],
+    title: '播放/暂停',
+    contexts: ['browser_action'],
     onclick: function () {
       store.togglePlaying()
     }
   },
   {
-    title: "上一首",
-    contexts: ["browser_action"],
+    title: '上一首',
+    contexts: ['browser_action'],
     onclick: function () {
       store.playPrev()
     }
   },
   {
-    title: "下一首",
-    contexts: ["browser_action"],
+    title: '下一首',
+    contexts: ['browser_action'],
     onclick: function () {
       store.playNext()
     }

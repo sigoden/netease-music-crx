@@ -7,7 +7,7 @@ import Login from './Login'
 import store from './store'
 import './App.css'
 
-export default function App() {
+export default function App () {
   const snap = useSnapshot(store)
   return (
     <div className="app">
@@ -21,9 +21,9 @@ export default function App() {
         }
       </ul>
       {!snap.userId && (<Login />)}
-      {snap.message && 
+      {snap.message &&
           (
-            <div className={classNames('alert border-0 rounded-0 my-1 py-0 message', {'alert-danger': snap.msgIsError, 'alert-success': !snap.msgIsError})}>
+            <div className={classNames('alert border-0 rounded-0 my-1 py-0 message', { 'alert-danger': snap.msgIsError, 'alert-success': !snap.msgIsError })}>
               {snap.message}
             </div>
           )

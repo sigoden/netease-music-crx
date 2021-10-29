@@ -6,7 +6,7 @@ const nonce = '0CoJUm6Qyw8W8jud'
 const pubKey = '010001'
 
 export function hashPasswd (passwd) {
-  let md5sum = crypto.createHash('md5')
+  const md5sum = crypto.createHash('md5')
   md5sum.update(passwd)
   return md5sum.digest('hex')
 }
@@ -33,7 +33,7 @@ function createSecretKey (size) {
   return key
 }
 
-function aesEncrypt(text, secKey) {
+function aesEncrypt (text, secKey) {
   const _text = text
   const lv = Buffer.from('0102030405060708', 'binary')
   const _secKey = Buffer.from(secKey, 'binary')
@@ -43,16 +43,16 @@ function aesEncrypt(text, secKey) {
   return encrypted
 }
 
-function rsaEncrypt(text, pubKey, modulus) {
+function rsaEncrypt (text, pubKey, modulus) {
   const _text = text.split('').reverse().join('')
-  const biText = bigInt(Buffer.from(_text).toString('hex'), 16),
-    biEx = bigInt(pubKey, 16),
-    biMod = bigInt(modulus, 16),
-    biRet = biText.modPow(biEx, biMod)
+  const biText = bigInt(Buffer.from(_text).toString('hex'), 16)
+  const biEx = bigInt(pubKey, 16)
+  const biMod = bigInt(modulus, 16)
+  const biRet = biText.modPow(biEx, biMod)
   return zfill(biRet.toString(16), 256)
 }
 
-function zfill(str, size) {
+function zfill (str, size) {
   while (str.length < size) str = '0' + str
   return str
 }
