@@ -40,6 +40,10 @@ function createRequester () {
         csrf = ''
       }
     },
+    clearCookie() {
+      delete document.cookie
+      csrf = ''
+    },
     // 手机登录
     cellphoneLogin(phone, password) {
       return createRequest({
