@@ -1,134 +1,116 @@
 import React, { useState } from 'react'
 import { useSnapshot } from 'valtio'
+import IconButton from '@mui/material/IconButton'
+import Avatar from '@mui/material/Avatar'
+import Box from '@mui/material/Box'
+import Grid from '@mui/material/Grid'
+import Slider from '@mui/material/Slider'
+import SkipPreviousIcon from '@mui/icons-material/SkipPrevious'
+import SkipNextIcon from '@mui/icons-material/SkipNext'
+import PauseIcon from '@mui/icons-material/Pause'
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
+import VolumeUpIcon from '@mui/icons-material/VolumeUp'
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
+import LoopIcon from '@mui/icons-material/Loop'
+import ShuffleIcon from '@mui/icons-material/Shuffle'
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
 import store from './store'
-import classNames from 'classnames'
-import { PLAY_MODE } from '../constants'
-
-import './Player.css'
+import { PLAY_MODE, formatScondTime } from '../utils'
 
 export default function Player () {
   const snap = useSnapshot(store)
-  const [state, setState] = useState({
-    isVolumeBarVisiable: false
-  })
-  const moveAudioThumb = (e) => {
-    const bb = e.currentTarget.getBoundingClientRect()
-    const percent = (e.pageX - bb.x) / bb.width
+  const [showVolumeBar, setShowVolumeBar] = useState(false)
+
+  const handleTimeChange = (e, percent) => {
     const { audioState: { duration } } = snap
-    const currentTime = percent * duration
-    snap.updateAudioTime(currentTime)
+    const currentTime = percent * duration / 100
+    store.updateAudioTime(currentTime)
   }
-  const toggleVolumeBarVisibility = () => {
-    setState({ isVolumeBarVisiable: !state.isVolumeBarVisiable })
+
+  const handleVolumeChange = (e) => {
+    store.updateVolume(1 - e.target.value)
   }
 
   const {
     userId,
     playing,
     song,
-    playNext,
-    playPrev,
     volume,
     playMode,
-    togglePlaying,
-    updateVolume,
-    updatePlayMode,
-    likeSong,
     audioState: {
       currentTime,
-      duration,
-      loadPercentage
+      duration
     }
   } = snap
 
   const currentTimeStr = formatScondTime(currentTime)
   const durationTimeStr = formatScondTime(duration)
-  const percentPlayed = currentTime / duration * 100
+  const percentPlayed = currentTime ? currentTime / duration * 100 : 0
 
   return (
-    <div className="player container-fluid mt-3">
-      <div className="row align-items-center">
-        <div className="media" style={{ maxWidth: '250px' }}>
-          <img src={song.picUrl} alt="album pic" className="rounded img-thumbnail p-0 mr-2" width="64" />
-          <div className="info media-body" style={{ minWidth: 0 }}>
-            <p className="name font-weight-bold text-truncate">
-              {song.name}
-            </p>
-            <p className="artist m-0 text-muted text-truncate">
-              {song.artists}
-            </p>
-          </div>
-        </div>
-        <div className="ctls d-flex ml-auto" style={{ minWidth: userId ? '260px' : '230px' }}>
-          <div className="btns">
-            <button className="btn btn-light rounded-circle" onClick={_ => playPrev()}>
-              <span className="icon-step-backward" / >
-            </button>
-            <button className="btn btn-light rounded-circle" onClick={_ => togglePlaying()} >
-              {playing
-                ? (<span className="icon-pause" / >)
-                : (<span className="icon-play" / >)
-              }
-            </button>
-            <button className="btn btn-light rounded-circle" onClick={_ => playNext()}>
-              <span className="icon-step-forward" / >
-            </button>
-          </div>
-          <div className="divider mx-2" />
-          <div className="btns mr-1">
-            {userId && (
-              <button className="btn btn-light rounded-circle">
-                <span className="icon-heart" onClick={_ => likeSong()} />
-              </button>
-            )}
-            <button className="btn btn-light rounded-circle" onClick={_ => updatePlayMode()}>
-              {playMode === PLAY_MODE.SHUFFLE
-                ? (<span className="icon-random" / >)
-                : (playMode === PLAY_MODE.LOOP
-                    ? (<span className="icon-loop" / >)
-                    : (<span className="icon-one" / >)
-                  )
-              }
-            </button>
-            <div className="volume">
-              <button className="btn btn-light rounded-circle" onClick={_ => toggleVolumeBarVisibility()}>
-                <span className="icon-volume" />
-              </button>
-              <input
-                min="0"
-                max="1"
-                value={volume}
-                step="0.1"
-                className={classNames('progress-volume', { 'd-none': !state.isVolumeBarVisiable })}
-                type="range"
-                onChange={e => updateVolume(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="row align-items-center">
-        <div className='curtime m-1'>
-          {currentTimeStr}
-        </div>
-        <div className="progress progress-audio" style={{ flexGrow: 2 }} onClick={e => moveAudioThumb(e)}>
-          <div className="progress-bar progress-bar-buffered " style={{ width: loadPercentage + '%' }}></div>
-          <div className="progress-bar progress-bar-played" style={{ width: percentPlayed + '%' }}></div>
-          <div className="thumb" style={{ zIndex: 3 }}>
-            <span className="icon-circle" />
-          </div>
-        </div>
-        <div className='totaltime m-1'>
-          {durationTimeStr}
-        </div>
-      </div>
-    </div>
-  )
-}
+    <Grid container alignItems='center' sx={{ background: 'white', p: 1 }}>
+      <Grid item alignItems='center'>
+        <IconButton onClick={store.playPrev}>
+          <SkipPreviousIcon />
+        </IconButton>
+        <IconButton onClick={store.togglePlaying}>
+            {playing
+              ? <PauseIcon />
+              : <PlayArrowIcon />
+            }
+        </IconButton>
+        <IconButton onClick={store.playNext}>
+          <SkipNextIcon />
+        </IconButton>
+      </Grid>
+      <Grid item alignItems='center' sx={{ flexGrow: 1, display: 'flex', mx: 1 }}>
+        <Avatar src={song.picUrl} alt='album pic' />
+        <Grid container direction='column' sx={{ mx: 1 }}>
+          <Grid item sx={{ display: 'flex' }}>
+            <Box sx={{ maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.name}</Box>
+            <Box sx={{ ml: 2, maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.artists}</Box>
+          </Grid>
+          <Grid item alignItems='center' sx={{ display: 'flex' }}>
+            <Box sx={{ width: '100%', mx: 1 }}>
+              <Slider value={percentPlayed} min={0} step={1} max={100} onChange={handleTimeChange} />
+            </Box>
+          </Grid>
+        </Grid>
+        <Box sx={{ whiteSpace: 'nowrap' }}>{currentTimeStr} / {durationTimeStr}</Box>
+      </Grid>
+      <Grid item alignItems='center'>
+        {userId &&
+          <IconButton onClick={store.likeSong}>
+            <FavoriteBorderIcon />
+          </IconButton>
+        }
+        <IconButton onClick={store.updatePlayMode}>
+          {playMode === PLAY_MODE.SHUFFLE
+            ? <ShuffleIcon />
+            : (playMode === PLAY_MODE.LOOP
+                ? <LoopIcon />
+                : <CompareArrowsIcon />
+              )
+          }
+        </IconButton>
+        <IconButton onClick={() => setShowVolumeBar(!showVolumeBar)} >
+          <VolumeUpIcon />
+        </IconButton>
+        <Box sx={{
+          height: 100, display: showVolumeBar ? 'block' : 'none', position: 'absolute', zIndex: 99, right: 6
+        }}>
+          <Slider
+            value={1 - volume}
+            orientation='vertical'
+            track='inverted'
+            step={0.01}
+            min={0}
+            max={1}
+            onChange={e => handleVolumeChange(e)}
+          />
+        </Box>
+      </Grid>
 
-// 格式化秒 90 -> 1:30
-function formatScondTime (timeInSeconds) {
-  const minutes = Math.floor(timeInSeconds / 60)
-  const seconds = (timeInSeconds % 60).toFixed()
-  return minutes + ':' + ('00' + seconds).slice(-2)
+    </Grid>
+  )
 }

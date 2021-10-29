@@ -1,36 +1,29 @@
 import React from 'react'
-import { useSnapshot } from 'valtio'
-import classNames from 'classnames'
-import Player from './Player'
-import PlayList from './PlayList'
+import { MemoryRouter as Router, Switch, Route } from 'react-router-dom'
+import CssBaseline from '@mui/material/CssBaseline'
+import { ThemeProvider } from '@mui/material/styles'
+import theme from './theme'
+
+import '@fontsource/roboto'
+
+import Home from './Home'
 import Login from './Login'
-import store from './store'
-import './App.css'
 
 export default function App () {
-  const snap = useSnapshot(store)
   return (
-    <div className="app">
-      <ul className="list-group playlist-group">
-        {
-          snap.playlistGroup.map(item => {
-            return (
-              <PlayList key={item.id} item={item} isPlaying={item.id === snap.selectedPlaylistId} />
-            )
-          })
-        }
-      </ul>
-      {!snap.userId && (<Login />)}
-      {snap.message &&
-          (
-            <div className={classNames('alert border-0 rounded-0 my-1 py-0 message', { 'alert-danger': snap.msgIsError, 'alert-success': !snap.msgIsError })}>
-              {snap.message}
-            </div>
-          )
-      }
-      {
-        snap.song && <Player />
-      }
-    </div>
+    <ThemeProvider theme={theme}>
+      {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
+      <CssBaseline />
+      <Router>
+        <Switch>
+          <Route exact path="/">
+            <Home />
+          </Route>
+          <Route path="/login">
+            <Login />
+          </Route>
+        </Switch>
+      </Router>
+    </ThemeProvider>
   )
 }

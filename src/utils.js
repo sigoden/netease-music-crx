@@ -23,11 +23,32 @@ export const STORE_PROPS = {
       id: TOP_NEW_ID,
       creator: '网易云音乐',
       name: '云音乐新歌榜',
+      songsCount: 0,
       coverImgUrl: 'http://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg?param=150y150',
-      shuffleSongsIndex: [],
-      songsHash: []
+      songsHash: {},
+      normalSongsIndex: [],
+      shuffleSongsIndex: []
     }
   ],
   selectedPlaylistId: TOP_NEW_ID,
   song: null
+}
+
+export function log (...args) {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(...args)
+  }
+}
+
+// 格式化秒 90 -> 1:30
+export function formatScondTime (timeInSeconds) {
+  const minutes = Math.floor(timeInSeconds / 60)
+  const seconds = (timeInSeconds % 60).toFixed()
+  return minutes + ':' + ('00' + seconds).slice(-2)
+}
+
+export async function sleep (ms) {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms)
+  })
 }

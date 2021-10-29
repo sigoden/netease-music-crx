@@ -1,8 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 
-import 'bootstrap/dist/css/bootstrap.min.css'
-
 import App from './popup/App'
 import store from './popup/store'
 

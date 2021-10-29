@@ -2,7 +2,7 @@ import { proxy } from 'valtio'
 import { subscribeKey } from 'valtio/utils'
 import api from './api'
 
-import { STORE_PROPS, TOP_NEW_ID, PLAY_MODE } from '../constants'
+import { STORE_PROPS, TOP_NEW_ID, PLAY_MODE, log } from '../utils'
 // 剪裁图片
 const IMAGE_CLIP = '?param=150y150'
 // store 中不需要存储的键
@@ -50,14 +50,19 @@ const store = proxy({
     return store.applyChange({ volume })
   },
   async playPrev () {
-    const { playlist, songId } = getPlaylistBySongId()
+    const { playlist, songId } = getCurrentPlaylistAndSong()
     const song = await getSong(playlist, store.playMode, songId, -1)
     return store.applyChange({ song })
   },
   async playNext () {
-    const { playlist, songId } = getPlaylistBySongId()
+    const { playlist, songId } = getCurrentPlaylistAndSong()
     const song = await getSong(playlist, store.playMode, songId)
     return store.applyChange({ song })
+  },
+  async playSong (songId) {
+    const { playlist } = getCurrentPlaylistAndSong()
+    const song = await getSong(playlist, store.playMode, songId, 0)
+    return store.applyChange({ song, playing: true })
   },
   async updatePlayMode () {
     const modeKeys = Object.keys(PLAY_MODE)
@@ -67,7 +72,12 @@ const store = proxy({
     return store.applyChange({ playMode })
   },
   async changePlaylist (playlistId) {
-    const song = await loadSongWhenPlaylistChanged()
+    let playlist = store.playlistGroup.find(playlist => playlist.id === playlistId)
+    if (!playlist) {
+      playlist = store.playlistGroup[0]
+    }
+    const songId = PLAY_MODE.SHUFFLE ? playlist.shuffleSongsIndex[0] : playlist.normalSongsIndex[0]
+    const song = await getSong(playlist, store.playMode, songId)
     return store.applyChange({
       selectedPlaylistId: playlistId,
       song
@@ -90,7 +100,13 @@ const store = proxy({
       const { userId } = res.profile
       return store.applyChange({ userId })
     } else {
-      throw new Error(res.msg)
+      throw new Error(res.message)
+    }
+  },
+  async captchaSent (phone) {
+    const res = await api.captchaSent(phone)
+    if (res.code !== 200) {
+      throw new Error(res.message)
     }
   },
   async loadPlaylists () {
@@ -103,7 +119,7 @@ const store = proxy({
   async fetchTopNew () {
     const res = await api.getPlaylistDetail(TOP_NEW_ID)
     if (res.code === 200) {
-      const playlist = tidyPlaylist(res.playlist)
+      const playlist = normalizePlaylist(res.playlist)
       return store.applyChange({
         playlistGroup: [playlist, ...store.playlistGroup.slice(1)]
       })
@@ -135,9 +151,6 @@ const store = proxy({
   async bootstrap () {
     await store.syncPersistData()
     await store.fetchTopNew()
-    if (!store.cookies) {
-      await store.changePlaylist(store.playlistGroup[0].id)
-    }
     if (store.userId) {
       const res = await api.loginRefresh()
       if (res.code === 200) {
@@ -149,6 +162,8 @@ const store = proxy({
           selectedPlaylistId: TOP_NEW_ID
         })
       }
+    } else {
+      await store.changePlaylist(store.playlistGroup[0].id)
     }
   },
   setCookie (cookies) {
@@ -158,7 +173,7 @@ const store = proxy({
   }
 })
 
-function tidyPlaylist (playlist) {
+function normalizePlaylist (playlist) {
   const { id, creator: { nickname: creator }, name, coverImgUrl, tracks } = playlist
   const { songsIndex: normalSongsIndex, songsHash } = tracksToSongs(tracks)
   const shuffleSongsIndex = shuffleArray(normalSongsIndex)
@@ -167,8 +182,8 @@ function tidyPlaylist (playlist) {
 
 function tracksToSongs (tracks) {
   const songs = tracks.map(track => {
-    const { id, name, al: { picUrl }, ar } = track
-    return { id, name, picUrl: picUrl + IMAGE_CLIP, artists: compactArtists(ar) }
+    const { id, name, al: { picUrl }, ar, dt } = track
+    return { id, name, picUrl: picUrl + IMAGE_CLIP, artists: compactArtists(ar), duration: dt }
   })
   const songsHash = songs.reduce((songsHash, song) => {
     songsHash[song.id] = song
@@ -222,7 +237,7 @@ function loadRecommandSongsPlaylist (userId) {
   return loadRecommandSongs(userId).then(songs => {
     playlist.tracks = songs
     playlist.coverImgUrl = songs[0].al.picUrl
-    return tidyPlaylist(playlist)
+    return normalizePlaylist(playlist)
   })
 }
 
@@ -257,7 +272,7 @@ function loadUserPlaylist (userId) {
       return Promise.all(res.playlist.map(playlist => {
         return api.getPlaylistDetail(playlist.id)
       })).then(result => {
-        return result.filter(res => res.code === 200).map(res => tidyPlaylist(res.playlist))
+        return result.filter(res => res.code === 200).map(res => normalizePlaylist(res.playlist))
       })
     } else {
       throw new Error('获取我的歌单失败')
@@ -265,14 +280,9 @@ function loadUserPlaylist (userId) {
   })
 }
 
-function loadSongWhenPlaylistChanged (_songId) {
-  const { playlist, songId } = getPlaylistBySongId(_songId)
-  return getSong(playlist, store.playMode, songId)
-}
-
-function getPlaylistBySongId (songId) {
+function getCurrentPlaylistAndSong () {
   const { song, playlistGroup, selectedPlaylistId } = store
-  songId = songId || (song ? song.id : TOP_NEW_ID)
+  let songId = song ? song.id : TOP_NEW_ID
   let playlist = playlistGroup.find(playlist => playlist.id === selectedPlaylistId)
   if (!playlist) {
     playlist = playlistGroup[0]
@@ -287,7 +297,7 @@ function updateLikeSongsPlaylist () {
   const playlistId = playlistGroup[likeSongPlaylistIndex].id
   return api.getPlaylistDetail(playlistId).then(res => {
     if (res.code === 200) {
-      const playlist = tidyPlaylist(res.playlist)
+      const playlist = normalizePlaylist(res.playlist)
       playlistGroup[likeSongPlaylistIndex] = playlist
       return playlistGroup
     } else {
@@ -342,7 +352,7 @@ subscribeKey(store, 'song', song => {
     store.playNext()
   }
   audio.onerror = (e) => {
-    console.log(e)
+    log(e)
   }
   audio.ontimeupdate = () => {
     updateAudioState({

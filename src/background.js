@@ -1,5 +1,6 @@
 import store from './background/store'
 import './background/contextMenus'
+import { log } from './utils'
 
 store.bootstrap()
 
@@ -9,26 +10,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     {
       const fun = store[request.storeFunc]
       if (fun) {
-        let result
-        try {
-          result = fun.apply(store, request.params)
-        } catch (err) {
-          sendResponse({ ok: false, errorMessage: err.message })
-        }
-        if (result instanceof Promise) {
-          result.then(change => {
+        (async () => {
+          try {
+            log(`${request.storeFunc}.req`, request.params)
+            const change = await fun.apply(store, request.params)
+            log(`${request.storeFunc}.res`, change)
             let message = ''
             if (change && change.message) {
               message = change.message
               delete change.message
             }
             sendResponse({ ok: true, change, message })
-          }).catch(err => {
-            sendResponse({ ok: false, errorMessage: err.message })
-          })
-        } else {
-          sendResponse({ ok: true, change: result || {} })
-        }
+          } catch (err) {
+            log(`${request.storeFunc}.err`, err)
+            sendResponse({ ok: false, message: err.message })
+          }
+        })()
       }
       return true
     }

@@ -1,53 +1,110 @@
-import React, { useState } from 'react'
-import { useSnapshot } from 'valtio'
+import React, { useEffect, useState } from 'react'
+import { useHistory } from 'react-router'
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
+import Grid from '@mui/material/Grid'
+import Alert from '@mui/material/Alert'
+import TextField from '@mui/material/TextField'
+import Button from '@mui/material/Button'
 import store from './store'
-import classNames from 'classnames'
-import './Login.css'
+import { sleep } from '../utils'
 
 export default function Login () {
-  const snap = useSnapshot(store)
+  const history = useHistory()
   const [state, setState] = useState({
     phone: '',
-    password: '',
-    collapsed: true
+    captcha: ''
   })
+  const [count, setCount] = useState(0)
   const formFieldUpdate = (field, value) => {
     setState({ ...state, [field]: value })
   }
-  const submit = (e) => {
+  useEffect(() => {
+    if (count > 0) {
+      sleep(1000).then(() => {
+        setCount(count - 1)
+      })
+    }
+  }, [count])
+  const handleSendSms = (e) => {
     e.preventDefault()
-    const { phone, password } = state
-    return snap.login(phone, password).then(() => {
-      return snap.loadPlaylists()
-    }).catch(e => {})
+    if (count > 0 || !state.phone) return
+    (async () => {
+      await store.captchaSent(state.phone)
+      setCount(59)
+    })()
+  }
+  const submit = async (e) => {
+    e.preventDefault()
+    const { phone, captcha } = state
+    try {
+      await store.login(phone, captcha)
+      await store.loadPlaylists()
+      history.push('/')
+    } catch {}
   }
   return (
-    <div>
-      <div className={classNames('text-center border', { 'd-none': !state.collapsed })}>
-        <div className="m-3">
-          <button className="btn btn-link" onClick={() => {
-            this.setState({
-              collapsed: false
-            })
-          }}>登录</button>
-          获取每日推荐和我的歌单
-        </div>
-      </div>
-      <div className={classNames('login-form', { 'd-none': state.collapsed })}>
-        <form className="form-inline flex-nowrap mx-2 my-3" onSubmit={e => submit(e)}>
-          <div className="form-group mb-0">
-            <label className="sr-only">手机号</label>
-            <input type="text" className="form-control" placeholder="手机号" onChange={e => formFieldUpdate('phone', e.target.value)} />
-          </div>
-          <div className="form-group mb-0">
-            <label className="sr-only">密码</label>
-            <input type="password" className="form-control" placeholder="密码" onChange={e => formFieldUpdate('password', e.target.value)} />
-          </div>
-          <div className="ml-auto">
-            <button type="submit" className="btn btn-primary">登录</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <Box sx={{ width: 400, m: 6 }}>
+      <Box sx={{ m: 3, textAlign: 'center' }}>
+        <Typography variant='h5'>
+          手机号登录
+        </Typography>
+      </Box>
+      <form onSubmit={e => submit(e)}>
+        <Grid container spacing={2} alignItems='center' justifyContent='space-around'>
+          <Grid item xs={12}>
+            <TextField
+              variant='outlined'
+              required
+              fullWidth
+              id='phone'
+              label='手机号'
+              name='phone'
+              autoComplete='phone'
+              onChange={e => formFieldUpdate('phone', e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={8}>
+            <TextField
+              variant='outlined'
+              required
+              fullWidth
+              id='captcha'
+              label='验证码'
+              name='captcha'
+              onChange={e => formFieldUpdate('captcha', e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <Button
+              fullWidth
+              variant='outlined'
+              size='large'
+              disabled={count > 0}
+              sx={{ p: '14px' }}
+              onClick={e => handleSendSms(e)}
+            >
+              {count === 0 ? '获取验证码' : `${count}s`}
+            </Button>
+          </Grid>
+        </Grid>
+        {store.message && store.msgIsError &&
+          <Box sx={{ my: 1 }}>
+            <Alert severity='error'>{store.message}</Alert>
+          </Box>
+        }
+        <Box sx={{ mt: 3 }}>
+          <Button
+            type='submit'
+            fullWidth
+            size='large'
+            variant='contained'
+            color='secondary'
+          >
+            登录
+          </Button>
+        </Box>
+      </form>
+    </Box>
   )
 }
