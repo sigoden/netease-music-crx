@@ -1,253 +1,209 @@
-import {
-  observable,
-  action,
-  observe,
-  extendObservable,
-  toJS,
-} from 'mobx'
+import { proxy } from 'valtio'
+import { subscribeKey } from 'valtio/utils'
+import api from './api'
 
-import * as API from './api'
-
-import {
-  TOP_NEW_ID,
-  IMAGE_CLIP,
-  PLAY_MODE,
-  OMIT_PERSIST_KEYS,
-} from '../constants'
-
+import { STORE_PROPS, TOP_NEW_ID, PLAY_MODE, log, parseCookies, serializeCookies } from '../utils'
+// 剪裁图片
+const IMAGE_CLIP = '?param=150y150'
+// store 中不需要存储的键
+const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId', 'cookies']
 
 // 播放器
 let audio
 
-class Store {
-  @observable playing = false
-  @observable userId = null
-  @observable volume = 1
-
-  @observable audioState = {
-    duration: 0,
-    currentTime: 0,
-    loadPercentage: 0,
-  }
-  @observable playMode = PLAY_MODE.LOOP
-
-  @observable playlistGroup = [
-    {
-      id: TOP_NEW_ID,
-      creator: '网易云音乐',
-      name: '云音乐新歌榜',
-      coverImgUrl: 'http://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg?param=150y150',
-      shuffleSongsIndex: [],
-      songsHash: []
-    }
-  ]
-  @observable selectedPlaylistId = TOP_NEW_ID
-  @observable song = null
-
-  @action syncPersistData = () => {
+const store = proxy({
+  cookies: '',
+  ...STORE_PROPS,
+  syncPersistData () {
     return new Promise((resolve) => {
       chrome.storage.sync.get(persistData => {
         if (persistData) {
-          if (persistData.cookies) {
-            API.setCookie(persistData.cookies)
-          }
-          extendObservable(self, persistData)
+          persistData = PERSIST_KEYS.reduce((acc, k) => {
+            const v = persistData[k]
+            if (typeof v !== 'undefined') acc[k] = v
+            return acc
+          }, {})
+          log('persistData', persistData)
+          Object.assign(store, persistData)
         }
-        resolve(self)
+        resolve(store)
       })
     })
-  } 
-
-  @action updateAudioCurrentTime = (currentTime) => {
+  },
+  updateAudioTime (currentTime) {
     if (audio) {
       audio.currentTime = currentTime
     }
-    return self.applyChange({
-      audioState: Object.assign(toJS(self.audioState), {currentTime})
-    }).then(() => {
-      if (!self.playing) {
-        return self.togglePlaying()
-      }
-    })
-  }
-
-  @action togglePlaying = () => {
-    if (self.playing) {
+    store.applyChange({ audioState: { ...store.audioState, currentTime } })
+    if (!store.playing) {
+      return store.togglePlaying()
+    }
+  },
+  togglePlaying () {
+    const { playing } = store
+    if (playing) {
       audio.pause()
     } else {
       audio.play()
     }
-    return self.applyChange({
-      playing: !self.playing
-    })
-  }
-  @action updateVolume = (volume) => {
+    return store.applyChange({ playing: !playing })
+  },
+  updateVolume (volume) {
     audio.volume = volume
-    return self.applyChange({
-      volume
+    return store.applyChange({ volume })
+  },
+  async playPrev () {
+    const { playlist, songId } = getCurrentPlaylistAndSong()
+    const song = await getSong(playlist, store.playMode, songId, -1)
+    return store.applyChange({ song })
+  },
+  async playNext () {
+    const { playlist, songId } = getCurrentPlaylistAndSong()
+    const song = await getSong(playlist, store.playMode, songId)
+    return store.applyChange({ song })
+  },
+  async playSong (songId) {
+    const { playlist } = getCurrentPlaylistAndSong()
+    const song = await getSong(playlist, store.playMode, songId, 0)
+    return store.applyChange({ song, playing: true })
+  },
+  async updatePlayMode () {
+    const modeKeys = Object.keys(PLAY_MODE)
+    const modeKeyIndex = modeKeys.findIndex(key => PLAY_MODE[key] === store.playMode)
+    const nextModeKeyIndex = (modeKeyIndex + 1 + modeKeys.length) % modeKeys.length
+    const playMode = PLAY_MODE[modeKeys[nextModeKeyIndex]]
+    return store.applyChange({ playMode })
+  },
+  async changePlaylist (playlistId) {
+    let playlist = store.playlistGroup.find(playlist => playlist.id === playlistId)
+    if (!playlist) {
+      playlist = store.playlistGroup[0]
+    }
+    const songId = store.playMode === PLAY_MODE.SHUFFLE ? playlist.shuffleSongsIndex[0] : playlist.normalSongsIndex[0]
+    const song = await getSong(playlist, store.playMode, songId, 0)
+    return store.applyChange({
+      selectedPlaylistId: playlistId,
+      song
     })
-  }
-  @action playPrev = () => {
-    let {playlist, songId} = safeFindPlaylistAndSong(self)
-    return getSong(playlist, self.playMode, songId, -1).then(song => {
-      return self.applyChange({
-        song
-      })
+  },
+  async likeSong () {
+    const { song } = store
+    if (!song) throw new Error('无选中歌曲')
+    const playlistId = store.playlistGroup[2]?.id
+    if (!playlistId) throw new Error('无法收藏')
+    const res = await api.likeSong(playlistId, song.id)
+    if (res.code === 200) {
+      const playlistGroup = await updateLikeSongsPlaylist()
+      return store.applyChange({ playlistGroup, message: '收藏成功' })
+    } else {
+      throw new Error('收藏到我喜欢的音乐失败')
+    }
+  },
+  async login (phone, password) {
+    const res = await api.cellphoneLogin(phone, password)
+    if (res.code === 200) {
+      const { userId } = res.profile
+      return store.applyChange({ userId })
+    } else {
+      throw new Error(res.message)
+    }
+  },
+  async captchaSent (phone) {
+    const res = await api.captchaSent(phone)
+    if (res.code === 200) {
+      return store.applyChange({ message: '短信发送成功' })
+    } else {
+      throw new Error(res.message)
+    }
+  },
+  async loadPlaylists () {
+    const playlists = await loadAllPlaylists()
+    return store.applyChange({
+      playlistGroup: [...store.playlistGroup, ...playlists]
     })
-  }
-  @action playNext = () => {
-    let {playlist, songId} = safeFindPlaylistAndSong(self)
-    return getSong(playlist, self.playMode, songId).then(song => {
-      return self.applyChange({
-        song
-      })
-    })
-  }
-  @action updatePlayMode = () => {
-    let modeKeys = Object.keys(PLAY_MODE)
-    let currentPlayMode = self.playMode
-    let modeKeyIndex = modeKeys.findIndex(key => PLAY_MODE[key] === currentPlayMode)
-    let nextModeKeyIndex = (modeKeyIndex + 1 + modeKeys.length) % modeKeys.length
-    let playMode = PLAY_MODE[modeKeys[nextModeKeyIndex]]
-    return self.applyChange({
-      playMode 
-    })
-  }
-  @action changePlaylist = (playlistId) => {
-    return getSongOnChangePlaylist(self).then(song => {
-      return self.applyChange({
-        selectedPlaylistId: playlistId,
-        song
-      })
-    })
-  }
-  @action likeSong = () => {
-    if (!self.song) return Promise.reject("选中歌曲")
-    return API.likeSong(self.song.id, true).then(res => {
-      if (res.code === 200) {
-        return updateLikeSongsPlaylist().then(playlistGroup => {
-          return self.applyChange({
-            playlistGroup
-          }, '收藏成功')
-        })
-      } else {
-        throw new Error('收藏到我喜欢的音乐失败')
-      }
-    })
-  }
-  @action login = (phone, password) => {
-    return API.cellphoneLogin(phone, password).then((res) => {
-      if (res.code === 200) {
-        let {userId} = res.profile
-        return self.applyChange({
-          userId
-        })
-      } else {
-        throw new Error(res.msg)
-      }
-    })
-  }
-  @action loadRecommandAndUserPlaylists = () => {
-    return loadRecommandAndUserPlaylists(self).then(playlists => {
-      return self.applyChange({
-        playlistGroup: [...self.playlistGroup, ...playlists]
-      })
-    })
-  }
+  },
   // 获取新歌榜
-  @action fetchTopNew = () => {
-    return API.getPlaylistDetail(TOP_NEW_ID).then(res => {
-      if (res.code === 200) {
-        let playlist = tidyPlaylist(res.playlist)
-        return self.applyChange({
-          playlistGroup: [playlist, ...self.playlistGroup.slice(1)]
-        })
-      } else {
-        throw new Error('获取新歌榜失败')
-      }
-    })
-  }
-  // popup 获取初始化数据
-  @action popupInit () {
-    return Promise.resolve(toJS(self))
-  }
-  @action logout () {
+  async fetchTopNew () {
+    const res = await api.getPlaylistDetail(TOP_NEW_ID)
+    if (res.code === 200) {
+      const playlist = normalizePlaylist(res.playlist)
+      return store.applyChange({
+        playlistGroup: [playlist, ...store.playlistGroup.slice(1)]
+      })
+    } else {
+      throw new Error('获取新歌榜失败')
+    }
+  },
+  logout () {
     audio.pause()
-    document.cookie = ''
-    return self.applyChange({
+    store.reset()
+    store.bootstrap()
+  },
+  popupInit () {
+    return store
+  },
+  saveCookies (cookieObj) {
+    const currentCookieObj = parseCookies([store.cookies])
+    const newCookieObj = { ...currentCookieObj, ...cookieObj }
+    store.applyChange({ cookies: serializeCookies(newCookieObj) })
+  },
+  async bootstrap () {
+    await store.syncPersistData()
+    await store.fetchTopNew()
+    if (store.userId) {
+      const res = await api.loginRefresh()
+      if (res.code === 200) {
+        await store.loadPlaylists()
+        await store.changePlaylist(store.playlistGroup[0].id)
+      } else if (res.code === 301) { // cookie 失效
+        store.reset()
+      }
+    } else {
+      await store.changePlaylist(store.playlistGroup[0].id)
+    }
+  },
+  reset () {
+    store.applyChange({
       playing: false,
       cookies: '',
       userId: null,
-      playlistGroup: self.playlistGroup.slice(0, 1),
-    }).then(() => {
-      return self.bootstrap()
+      playlistGroup: []
     })
+  },
+  applyChange (change) {
+    persistStore(change)
+    Object.assign(store, change)
+    return change
   }
-  /**
-   * - 更新 self
-   * - 持久化
-   * - 通知 delegatedStore 变更 (返回值)
-   */
-  applyChange (change, message) {
-    extendObservable(self, change)
-    persist(change)
-    if (message) {
-      change.message = message
-    }
-    return Promise.resolve(change)
-  }
+})
 
-  bootstrap () {
-    return self.syncPersistData().then(() => {
-      return self.fetchTopNew().then(() => {
-        if (!self.cookies) {
-          return self.changePlaylist(self.playlistGroup[0].id)
-        }
-      })
-    }).then(() => {
-      if (self.userId) {
-        return API.loginRefresh().then(res => {
-          if (res.code === 200) {
-            return self.loadRecommandAndUserPlaylists(self)
-          } else if (res.code === 301) { // cookie 失效
-            return self.applyChange({
-              userId: null,
-              cookies: null,
-              selectedPlaylistId: TOP_NEW_ID
-            })
-          }
-        })
-      }
-    })
+function normalizePlaylist (playlist) {
+  const { id, creator: { nickname: creator }, name, coverImgUrl, tracks } = playlist
+  const { songsIndex: normalSongsIndex, songsMap } = tracksToSongs(tracks)
+  const shuffleSongsIndex = shuffleArray(normalSongsIndex)
+  return {
+    id: Number(id),
+    creator,
+    name,
+    songsCount: normalSongsIndex.length,
+    coverImgUrl: coverImgUrl + IMAGE_CLIP,
+    songsMap,
+    normalSongsIndex,
+    shuffleSongsIndex
   }
-
-  setCookie (cookies) {
-    chrome.storage.sync.set({cookies})
-    API.setCookie(cookies)
-    return self.applyChange({
-      cookies
-    })
-  }
-}
-
-function tidyPlaylist (playlist) {
-  let {id, creator: {nickname: creator}, name, coverImgUrl, tracks} = playlist
-  let {songsIndex: normalSongsIndex, songsHash}= tracksToSongs(tracks)
-  let shuffleSongsIndex = shuffleArray(normalSongsIndex)
-  return {id: Number(id), creator, name, songsCount: normalSongsIndex.length, coverImgUrl: coverImgUrl + IMAGE_CLIP, songsHash, normalSongsIndex, shuffleSongsIndex}
 }
 
 function tracksToSongs (tracks) {
-  let songs = tracks.map(track => {
-    let {id, name, al: {picUrl}, ar} = track
-    return {id, name, picUrl: picUrl + IMAGE_CLIP, artists: compactArtists(ar)}
+  const songs = tracks.map(track => {
+    const { id, name, al: { picUrl }, ar, dt } = track
+    return { id, name, picUrl: picUrl + IMAGE_CLIP, artists: compactArtists(ar), duration: dt }
   })
-  let songsHash = songs.reduce((songsHash, song) => {
-    songsHash[song.id] = song
-    return songsHash
+  const songsMap = songs.reduce((songsMap, song) => {
+    songsMap[song.id] = song
+    return songsMap
   }, {})
-  let songsIndex = songs.map(song => song.id)
-  return {songsIndex, songsHash}
+  const songsIndex = songs.map(song => song.id)
+  return { songsIndex, songsMap }
 }
 
 function compactArtists (artists) {
@@ -255,13 +211,13 @@ function compactArtists (artists) {
 }
 
 function getSong (playlist, playMode, currentSongId, dir = 1) {
-  let {songsHash, shuffleSongsIndex, normalSongsIndex} = playlist
-  let songsIndex = playMode === PLAY_MODE.SHUFFLE ? shuffleSongsIndex : normalSongsIndex
-  let len = songsIndex.length
-  let currentSongIndex = songsIndex.findIndex(index => index === currentSongId)
-  let nextSongIndex = currentSongIndex === -1 ? 0 : (len + currentSongIndex + dir) % len
-  let song = songsHash[songsIndex[nextSongIndex]]
-  return updateSongWithUrl(song).then(song => { 
+  const { songsMap, shuffleSongsIndex, normalSongsIndex } = playlist
+  const songsIndex = playMode === PLAY_MODE.SHUFFLE ? shuffleSongsIndex : normalSongsIndex
+  const len = songsIndex.length
+  const currentSongIndex = songsIndex.findIndex(index => index === currentSongId)
+  const nextSongIndex = currentSongIndex === -1 ? 0 : (len + currentSongIndex + dir) % len
+  const song = songsMap[songsIndex[nextSongIndex]]
+  return updateSongWithUrl(song).then(song => {
     // some song have no valid url, need to be skipped
     if (!song.url) {
       return getSong(playlist, playMode, song.id, dir)
@@ -271,9 +227,9 @@ function getSong (playlist, playMode, currentSongId, dir = 1) {
 }
 
 function updateSongWithUrl (song) {
-  return API.getSongUrls([song.id]).then(res => {
+  return api.getSongUrls([song.id]).then(res => {
     if (res.code === 200) {
-      let {url} = res.data[0]
+      const { url } = res.data[0]
       song.url = url
       return song
     }
@@ -281,41 +237,37 @@ function updateSongWithUrl (song) {
 }
 
 function shuffleArray (array) {
-  let _array = array.slice()
+  const _array = array.slice()
   for (let i = _array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [_array[i], _array[j]] = [_array[j], _array[i]];
+    [_array[i], _array[j]] = [_array[j], _array[i]]
   }
   return _array
 }
 
-function createRecommendSongsPlaylist (userId) {
-  let playlist = {id: generateId(), creator: {nickname: '网易云音乐'}, name: '每日推荐歌曲'}
-  return getRecommendSongs(userId).then(songs => {
-    playlist.tracks = songs
-    playlist.coverImgUrl = songs[0].al.picUrl
-    return tidyPlaylist(playlist)
-  })
-}
-
-function generateId () {
-  return Number(Math.random().toString().substr(3, 8))
-}
-
-function loadRecommandAndUserPlaylists (self) {
-  let userId = self.userId
-  return Promise.all([createRecommendSongsPlaylist(userId), getUserPlaylist(userId)]).then(result => {
-    let [recommendSongsPlaylist, userPlaylists] = result
+function loadAllPlaylists () {
+  const { userId } = store
+  return Promise.all([loadRecommandSongsPlaylist(userId), loadUserPlaylist(userId)]).then(result => {
+    const [recommendSongsPlaylist, userPlaylists] = result
     return [recommendSongsPlaylist, ...userPlaylists]
   })
 }
 
-function getRecommendSongs (userId) {
-  return API.getRecommendSongs(userId).then(res => {
+function loadRecommandSongsPlaylist (userId) {
+  const playlist = { id: randomId(), creator: { nickname: '网易云音乐' }, name: '每日推荐歌曲' }
+  return loadRecommandSongs(userId).then(songs => {
+    playlist.tracks = songs
+    playlist.coverImgUrl = songs[0].al.picUrl
+    return normalizePlaylist(playlist)
+  })
+}
+
+function loadRecommandSongs (userId) {
+  return api.getRecommendSongs(userId).then(res => {
     if (res.code === 200) {
       return res.recommend.map(song => {
-        let {id, album: al, artists: ar} = song
-        return  {id, al, ar}
+        const { id, name, album: al, artists: ar, duration } = song
+        return { id, name, al, ar, dt: duration }
       })
     } else {
       throw new Error('获取推荐音乐失败')
@@ -323,13 +275,13 @@ function getRecommendSongs (userId) {
   })
 }
 
-function getUserPlaylist (userId) {
-  return API.getUserPlaylist(userId).then(res => {
+function loadUserPlaylist (userId) {
+  return api.getUserPlaylist(userId).then(res => {
     if (res.code === 200) {
       return Promise.all(res.playlist.map(playlist => {
-        return API.getPlaylistDetail(playlist.id)
+        return api.getPlaylistDetail(playlist.id)
       })).then(result => {
-        return result.filter(res => res.code === 200).map(res => tidyPlaylist(res.playlist))
+        return result.filter(res => res.code === 200).map(res => normalizePlaylist(res.playlist))
       })
     } else {
       throw new Error('获取我的歌单失败')
@@ -337,103 +289,98 @@ function getUserPlaylist (userId) {
   })
 }
 
-function getSongOnChangePlaylist (self, _songId) {
-  let {playlist, songId} = safeFindPlaylistAndSong(self, _songId)
-  return getSong(playlist, self.playMode, songId)
-}
-
-function safeFindPlaylistAndSong (self, songId) {
-  songId = songId || (self.song ? self.song.id : TOP_NEW_ID)
-  let playlist = self.playlistGroup.find(playlist => playlist.id === self.selectedPlaylistId)
-  if (!playlist)  {
-    playlist = self.playlistGroup[0]
+function getCurrentPlaylistAndSong () {
+  const { song, playlistGroup, selectedPlaylistId } = store
+  let songId = song ? song.id : TOP_NEW_ID
+  let playlist = playlistGroup.find(playlist => playlist.id === selectedPlaylistId)
+  if (!playlist) {
+    playlist = playlistGroup[0]
     songId = TOP_NEW_ID
   }
-  return {playlist, songId}
+  return { playlist, songId }
 }
 
 function updateLikeSongsPlaylist () {
-  let likeSongPlaylistIndex = 2
-  let playlistId = self.playlistGroup[likeSongPlaylistIndex].id
-  return API.getPlaylistDetail(playlistId).then(res => {
+  const { playlistGroup } = store
+  const likeSongPlaylistIndex = 2
+  const playlistId = playlistGroup[likeSongPlaylistIndex].id
+  return api.getPlaylistDetail(playlistId).then(res => {
     if (res.code === 200) {
-      let playlist = tidyPlaylist(res.playlist)
-      self.playlistGroup[likeSongPlaylistIndex] = playlist
-      return self.playlistGroup
+      const playlist = normalizePlaylist(res.playlist)
+      playlistGroup[likeSongPlaylistIndex] = playlist
+      return playlistGroup
     } else {
       throw new Error('刷新喜欢的音乐歌单失败')
     }
   })
 }
 
-function persist (change) {
-  let toPersistDataKeys = Object.keys(change)
-    .filter(key => OMIT_PERSIST_KEYS.indexOf(key) === -1)
-  if (toPersistDataKeys.length === 0) return
-  let toPersistData = toPersistDataKeys.reduce((acc, key) => {
-    acc[key] = change[key]
-    return acc
-  }, {})
-  chrome.storage.sync.set(toPersistData)
+function randomId () {
+  return Number(Math.random().toString().substr(3, 8))
 }
 
+function persistStore (change) {
+  const changePersistKeys = Object.keys(change).filter(key => PERSIST_KEYS.indexOf(key) > -1)
+  if (changePersistKeys.length === 0) return
+  const persistData = PERSIST_KEYS.reduce((acc, k) => {
+    acc[k] = store[k]
+    return acc
+  }, {})
+  chrome.storage.sync.set(persistData)
+}
 
-let self = new Store()
-
-observe(self, 'song', (change) => {
+subscribeKey(store, 'song', song => {
   if (audio) {
-    audio.src = self.song.url
+    audio.src = song.url
   } else {
-    audio = new Audio(self.song.url)
+    audio = new Audio(song.url)
   }
-  if (self.playing) {
+  if (store.playing) {
     audio.autoplay = true
   }
   audio.onprogress = () => {
     if (audio.buffered.length) {
-      let loadPercentage = (audio.buffered.end(audio.buffered.length - 1) / audio.duration) * 100
-      dispatchAudioState({
+      const loadPercentage = (audio.buffered.end(audio.buffered.length - 1) / audio.duration) * 100
+      updateAudioState({
         loadPercentage
       })
     }
   }
   audio.oncanplay = () => {
     audio.onprogress()
-    dispatchAudioState({
+    updateAudioState({
       duration: audio.duration
     })
   }
   audio.onabort = () => {
-    dispatchAudioState({
+    updateAudioState({
       currentTime: 0
     })
   }
   audio.onended = () => {
-    dispatchAudioState({
+    updateAudioState({
       currentTime: 0
     })
-    self.playNext()
+    store.playNext()
   }
   audio.onerror = (e) => {
-    console.log(e)
+    log('audio errror', e)
   }
   audio.ontimeupdate = () => {
-    dispatchAudioState({
+    updateAudioState({
       currentTime: audio.currentTime
     })
   }
 })
 
-function dispatchAudioState (state) {
-  let audioState = extendObservable(self.audioState, state)
-  self.applyChange({
-    audioState,
-  }).then(() => {
-    chrome.runtime.sendMessage({
-      action: 'audioState',
-      audioState: toJS(audioState)
-    })
+function updateAudioState (state) {
+  const { audioState } = store
+  const newAudioState = { ...audioState, ...state }
+  store.audioState = newAudioState
+  chrome.runtime.sendMessage({
+    action: 'audioState',
+    audioState: newAudioState
   })
 }
 
-export default self
+export default store
