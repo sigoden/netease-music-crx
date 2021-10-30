@@ -46,20 +46,35 @@ export default function Player () {
   const currentTimeStr = formatScondTime(currentTime)
   const durationTimeStr = formatScondTime(duration)
   const percentPlayed = currentTime ? currentTime / duration * 100 : 0
+  let playModeIcon, playModeTitle
+  switch (playMode) {
+    case PLAY_MODE.SHUFFLE:
+      playModeIcon = <ShuffleIcon />
+      playModeTitle = '随机'
+      break
+    case PLAY_MODE.ONE:
+      playModeIcon = <CompareArrowsIcon />
+      playModeTitle = '单曲循环'
+      break
+    default:
+      playModeIcon = <LoopIcon />
+      playModeTitle = '循环'
+      break
+  }
 
   return (
     <Grid container alignItems='center' sx={{ background: 'white', p: 1 }}>
       <Grid item alignItems='center'>
-        <IconButton onClick={store.playPrev}>
+        <IconButton onClick={store.playPrev} title='上一首'>
           <SkipPreviousIcon />
         </IconButton>
-        <IconButton onClick={store.togglePlaying}>
+        <IconButton onClick={store.togglePlaying} title='播放/暂停'>
             {playing
               ? <PauseIcon />
               : <PlayArrowIcon />
             }
         </IconButton>
-        <IconButton onClick={store.playNext}>
+        <IconButton onClick={store.playNext} title='下一首'>
           <SkipNextIcon />
         </IconButton>
       </Grid>
@@ -68,7 +83,7 @@ export default function Player () {
         <Grid container direction='column' sx={{ mx: 1 }}>
           <Grid item sx={{ display: 'flex' }}>
             <Box sx={{ maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.name}</Box>
-            <Box sx={{ ml: 2, maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.artists}</Box>
+            <Box sx={{ ml: 2, maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', opacity: 0.6 }}>{song.artists}</Box>
           </Grid>
           <Grid item alignItems='center' sx={{ display: 'flex' }}>
             <Box sx={{ width: '100%', mx: 1 }}>
@@ -80,20 +95,14 @@ export default function Player () {
       </Grid>
       <Grid item alignItems='center'>
         {userId &&
-          <IconButton onClick={store.likeSong}>
+          <IconButton onClick={store.likeSong} title='收藏'>
             <FavoriteBorderIcon />
           </IconButton>
         }
-        <IconButton onClick={store.updatePlayMode}>
-          {playMode === PLAY_MODE.SHUFFLE
-            ? <ShuffleIcon />
-            : (playMode === PLAY_MODE.LOOP
-                ? <LoopIcon />
-                : <CompareArrowsIcon />
-              )
-          }
+        <IconButton onClick={store.updatePlayMode} title={playModeTitle}>
+          {playModeIcon}
         </IconButton>
-        <IconButton onClick={() => setShowVolumeBar(!showVolumeBar)} >
+        <IconButton onClick={() => setShowVolumeBar(!showVolumeBar)} title='音量'>
           <VolumeUpIcon />
         </IconButton>
         <Box sx={{
