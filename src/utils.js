@@ -1,3 +1,5 @@
+import * as cookieUtils from '@tinyhttp/cookie'
+
 export const DOMAIN = 'https://music.163.com'
 
 // 网易新歌榜的歌单 ID
@@ -53,4 +55,30 @@ export async function sleep (ms) {
   return new Promise(resolve => {
     setTimeout(resolve, ms)
   })
+}
+
+const OMIT_COOKIE_KEYS = ['Expires', 'Max-Age', 'Domain', 'Path', 'Secure', 'HttpOnly', 'SameSite', 'SameSite', 'Domain']
+
+export function parseCookies (cookieValues) {
+  return cookieValues.reduce((acc, cur) => {
+    const obj = cookieUtils.parse(cur)
+    OMIT_COOKIE_KEYS.forEach(k => delete obj[k])
+    return Object.assign(acc, obj)
+  }, {})
+}
+
+export function serializeCookies (cookieObj, withOptions = false) {
+  let result = Object.keys(cookieObj).map(k => cookieUtils.serialize(k, cookieObj[k])).join('; ')
+  if (!result) return result
+  if (withOptions) {
+    const maxAge = 2147483647
+    const date = new Date()
+    date.setTime(date.getTime() + maxAge * 1000)
+    result += cookieUtils.serialize('k', 'v', {
+      expires: date,
+      path: '/',
+      domain: '.music.163.com'
+    }).slice(3)
+  }
+  return result
 }

@@ -2,11 +2,11 @@ import { proxy } from 'valtio'
 import { subscribeKey } from 'valtio/utils'
 import api from './api'
 
-import { STORE_PROPS, TOP_NEW_ID, PLAY_MODE, log } from '../utils'
+import { STORE_PROPS, TOP_NEW_ID, PLAY_MODE, log, parseCookies, serializeCookies } from '../utils'
 // 剪裁图片
 const IMAGE_CLIP = '?param=150y150'
 // store 中不需要存储的键
-const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId']
+const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId', 'cookies']
 
 // 播放器
 let audio
@@ -142,6 +142,11 @@ const store = proxy({
   popupInit () {
     return store
   },
+  saveCookies (cookieObj) {
+    const currentCookieObj = parseCookies([store.cookies])
+    const newCookieObj = { ...currentCookieObj, ...cookieObj }
+    store.applyChange({ cookies: serializeCookies(newCookieObj) })
+  },
   async bootstrap () {
     await store.syncPersistData()
     await store.fetchTopNew()
@@ -151,7 +156,7 @@ const store = proxy({
         await store.loadPlaylists()
         await store.changePlaylist(store.playlistGroup[0].id)
       } else if (res.code === 301) { // cookie 失效
-        store.clear()
+        store.reset()
       }
     } else {
       await store.changePlaylist(store.playlistGroup[0].id)
