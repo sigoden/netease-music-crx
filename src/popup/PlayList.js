@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useSnapshot } from 'valtio'
 import Grid from '@mui/material/Grid'
 import List from '@mui/material/List'
@@ -23,10 +23,34 @@ export default function PlayList () {
   const theme = useTheme()
   const snap = useSnapshot(store)
   let songs = []
+  let songRefs = {}
+  let playlistRefs = snap.playlistGroup.reduce((acc, cur) => {
+    acc[cur.id] = React.createRef()
+    return acc
+  }, {})
   if (snap.selectedPlaylistId) {
     const selectedPlaylist = snap.playlistGroup.find(playlist => playlist.id === snap.selectedPlaylistId)
     songs = selectedPlaylist?.normalSongsIndex.map(idx => selectedPlaylist.songsMap[idx]) || []
+    songRefs = songs.reduce((acc, cur) => {
+      acc[cur.id] = React.createRef()
+      return acc
+    }, {})
   }
+  const { song: currentSong, selectedPlaylistId } = snap
+  useEffect(() => {
+    if (playlistRefs[selectedPlaylistId]) {
+      playlistRefs[selectedPlaylistId].current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    }
+    if (songRefs[currentSong.id]) {
+      songRefs[currentSong.id].current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    }
+  }, [currentSong, selectedPlaylistId])
   return (
     <Grid container>
       <Grid item xs={4} sx={{ background: theme.palette.background.playlist }}>
@@ -37,6 +61,7 @@ export default function PlayList () {
             <ListItemButton
               key={playlist.id}
               selected={selected}
+              ref={playlistRefs[playlist.id]}
               onClick={_ => store.changePlaylist(playlist.id)}
             >
               <ListItemIcon sx={{ minWidth: 30 }}>
@@ -63,6 +88,7 @@ export default function PlayList () {
                 <TableRow
                   key={song.id}
                   selected={song.id === snap.song.id}
+                  ref={songRefs[song.id]}
                   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                 >
                   <TableCell component="th" scope="row" sx={{ maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', padding: '4px 16px' }}>
