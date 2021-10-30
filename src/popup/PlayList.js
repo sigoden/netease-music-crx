@@ -24,39 +24,17 @@ export default function PlayList () {
   const snap = useSnapshot(store)
   let songs = []
   let songRefs = {}
-  let playlistRefs = snap.playlistGroup.reduce((acc, cur) => {
-    acc[cur.id] = React.createRef()
-    return acc
-  }, {})
+  const playlistRefs = createRefs(snap.playlistGroup)
   if (snap.selectedPlaylistId) {
     const selectedPlaylist = snap.playlistGroup.find(playlist => playlist.id === snap.selectedPlaylistId)
     songs = selectedPlaylist?.normalSongsIndex.map(idx => selectedPlaylist.songsMap[idx]) || []
-    songRefs = songs.reduce((acc, cur) => {
-      acc[cur.id] = React.createRef()
-      return acc
-    }, {})
+    songRefs = createRefs(songs)
   }
   const { song: currentSong, selectedPlaylistId } = snap
   useEffect(() => {
-    if (currentSong && playlistRefs[selectedPlaylistId]) {
-      const el = playlistRefs[selectedPlaylistId].current
-      if (!isInViewport(el)) {
-        el.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        })
-      }
-    }
-    if (selectedPlaylistId && songRefs[currentSong.id]) {
-      const el = songRefs[currentSong.id].current
-      if (!isInViewport(el)) {
-        el.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        })
-      }
-    }
-  }, [currentSong, selectedPlaylistId])
+    scrollListItemToView(playlistRefs, selectedPlaylistId)
+    scrollListItemToView(songRefs, currentSong?.id, { behavior: 'smooth', block: 'center' })
+  }, [currentSong, selectedPlaylistId, scrollListItemToView])
   return (
     <Grid container>
       <Grid item xs={4} sx={{ background: theme.palette.background.playlist }}>
@@ -115,12 +93,28 @@ export default function PlayList () {
   )
 }
 
-function isInViewport(el) {
-  const rect = el.getBoundingClientRect();
+function createRefs (list) {
+  return list.reduce((acc, cur) => {
+    acc[cur.id] = React.createRef()
+    return acc
+  }, {})
+}
+
+function scrollListItemToView (refs, id, opts) {
+  if (id && refs[id]) {
+    const el = refs[id].current
+    if (!isInViewport(el)) {
+      el.scrollIntoView(opts)
+    }
+  }
+}
+
+function isInViewport (el) {
+  const rect = el.getBoundingClientRect()
   return (
     rect.top >= 0 &&
     rect.left >= 0 &&
     rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
     rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-  );
+  )
 }
