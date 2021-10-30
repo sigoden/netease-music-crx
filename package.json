@@ -2,10 +2,11 @@
   "name": "netease-music-crx",
   "description": "netease cloud music chrome extensions",
   "license": "MIT",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "scripts": {
     "build": "node scripts/build.js",
     "start": "node scripts/webserver.js",
+    "release": "node scripts/release.js",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -33,6 +34,7 @@
     "babel-loader": "^8.2.3",
     "babel-preset-react-app": "^10.0.0",
     "copy-webpack-plugin": "^9.0.1",
+    "crx": "^5.0.1",
     "css-loader": "^6.5.0",
     "eslint": "^8.1.0",
     "eslint-config-react-app": "^6.0.0",
@@ -47,6 +49,7 @@
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.5.0",
     "react-hot-loader": "^4.13.0",
+    "shelljs": "^0.8.4",
     "source-map-loader": "^3.0.0",
     "style-loader": "^3.3.1",
     "terser-webpack-plugin": "^5.2.4",
