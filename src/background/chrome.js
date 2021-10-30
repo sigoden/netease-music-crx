@@ -3,13 +3,6 @@ import { DOMAIN, log, parseCookies, serializeCookies } from '../utils'
 
 const contextMenus = [
   {
-    title: '退出登录',
-    contexts: ['browser_action'],
-    onclick: function () {
-      store.logout()
-    }
-  },
-  {
     title: '播放/暂停',
     contexts: ['browser_action'],
     onclick: function () {
@@ -28,6 +21,13 @@ const contextMenus = [
     contexts: ['browser_action'],
     onclick: function () {
       store.playNext()
+    }
+  },
+  {
+    title: '退出登录',
+    contexts: ['browser_action'],
+    onclick: function () {
+      store.logout()
     }
   }
 ]
