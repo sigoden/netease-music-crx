@@ -38,17 +38,23 @@ export default function PlayList () {
   }
   const { song: currentSong, selectedPlaylistId } = snap
   useEffect(() => {
-    if (playlistRefs[selectedPlaylistId]) {
-      playlistRefs[selectedPlaylistId].current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      })
+    if (currentSong && playlistRefs[selectedPlaylistId]) {
+      const el = playlistRefs[selectedPlaylistId].current
+      if (!isInViewport(el)) {
+        el.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        })
+      }
     }
-    if (songRefs[currentSong.id]) {
-      songRefs[currentSong.id].current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      })
+    if (selectedPlaylistId && songRefs[currentSong.id]) {
+      const el = songRefs[currentSong.id].current
+      if (!isInViewport(el)) {
+        el.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        })
+      }
     }
   }, [currentSong, selectedPlaylistId])
   return (
@@ -107,4 +113,14 @@ export default function PlayList () {
       </Grid>
     </Grid>
   )
+}
+
+function isInViewport(el) {
+  const rect = el.getBoundingClientRect();
+  return (
+    rect.top >= 0 &&
+    rect.left >= 0 &&
+    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+    rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+  );
 }
