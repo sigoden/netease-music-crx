@@ -46,7 +46,7 @@ export default function Login () {
     } catch {}
   }
   return (
-    <Box sx={{ width: 400, m: 6 }}>
+    <Box sx={{ width: 400, m: 4 }}>
       <Box sx={{ m: 3, textAlign: 'center' }}>
         <Typography variant='h5'>
           手机号登录
@@ -95,13 +95,14 @@ export default function Login () {
             <Alert severity={snap.isErr ? 'error' : 'success'}>{snap.message}</Alert>
           </Box>
         }
-        <Box sx={{ my: 3 }}>
+        <Box sx={{ my: 6 }}>
           <Button
             type='submit'
             fullWidth
             size='large'
             variant='contained'
             color='secondary'
+            sx={{ fontSize: '1.2rem' }}
           >
             登录
           </Button>
