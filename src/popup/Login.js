@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useSnapshot } from 'valtio'
 import { useHistory } from 'react-router'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -10,6 +11,7 @@ import store from './store'
 import { sleep } from '../utils'
 
 export default function Login () {
+  const snap = useSnapshot(store)
   const history = useHistory()
   const [state, setState] = useState({
     phone: '',
@@ -88,12 +90,12 @@ export default function Login () {
             </Button>
           </Grid>
         </Grid>
-        {store.message && store.msgIsError &&
-          <Box sx={{ my: 1 }}>
-            <Alert severity='error'>{store.message}</Alert>
+        {snap.message &&
+          <Box sx={{ my: 2 }}>
+            <Alert severity={snap.isErr ? 'error' : 'success'}>{snap.message}</Alert>
           </Box>
         }
-        <Box sx={{ mt: 3 }}>
+        <Box sx={{ my: 3 }}>
           <Button
             type='submit'
             fullWidth

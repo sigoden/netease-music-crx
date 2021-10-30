@@ -1,48 +1,30 @@
+import { DOMAIN, log } from '../utils'
 import * as encrypt from './encrypt'
-
-// 网易 API 请求路径前缀
-const API_PREFIX = 'https://music.163.com'
 
 export default createRequester()
 
 function createRequester () {
-  let csrf = ''
   function createRequest (reqInfo) {
     let {
       method = 'post',
-      baseURL = API_PREFIX,
+      baseURL = DOMAIN,
       url,
       data
     } = reqInfo
     url = baseURL + url
-    url += (url.indexOf('?') > -1 ? '&' : '?') + 'csrf_token=' + csrf
-    data.csrf_token = csrf
+    log(url, data)
     return fetch(url, {
       method,
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        Cookie: document.cookie
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      credentials: 'include',
+      credentials: 'same-origin',
       body: createQueryParams(data)
     }).then(res => {
       return res.json()
     })
   }
   return {
-    setCookie (_cookies) {
-      document.cookie = _cookies
-      if (_cookies) {
-        const csrfToken = (_cookies || '').match(/_csrf=([^(;|$)]+)/)
-        csrf = csrfToken ? csrfToken[1] : ''
-      } else {
-        csrf = ''
-      }
-    },
-    clearCookie () {
-      delete document.cookie
-      csrf = ''
-    },
     // 手机登录
     cellphoneLogin (phone, captcha) {
       return createRequest({

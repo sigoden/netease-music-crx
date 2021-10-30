@@ -9,5 +9,5 @@ module.exports = {
   globals: {
     chrome: 'readonly'
   },
-  ignorePatterns: ['build/**/*']
+  ignorePatterns: ['build', 'tmp']
 }

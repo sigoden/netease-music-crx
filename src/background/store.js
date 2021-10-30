@@ -6,7 +6,7 @@ import { STORE_PROPS, TOP_NEW_ID, PLAY_MODE, log } from '../utils'
 // 剪裁图片
 const IMAGE_CLIP = '?param=150y150'
 // store 中不需要存储的键
-const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId', 'cookies']
+const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId']
 
 // 播放器
 let audio
@@ -17,11 +17,13 @@ const store = proxy({
   syncPersistData () {
     return new Promise((resolve) => {
       chrome.storage.sync.get(persistData => {
-        log('persistData', persistData)
         if (persistData) {
-          if (persistData.cookies) {
-            api.setCookie(persistData.cookies)
-          }
+          persistData = PERSIST_KEYS.reduce((acc, k) => {
+            const v = persistData[k]
+            if (typeof v !== 'undefined') acc[k] = v
+            return acc
+          }, {})
+          log('persistData', persistData)
           Object.assign(store, persistData)
         }
         resolve(store)
@@ -108,7 +110,9 @@ const store = proxy({
   },
   async captchaSent (phone) {
     const res = await api.captchaSent(phone)
-    if (res.code !== 200) {
+    if (res.code === 200) {
+      return store.applyChange({ message: '短信发送成功' })
+    } else {
       throw new Error(res.message)
     }
   },
@@ -130,49 +134,41 @@ const store = proxy({
       throw new Error('获取新歌榜失败')
     }
   },
+  logout () {
+    audio.pause()
+    store.reset()
+    store.bootstrap()
+  },
   popupInit () {
     return store
   },
-  logout () {
-    audio.pause()
-    api.clearCookie()
+  async bootstrap () {
+    await store.syncPersistData()
+    await store.fetchTopNew()
+    if (store.userId) {
+      const res = await api.loginRefresh()
+      if (res.code === 200) {
+        await store.loadPlaylists()
+        await store.changePlaylist(store.playlistGroup[0].id)
+      } else if (res.code === 301) { // cookie 失效
+        store.clear()
+      }
+    } else {
+      await store.changePlaylist(store.playlistGroup[0].id)
+    }
+  },
+  reset () {
     store.applyChange({
       playing: false,
       cookies: '',
       userId: null,
       playlistGroup: []
     })
-    store.bootstrap()
   },
-
   applyChange (change) {
-    persist(change)
+    persistStore(change)
     Object.assign(store, change)
     return change
-  },
-
-  async bootstrap () {
-    await store.syncPersistData()
-    await store.fetchTopNew()
-    if (store.userId) {
-      // const res = await api.loginRefresh()
-      // if (res.code === 200) {
-      await store.loadPlaylists()
-      await store.changePlaylist(store.playlistGroup[0].id)
-      // } else if (res.code === 301) { // cookie 失效
-      //   store.applyChange({
-      //     userId: null,
-      //     cookies: null,
-      //     selectedPlaylistId: TOP_NEW_ID
-      //   })
-      // }
-    } else {
-      await store.changePlaylist(store.playlistGroup[0].id)
-    }
-  },
-  setCookie (cookies) {
-    api.setCookie(cookies)
-    return store.applyChange({ cookies })
   }
 })
 
@@ -318,15 +314,14 @@ function randomId () {
   return Number(Math.random().toString().substr(3, 8))
 }
 
-function persist (change) {
-  const toPersistDataKeys = Object.keys(change)
-    .filter(key => PERSIST_KEYS.indexOf(key) > -1)
-  if (toPersistDataKeys.length === 0) return
-  const toPersistData = toPersistDataKeys.reduce((acc, key) => {
-    acc[key] = change[key]
+function persistStore (change) {
+  const changePersistKeys = Object.keys(change).filter(key => PERSIST_KEYS.indexOf(key) > -1)
+  if (changePersistKeys.length === 0) return
+  const persistData = PERSIST_KEYS.reduce((acc, k) => {
+    acc[k] = store[k]
     return acc
   }, {})
-  chrome.storage.sync.set(toPersistData)
+  chrome.storage.sync.set(persistData)
 }
 
 subscribeKey(store, 'song', song => {
@@ -364,7 +359,7 @@ subscribeKey(store, 'song', song => {
     store.playNext()
   }
   audio.onerror = (e) => {
-    log(e)
+    log('audio errror', e)
   }
   audio.ontimeupdate = () => {
     updateAudioState({

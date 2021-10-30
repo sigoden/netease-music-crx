@@ -2,7 +2,7 @@ import store from './store'
 
 const contextMenus = [
   {
-    title: '注销',
+    title: '退出登录',
     contexts: ['browser_action'],
     onclick: function () {
       store.logout()

@@ -7,7 +7,7 @@ let messageTimer
 
 const store = proxy({
   message: '',
-  msgIsError: true,
+  isErr: true,
   ...STORE_PROPS,
   updateAudioTime (currentTime) {
     return store.doAction('updateAudioTime', [currentTime])
@@ -60,19 +60,19 @@ const store = proxy({
         params
       }, response => {
         log(action + '.res', response)
-        log(store)
+        log('store', store)
         if (response.ok) {
           if (typeof response.change === 'object') {
             Object.assign(store, response.change)
           }
           if (response.message) {
             store.message = response.message
-            store.msgIsError = false
+            store.isErr = false
           }
           return resolve(response.change)
         } else {
           store.message = response.message
-          store.msgIsError = true
+          store.isErr = true
           return reject(response.message)
         }
       })
@@ -84,7 +84,7 @@ subscribeKey(store, 'message', () => {
   if (store.message) {
     clearTimeout(messageTimer)
     messageTimer = setTimeout(() => {
-      store.msgIsError = true
+      store.isErr = true
       store.message = ''
     }, MSG_TIMEOUT)
   }

@@ -1,3 +1,5 @@
+export const DOMAIN = 'https://music.163.com'
+
 // 网易新歌榜的歌单 ID
 export const TOP_NEW_ID = 3779629
 

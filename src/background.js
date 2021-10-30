@@ -1,6 +1,6 @@
 import store from './background/store'
 import './background/contextMenus'
-import { log } from './utils'
+import { DOMAIN, log } from './utils'
 
 store.bootstrap()
 
@@ -33,17 +33,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 })
 
-// capture login cooke
-chrome.webRequest.onHeadersReceived.addListener((details) => {
-  if (details.tabId === -1) { // only capture the request sent by extensions
-    const cookies = details.responseHeaders
-      .filter(header => header.name.toLowerCase() === 'set-cookie')
-      .reduce((cookies, header) => {
-        cookies.push(header.value)
-        return cookies
-      }, []).join('; ')
-    if (cookies) {
-      store.setCookie(cookies)
+chrome.webRequest.onBeforeSendHeaders.addListener(
+  function (details) {
+    log('webRequest.onBeforeSendHeaders', details.requestHeaders)
+    for (let i = 0; i < details.requestHeaders.length; ++i) {
+      const header = details.requestHeaders[i]
+      if (header.name === 'Origin') {
+        header.value = DOMAIN
+      } else if (header.name === 'Cookie') {
+        header.value = header.value + '; os=pc'
+      }
     }
-  }
-}, { urls: ['https://music.163.com/weapi/login/*'] }, ['responseHeaders'])
+    return { requestHeaders: details.requestHeaders }
+  },
+  {
+    urls: [
+      `${DOMAIN}/weapi/login/*`,
+      `${DOMAIN}/weapi/sms/*`
+    ]
+  },
+  ['requestHeaders', 'blocking', 'extraHeaders']
+)
