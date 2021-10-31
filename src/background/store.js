@@ -2,7 +2,7 @@ import { proxy } from 'valtio'
 import { subscribeKey } from 'valtio/utils'
 import api from './api'
 
-import { STORE_PROPS, TOP_NEW_ID, PLAY_MODE, log, parseCookies, serializeCookies } from '../utils'
+import { STORE_PROPS, PLAY_MODE, log, parseCookies, serializeCookies, TOPLIST } from '../utils'
 // 剪裁图片
 const IMAGE_CLIP = '?param=150y150'
 // store 中不需要存储的键
@@ -13,6 +13,7 @@ let audio
 
 const store = proxy({
   ...STORE_PROPS,
+  myPlaylistId: null,
   async bootstrap () {
     await store.syncPersistData()
     await store.load()
@@ -95,9 +96,9 @@ const store = proxy({
     })
   },
   async likeSong () {
-    const { song } = store
+    const { song, playlistGroup } = store
     if (!song) throw new Error('无选中歌曲')
-    const playlistId = store.playlistGroup[2]?.id
+    const playlistId = playlistGroup.find(v => v.type === '喜欢')?.id
     if (!playlistId) throw new Error('无法收藏')
     const res = await api.likeSong(playlistId, song.id)
     if (res.code === 200) {
@@ -127,20 +128,20 @@ const store = proxy({
   async loadPlaylists () {
     const playlists = await loadAllPlaylists()
     return store.applyChange({
-      playlistGroup: [...store.playlistGroup, ...playlists]
+      playlistGroup: [...store.playlistGroup.filter(v => v.type === '榜单'), ...playlists]
     })
   },
-  // 获取新歌榜
-  async fetchTopNew () {
-    const res = await api.getPlaylistDetail(TOP_NEW_ID)
-    if (res.code === 200) {
-      const playlist = normalizePlaylist(res.playlist)
-      return store.applyChange({
-        playlistGroup: [playlist, ...store.playlistGroup.slice(1)]
-      })
-    } else {
-      throw new Error('获取新歌榜失败')
-    }
+  // 获取榜单
+  async fetchTopList () {
+    const list = await Promise.all(TOPLIST.map(async id => {
+      const res = await api.getPlaylistDetail(id)
+      if (res.code === 200) {
+        return normalizePlaylist(res.playlist, '榜单')
+      } else {
+        throw new Error('获取排行榜失败')
+      }
+    }))
+    store.applyChange({ playlistGroup: [...list, ...store.playlistGroup.filter(v => v.type === '榜单')] })
   },
   async logout () {
     store.applyChange(STORE_PROPS)
@@ -151,7 +152,7 @@ const store = proxy({
     return store.applyChange({ message: '' })
   },
   async load () {
-    await store.fetchTopNew()
+    await store.fetchTopList()
     if (store.userId) {
       const res = await api.loginRefresh()
       if (res.code === 200) {
@@ -181,14 +182,19 @@ const store = proxy({
   }
 })
 
-function normalizePlaylist (playlist) {
-  const { id, creator: { nickname: creator }, name, coverImgUrl, tracks } = playlist
+function normalizePlaylist (playlist, type) {
+  const { id, name, coverImgUrl, tracks } = playlist
+  if (playlist.specialType === 5) {
+    type = '喜欢'
+  } else if (playlist.userId === store.userId) {
+    type = '创建'
+  }
   const { songsIndex: normalSongsIndex, songsMap } = tracksToSongs(tracks)
   const shuffleSongsIndex = shuffleArray(normalSongsIndex)
   return {
     id: Number(id),
-    creator,
     name,
+    type,
     songsCount: normalSongsIndex.length,
     coverImgUrl: coverImgUrl + IMAGE_CLIP,
     songsMap,
@@ -260,11 +266,11 @@ function loadAllPlaylists () {
 }
 
 function loadRecommandSongsPlaylist (userId) {
-  const playlist = { id: randomId(), creator: { nickname: '网易云音乐' }, name: '每日推荐歌曲' }
+  const playlist = { id: randomId(), name: '每日歌曲推荐' }
   return loadRecommandSongs(userId).then(songs => {
     playlist.tracks = songs
     playlist.coverImgUrl = songs[0].al.picUrl
-    return normalizePlaylist(playlist)
+    return normalizePlaylist(playlist, '推荐')
   })
 }
 
@@ -287,7 +293,7 @@ function loadUserPlaylist (userId) {
       return Promise.all(res.playlist.map(playlist => {
         return api.getPlaylistDetail(playlist.id)
       })).then(result => {
-        return result.filter(res => res.code === 200).map(res => normalizePlaylist(res.playlist))
+        return result.filter(res => res.code === 200).map(res => normalizePlaylist(res.playlist, '收藏'))
       })
     } else {
       throw new Error('获取我的歌单失败')
@@ -297,22 +303,22 @@ function loadUserPlaylist (userId) {
 
 function getCurrentPlaylistAndSong () {
   const { song, playlistGroup, selectedPlaylistId } = store
-  let songId = song ? song.id : TOP_NEW_ID
+  let songId = song ? song.id : TOPLIST[0]
   let playlist = playlistGroup.find(playlist => playlist.id === selectedPlaylistId)
   if (!playlist) {
     playlist = playlistGroup[0]
-    songId = TOP_NEW_ID
+    songId = TOPLIST[0]
   }
   return { playlist, songId }
 }
 
 function updateLikeSongsPlaylist () {
   const { playlistGroup } = store
-  const likeSongPlaylistIndex = 2
+  const likeSongPlaylistIndex = playlistGroup.findIndex(v => v.type === '喜欢')
   const playlistId = playlistGroup[likeSongPlaylistIndex].id
   return api.getPlaylistDetail(playlistId).then(res => {
     if (res.code === 200) {
-      const playlist = normalizePlaylist(res.playlist)
+      const playlist = normalizePlaylist(res.playlist, '我的')
       playlistGroup[likeSongPlaylistIndex] = playlist
       return playlistGroup
     } else {

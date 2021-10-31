@@ -2,8 +2,8 @@ import * as cookieUtils from '@tinyhttp/cookie'
 
 export const DOMAIN = 'https://music.163.com'
 
-// 网易新歌榜的歌单 ID
-export const TOP_NEW_ID = 3779629
+// 网易榜单
+export const TOPLIST = [19723756, 3779629, 3778678]
 
 // 播放模式
 export const PLAY_MODE = {
@@ -24,19 +24,8 @@ export const STORE_PROPS = {
     loadPercentage: 0
   },
   playMode: PLAY_MODE.LOOP,
-  playlistGroup: [
-    {
-      id: TOP_NEW_ID,
-      creator: '网易云音乐',
-      name: '新歌榜',
-      songsCount: 0,
-      coverImgUrl: 'http://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg?param=150y150',
-      songsMap: {},
-      normalSongsIndex: [],
-      shuffleSongsIndex: []
-    }
-  ],
-  selectedPlaylistId: TOP_NEW_ID,
+  playlistGroup: [],
+  selectedPlaylistId: null,
   song: null
 }
 

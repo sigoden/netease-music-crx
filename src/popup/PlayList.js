@@ -48,7 +48,7 @@ export default function PlayList ({ maxHeight }) {
               <ListItemIcon sx={{ minWidth: 30 }}>
                 <Avatar src={playlist.coverImgUrl} sx={{ width: 24, height: 24 }} />
               </ListItemIcon>
-              <ListItemText primary={playlist.name} sx={{ maxWidth: 150, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }} />
+              <ListItemText primary={playlist.name} sx={{ '.MuiTypography-root': { maxWidth: 180, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' } }} />
             </ListItemButton>
           )
         })}
