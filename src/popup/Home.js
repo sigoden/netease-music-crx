@@ -14,10 +14,10 @@ export default function Home () {
   return (
     <Box sx={{ width: 800 }}>
       {snap.song && <Player />}
+      {snap.playlistGroup.length > 0 && <PlayList />}
       {snap.message &&
         <Alert severity={snap.isErr ? 'error' : 'success'}>{snap.message}</Alert>
       }
-      {snap.playlistGroup.length > 0 && <PlayList />}
       {!snap.userId &&
         <Box sx={{ p: 3, textAlign: 'center', background: 'white' }}>
           <Link href="#" onClick={() => history.push('/login')}>

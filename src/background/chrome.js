@@ -51,8 +51,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
         log(`${action}.params`, params)
         const change = (await fn.apply(store, request.params)) || {}
         log(`${action}.result`, change)
-        change.isErr = false
-        sendResponse(change)
+        sendResponse({ isErr: false, message: '', ...change })
       } catch (err) {
         log(`${action}.error`, err)
         sendResponse({ isErr: true, message: err.message })

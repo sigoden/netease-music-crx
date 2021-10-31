@@ -223,8 +223,10 @@ function getSong (playlist, playMode, currentSongId, dir) {
   const song = songsMap[songsIndex[nextSongIndex]]
   return updateSongUrl(song).then(song => {
     if (!song.url) {
-      // 有些歌曲可能获取不到链接
-      return getSong(playlist, playMode, song.id, dir || 1)
+      if (dir === 0 || playlist.normalSongsIndex.length < 2) {
+        throw new Error('无法播放选中歌曲')
+      }
+      return getSong(playlist, playMode, song.id, dir)
     }
     return song
   })
