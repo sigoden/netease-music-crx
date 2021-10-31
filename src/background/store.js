@@ -10,10 +10,11 @@ const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId', 'coo
 
 // 播放器
 let audio
+let lastLoadAt = 0
 
 const store = proxy({
-  ...STORE_PROPS,
   myPlaylistId: null,
+  ...STORE_PROPS,
   async bootstrap () {
     await store.syncPersistData()
     await store.load()
@@ -58,17 +59,17 @@ const store = proxy({
   },
   async playPrev () {
     const { playlist, songId } = getCurrentPlaylistAndSong()
-    const song = await getSong(playlist, store.playMode, songId, -1)
+    const song = await getSong(playlist, store.playMode, songId, -1, true)
     return store.applyChange({ song, playing: true })
   },
   async playNext () {
     const { playlist, songId } = getCurrentPlaylistAndSong()
-    const song = await getSong(playlist, store.playMode, songId, 1)
+    const song = await getSong(playlist, store.playMode, songId, 1, true)
     return store.applyChange({ song, playing: true })
   },
   async playSong (songId) {
     const { playlist } = getCurrentPlaylistAndSong()
-    const song = await getSong(playlist, store.playMode, songId, 0)
+    const song = await getSong(playlist, store.playMode, songId, 0, false)
     return store.applyChange({ song, playing: true })
   },
   async updatePlayMode () {
@@ -89,7 +90,7 @@ const store = proxy({
     if (playlist.normalSongsIndex.indexOf(v => v === songId) === -1) {
       songId = store.playMode === PLAY_MODE.SHUFFLE ? playlist.shuffleSongsIndex[0] : playlist.normalSongsIndex[0]
     }
-    const song = await getSong(playlist, store.playMode, songId, 0)
+    const song = await getSong(playlist, store.playMode, songId, 0, true)
     return store.applyChange({
       selectedPlaylistId: playlistId,
       song
@@ -133,15 +134,12 @@ const store = proxy({
   },
   // 获取榜单
   async loadTopList () {
-    const list = await Promise.all(TOPLIST.map(async id => {
-      const res = await api.getPlaylistDetail(id)
-      if (res.code === 200) {
-        return normalizePlaylist(res.playlist, '榜单')
-      } else {
-        throw new Error('获取排行榜失败')
-      }
-    }))
-    store.applyChange({ playlistGroup: [...list, ...store.playlistGroup.filter(v => v.type === '榜单')] })
+    try {
+      const playlists = await Promise.all(TOPLIST.map(async id => loadPlaylistById(id)))
+      store.applyChange({ playlistGroup: playlists })
+    } catch {
+      throw new Error('获取排行榜失败')
+    }
   },
   async logout () {
     store.applyChange(STORE_PROPS)
@@ -152,6 +150,7 @@ const store = proxy({
     return store.applyChange({ message: '' })
   },
   async load () {
+    lastLoadAt = Date.now()
     await store.loadTopList()
     if (store.userId) {
       const res = await api.loginRefresh()
@@ -220,32 +219,33 @@ function compactArtists (artists) {
   return artists.map(artist => artist.name).join('/')
 }
 
-function getSong (playlist, playMode, currentSongId, dir) {
+async function getSong (playlist, playMode, currentSongId, dir, retry) {
   const { songsMap, shuffleSongsIndex, normalSongsIndex } = playlist
   const songsIndex = playMode === PLAY_MODE.SHUFFLE ? shuffleSongsIndex : normalSongsIndex
   const len = songsIndex.length
   const currentSongIndex = songsIndex.findIndex(index => index === currentSongId)
   const nextSongIndex = currentSongIndex === -1 ? 0 : (len + currentSongIndex + dir) % len
   const song = songsMap[songsIndex[nextSongIndex]]
-  return updateSongUrl(song).then(song => {
-    if (!song.url) {
-      if (dir === 0 || playlist.normalSongsIndex.length < 2) {
-        throw new Error('无法播放选中歌曲')
+  if (song.url !== '') {
+    const url = await getSongUrl(song.id)
+    if (!url) {
+      playlist.songsCount -= 1
+      if (retry && playlist.songsCount > 0) {
+        return getSong(playlist, playMode, song.id, dir || 1)
+      } else {
+        throw new Error('无法播放歌曲')
       }
-      return getSong(playlist, playMode, song.id, dir)
     }
-    return song
-  })
+    song.url = url
+  }
+  return song
 }
 
-function updateSongUrl (song) {
-  return api.getSongUrls([song.id]).then(res => {
-    if (res.code === 200) {
-      const { url } = res.data[0]
-      song.url = url
-      return song
-    }
-  })
+async function getSongUrl (id) {
+  const res = await api.getSongUrls([id])
+  if (res.code !== 200) return ''
+  const { url } = res.data[0]
+  return url || ''
 }
 
 function shuffleArray (array) {
@@ -371,13 +371,21 @@ subscribeKey(store, 'song', song => {
   if (audio) {
     audio.src = song.url
   } else {
-    audio = new Audio(song.url)
+    audio = createAudio(song)
   }
   if (store.playing) {
     audio.play()
   } else {
     audio.pause()
   }
+  if (Date.now() - lastLoadAt > 86400000) {
+    log('load.daily')
+    store.load()
+  }
+})
+
+function createAudio (song) {
+  const audio = new Audio(song.url)
   audio.onprogress = () => {
     if (audio.buffered.length) {
       const loadPercentage = (audio.buffered.end(audio.buffered.length - 1) / audio.duration) * 100
@@ -411,7 +419,8 @@ subscribeKey(store, 'song', song => {
       currentTime: audio.currentTime
     })
   }
-})
+  return audio
+}
 
 function updateAudioState (state) {
   const { audioState } = store
