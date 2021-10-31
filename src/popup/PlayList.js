@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 import Grid from '@mui/material/Grid'
 import List from '@mui/material/List'
@@ -22,19 +22,18 @@ import store from './store'
 export default function PlayList () {
   const theme = useTheme()
   const snap = useSnapshot(store)
-  let songs = []
-  let songRefs = {}
   const playlistRefs = createRefs(snap.playlistGroup)
-  if (snap.selectedPlaylistId) {
-    const selectedPlaylist = snap.playlistGroup.find(playlist => playlist.id === snap.selectedPlaylistId)
-    songs = selectedPlaylist?.normalSongsIndex.map(idx => selectedPlaylist.songsMap[idx]) || []
-    songRefs = createRefs(songs)
-  }
-  const { song: currentSong, selectedPlaylistId } = snap
+  const { song: currentSong, selectedPlaylistId, playlistGroup } = snap
+  const [songs, songRefs] = useMemo(() => {
+    const selectedPlaylist = playlistGroup.find(playlist => playlist.id === selectedPlaylistId)
+    const songs = selectedPlaylist?.normalSongsIndex.map(idx => selectedPlaylist.songsMap[idx]) || []
+    const songRefs = createRefs(songs)
+    return [songs, songRefs]
+  }, [selectedPlaylistId, playlistGroup])
   useEffect(() => {
     scrollListItemToView(playlistRefs, selectedPlaylistId)
     scrollListItemToView(songRefs, currentSong?.id, { behavior: 'smooth', block: 'center' })
-  }, [currentSong, selectedPlaylistId, scrollListItemToView])
+  }, [currentSong, selectedPlaylistId, songRefs, playlistRefs])
   return (
     <Grid container>
       <Grid item xs={4} sx={{ background: theme.palette.background.playlist }}>
