@@ -14,13 +14,11 @@ import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
-import { useTheme } from '@mui/material/styles'
 import { formatScondTime } from '../utils'
 
 import store from './store'
 
-export default function PlayList () {
-  const theme = useTheme()
+export default function PlayList ({ maxHeight }) {
   const snap = useSnapshot(store)
   const playlistRefs = createRefs(snap.playlistGroup)
   const { song: currentSong, selectedPlaylistId, playlistGroup } = snap
@@ -30,14 +28,13 @@ export default function PlayList () {
     const songRefs = createRefs(songs)
     return [songs, songRefs]
   }, [selectedPlaylistId, playlistGroup])
-  const maxHeight = snap.userId ? 500 : 400
   useEffect(() => {
     scrollListItemToView(playlistRefs, selectedPlaylistId)
     scrollListItemToView(songRefs, currentSong?.id, { behavior: 'smooth', block: 'center' })
   }, [currentSong, selectedPlaylistId, songRefs, playlistRefs])
   return (
     <Grid container>
-      <Grid item xs={4} sx={{ background: theme.palette.background.playlist }}>
+      <Grid item xs={4} sx={{ background: '#f3f0f0' }}>
         <List sx={{ maxHeight, overflowY: 'auto', py: 0 }}>
         {snap.playlistGroup.filter(playlist => playlist?.normalSongsIndex.length > 0).map(playlist => {
           const selected = playlist.id === snap.selectedPlaylistId

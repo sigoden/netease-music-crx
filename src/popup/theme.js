@@ -14,8 +14,7 @@ const theme = createTheme({
       main: red.A400
     },
     background: {
-      default: grey.A100,
-      playlist: '#f3f0f0'
+      default: grey.A100
     }
   }
 })

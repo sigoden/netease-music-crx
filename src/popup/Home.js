@@ -13,8 +13,8 @@ export default function Home () {
   const history = useHistory()
   return (
     <Box sx={{ width: 800 }}>
-      {snap.song && <Player />}
-      {<PlayList />}
+      <Player />
+      {<PlayList maxHeight={400} />}
       {snap.message &&
         <Alert severity={snap.isErr ? 'error' : 'success'}>{snap.message}</Alert>
       }
