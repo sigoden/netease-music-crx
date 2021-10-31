@@ -15,6 +15,7 @@ export const PLAY_MODE = {
 export const STORE_PROPS = {
   playing: false,
   userId: null,
+  songId: null,
   volume: 1,
   audioState: {
     duration: 0,
@@ -26,7 +27,7 @@ export const STORE_PROPS = {
     {
       id: TOP_NEW_ID,
       creator: '网易云音乐',
-      name: '云音乐新歌榜',
+      name: '新歌榜',
       songsCount: 0,
       coverImgUrl: 'http://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg?param=150y150',
       songsMap: {},

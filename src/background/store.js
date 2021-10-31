@@ -6,7 +6,7 @@ import { STORE_PROPS, TOP_NEW_ID, PLAY_MODE, log, parseCookies, serializeCookies
 // 剪裁图片
 const IMAGE_CLIP = '?param=150y150'
 // store 中不需要存储的键
-const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId', 'cookies']
+const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId', 'cookies', 'songId']
 
 // 播放器
 let audio
@@ -55,12 +55,12 @@ const store = proxy({
   async playPrev () {
     const { playlist, songId } = getCurrentPlaylistAndSong()
     const song = await getSong(playlist, store.playMode, songId, -1)
-    return store.applyChange({ song })
+    return store.applyChange({ song, playing: true })
   },
   async playNext () {
     const { playlist, songId } = getCurrentPlaylistAndSong()
-    const song = await getSong(playlist, store.playMode, songId)
-    return store.applyChange({ song })
+    const song = await getSong(playlist, store.playMode, songId, 1)
+    return store.applyChange({ song, playing: true })
   },
   async playSong (songId) {
     const { playlist } = getCurrentPlaylistAndSong()
@@ -75,11 +75,16 @@ const store = proxy({
     return store.applyChange({ playMode })
   },
   async changePlaylist (playlistId) {
-    let playlist = store.playlistGroup.find(playlist => playlist.id === playlistId)
-    if (!playlist) {
-      playlist = store.playlistGroup[0]
+    let songId
+    if (!playlistId) {
+      playlistId = store.selectedPlaylistId
+      songId = store.songId
     }
-    const songId = store.playMode === PLAY_MODE.SHUFFLE ? playlist.shuffleSongsIndex[0] : playlist.normalSongsIndex[0]
+    let playlist = store.playlistGroup.find(playlist => playlist.id === playlistId)
+    if (!playlist) playlist = store.playlistGroup[0]
+    if (playlist.normalSongsIndex.indexOf(v => v === songId) === -1) {
+      songId = store.playMode === PLAY_MODE.SHUFFLE ? playlist.shuffleSongsIndex[0] : playlist.normalSongsIndex[0]
+    }
     const song = await getSong(playlist, store.playMode, songId, 0)
     return store.applyChange({
       selectedPlaylistId: playlistId,
@@ -154,7 +159,7 @@ const store = proxy({
       const res = await api.loginRefresh()
       if (res.code === 200) {
         await store.loadPlaylists()
-        await store.changePlaylist(store.playlistGroup[0].id)
+        await store.changePlaylist()
       } else if (res.code === 301) { // cookie 失效
         store.reset()
       }
@@ -171,6 +176,7 @@ const store = proxy({
     })
   },
   applyChange (change) {
+    if (change.song) change.songId = change.song.id
     persistStore(change)
     Object.assign(store, change)
     return change
@@ -210,7 +216,7 @@ function compactArtists (artists) {
   return artists.map(artist => artist.name).join('/')
 }
 
-function getSong (playlist, playMode, currentSongId, dir = 1) {
+function getSong (playlist, playMode, currentSongId, dir) {
   const { songsMap, shuffleSongsIndex, normalSongsIndex } = playlist
   const songsIndex = playMode === PLAY_MODE.SHUFFLE ? shuffleSongsIndex : normalSongsIndex
   const len = songsIndex.length

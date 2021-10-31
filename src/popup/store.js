@@ -2,7 +2,7 @@ import { proxy } from 'valtio'
 import { subscribeKey } from 'valtio/utils'
 import { STORE_PROPS, log } from '../utils'
 
-const MSG_TIMEOUT = 3000
+const MSG_TIMEOUT = 5000
 let messageTimer
 
 const store = proxy({
