@@ -20,24 +20,23 @@ import store from './store'
 
 export default function PlayList ({ maxHeight }) {
   const snap = useSnapshot(store)
-  const playlistRefs = createRefs(snap.playlistGroup)
-  const { song: currentSong, selectedPlaylistId, playlistGroup } = snap
+  const { song, selectedPlaylist, playlists } = snap
+  const playlistRefs = createRefs(playlists)
   const [songs, songRefs] = useMemo(() => {
-    const selectedPlaylist = playlistGroup.find(playlist => playlist.id === selectedPlaylistId)
     const songs = selectedPlaylist?.normalSongsIndex.map(idx => selectedPlaylist.songsMap[idx]) || []
     const songRefs = createRefs(songs)
     return [songs, songRefs]
-  }, [selectedPlaylistId, playlistGroup])
+  }, [selectedPlaylist])
   useEffect(() => {
-    scrollListItemToView(playlistRefs, selectedPlaylistId)
-    scrollListItemToView(songRefs, currentSong?.id, { behavior: 'smooth', block: 'center' })
-  }, [currentSong, selectedPlaylistId, songRefs, playlistRefs])
+    scrollListItemToView(playlistRefs, selectedPlaylist?.id)
+    scrollListItemToView(songRefs, song?.id, { behavior: 'smooth', block: 'center' })
+  }, [song, selectedPlaylist, songRefs, playlistRefs])
   return (
     <Grid container>
       <Grid item xs={4} sx={{ background: '#f3f0f0' }}>
         <List sx={{ maxHeight, overflowY: 'auto', py: 0 }}>
-        {snap.playlistGroup.filter(playlist => playlist?.normalSongsIndex.length > 0).map(playlist => {
-          const selected = playlist.id === snap.selectedPlaylistId
+        {playlists.map(playlist => {
+          const selected = playlist.id === selectedPlaylist?.id
           return (
             <ListItemButton
               key={playlist.id}
@@ -46,7 +45,7 @@ export default function PlayList ({ maxHeight }) {
               onClick={_ => store.changePlaylist(playlist.id)}
             >
               <ListItemIcon sx={{ minWidth: 30 }}>
-                <Avatar src={playlist.coverImgUrl} sx={{ width: 24, height: 24 }} />
+                <Avatar src={playlist.picUrl} sx={{ width: 24, height: 24 }} />
               </ListItemIcon>
               <ListItemText primary={playlist.name} sx={{ '.MuiTypography-root': { maxWidth: 180, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' } }} />
             </ListItemButton>

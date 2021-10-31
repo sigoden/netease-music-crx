@@ -2,8 +2,34 @@ import * as cookieUtils from '@tinyhttp/cookie'
 
 export const DOMAIN = 'https://music.163.com'
 
-// 网易榜单
-export const TOPLIST = [19723756, 3779629, 3778678]
+// 榜单
+export const PLAYLIST_TOP = [
+  {
+    id: 19723756,
+    name: '飙升榜',
+    type: '榜单',
+    picUrl: 'https://p1.music.126.net/DrRIg6CrgDfVLEph9SNh7w==/18696095720518497.jpg'
+  },
+  {
+    id: 3779629,
+    name: '新歌榜',
+    type: '榜单',
+    picUrl: 'https://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg'
+  },
+  {
+    id: 3778678,
+    name: '热歌榜',
+    type: '榜单',
+    picUrl: 'https://p1.music.126.net/GhhuF6Ep5Tq9IEvLsyCN7w==/18708190348409091.jpg'
+  }
+]
+
+export const PLAYLIST_REC_SONGS = {
+  id: 1,
+  name: '每日歌曲推荐',
+  type: '每日推荐',
+  picUrl: ''
+}
 
 // 播放模式
 export const PLAY_MODE = {
@@ -23,10 +49,11 @@ export const STORE_PROPS = {
     currentTime: 0,
     loadPercentage: 0
   },
+  playlists: [],
   playMode: PLAY_MODE.LOOP,
-  playlistGroup: [],
+  song: null,
   selectedPlaylistId: null,
-  song: null
+  selectedPlaylist: null
 }
 
 export function log (...args) {
