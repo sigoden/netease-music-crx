@@ -224,9 +224,9 @@ function getSong (playlist, playMode, currentSongId, dir) {
   const nextSongIndex = currentSongIndex === -1 ? 0 : (len + currentSongIndex + dir) % len
   const song = songsMap[songsIndex[nextSongIndex]]
   return updateSongWithUrl(song).then(song => {
-    // some song have no valid url, need to be skipped
     if (!song.url) {
-      return getSong(playlist, playMode, song.id, dir)
+      // 有些歌曲可能获取不到链接
+      return getSong(playlist, playMode, song.id, dir || 1)
     }
     return song
   })

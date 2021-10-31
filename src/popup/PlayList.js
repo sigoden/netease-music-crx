@@ -70,7 +70,7 @@ export default function PlayList () {
               {songs.map((song) => (
                 <TableRow
                   key={song.id}
-                  selected={song.id === snap.song.id}
+                  selected={song.id === snap.song?.id}
                   ref={songRefs[song.id]}
                   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                 >
