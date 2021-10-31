@@ -9,12 +9,12 @@
   },
   "browser_action": {
     "default_popup": "popup.html",
-    "default_icon": "assets/icon-34.png"
+    "default_icon": "icon-34.png"
   },
   "icons": {
-    "128": "assets/icon-128.png",
-    "48" : "assets/icon-128.png",
-    "16" : "assets/icon-128.png"
+    "128": "icon-128.png",
+    "48" : "icon-128.png",
+    "16" : "icon-128.png"
   },
   "permissions": ["storage", "webRequest", "webRequestBlocking", "https://music.163.com/", "contextMenus"],
   "update_url": "http://clients2.google.com/service/update2/crx",
