@@ -5,12 +5,6 @@ const modulus =
 const nonce = '0CoJUm6Qyw8W8jud'
 const pubKey = '010001'
 
-export function hashPasswd (passwd) {
-  const md5sum = crypto.createHash('md5')
-  md5sum.update(passwd)
-  return md5sum.digest('hex')
-}
-
 export function encryptData (obj) {
   const text = JSON.stringify(obj)
   const secKey = createSecretKey(16)

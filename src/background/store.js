@@ -2,11 +2,21 @@ import { proxy } from 'valtio'
 import { subscribeKey } from 'valtio/utils'
 import api from './api'
 
-import { STORE_PROPS, PLAY_MODE, log, parseCookies, serializeCookies, PLAYLIST_REC_SONGS, PLAYLIST_TOP } from '../utils'
+import {
+  STORE_PROPS,
+  PLAY_MODE,
+  log,
+  parseCookies,
+  serializeCookies,
+  PLAYLIST_REC_SONGS,
+  PLAYLIST_TOP,
+  PLAYLIST_TYPE
+} from '../utils'
+
 // 剪裁图片
 const IMAGE_CLIP = '?param=150y150'
 // 不需要同步的键
-const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId', 'cookies', 'songId']
+const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId', 'cookies', 'selectedSongId']
 // 推荐歌单数量
 const LEN_PLAYLIST_REC = 5
 
@@ -60,16 +70,16 @@ const store = proxy({
     return store.applyChange({ volume })
   },
   async playPrev () {
-    const song = await getSong(store.selectedPlaylist, store.songId, -1, true)
-    return store.applyChange({ song, playing: true })
+    const selectedSong = await getSong(store.selectedPlaylist, store.selectedSongId, -1, true)
+    return store.applyChange({ selectedSong, playing: true })
   },
   async playNext () {
-    const song = await getSong(store.selectedPlaylist, store.songId, 1, true)
-    return store.applyChange({ song, playing: true })
+    const selectedSong = await getSong(store.selectedPlaylist, store.selectedSongId, 1, true)
+    return store.applyChange({ selectedSong, playing: true })
   },
   async playSong (songId) {
-    const song = await getSong(store.selectedPlaylist, songId, 0, false)
-    return store.applyChange({ song, playing: true })
+    const selectedSong = await getSong(store.selectedPlaylist, songId, 0, false)
+    return store.applyChange({ selectedSong, playing: true })
   },
   async updatePlayMode () {
     const modeKeys = Object.keys(PLAY_MODE)
@@ -82,7 +92,7 @@ const store = proxy({
     let songId
     if (!playlistId) {
       playlistId = store.selectedPlaylistId
-      songId = store.songId
+      songId = store.selectedSongId
     }
     let playlist = store.playlists.find(playlist => playlist.id === playlistId)
     if (!playlist) playlist = store.playlists[0]
@@ -90,15 +100,15 @@ const store = proxy({
     if (selectedPlaylist.normalSongsIndex.indexOf(v => v === songId) === -1) {
       songId = store.playMode === PLAY_MODE.SHUFFLE ? selectedPlaylist.shuffleSongsIndex[0] : selectedPlaylist.normalSongsIndex[0]
     }
-    const song = await getSong(selectedPlaylist, songId, 0, true)
-    return store.applyChange({ selectedPlaylist, song })
+    const selectedSong = await getSong(selectedPlaylist, songId, 0, true)
+    return store.applyChange({ selectedPlaylist, selectedSong })
   },
   async likeSong () {
-    const { song, playlists } = store
-    if (!song) throw new Error('无选中歌曲')
-    const playlistId = playlists.find(v => v.type === '喜欢')?.id
+    const { selectedSong, playlists } = store
+    if (!selectedSong) throw new Error('无选中歌曲')
+    const playlistId = playlists.find(v => v.type === PLAYLIST_TYPE.CRATE)?.id
     if (!playlistId) throw new Error('无法收藏')
-    const res = await api.likeSong(playlistId, song.id)
+    const res = await api.likeSong(playlistId, selectedSong.id)
     if (res.code === 200) {
       return store.applyChange({ message: '收藏成功' })
     } else {
@@ -157,7 +167,7 @@ const store = proxy({
     store.applyChange({ cookies: serializeCookies(newCookieObj) })
   },
   applyChange (change) {
-    if (change.song) change.songId = change.song.id
+    if (change.selectedSong) change.selectedSongId = change.selectedSong.id
     if (change.selectedPlaylist) change.selectedPlaylistId = change.selectedPlaylist.id
     persistStore(change)
     Object.assign(store, change)
@@ -174,8 +184,8 @@ function tracksToSongs (tracks) {
     songsMap[song.id] = song
     return songsMap
   }, {})
-  const songsIndex = songs.map(song => song.id)
-  return { songsIndex, songsMap }
+  const normalSongsIndex = songs.map(song => song.id)
+  return { normalSongsIndex, songsMap }
 }
 
 function compactArtists (artists) {
@@ -234,7 +244,7 @@ async function loadRecommendResourcePlaylist () {
       log('loadRecommendResourcePlaylist.error', res.message)
       throw new Error(res.message)
     }
-    return res.recommend.slice(0, LEN_PLAYLIST_REC).map(({ id, picUrl, name }) => ({ id, picUrl, name, type: '推荐' }))
+    return res.recommend.slice(0, LEN_PLAYLIST_REC).map(({ id, picUrl, name }) => ({ id, picUrl, name, type: PLAYLIST_TYPE.RECOMMEND }))
   } catch {
     throw new Error('获取推荐歌单失败')
   }
@@ -247,12 +257,10 @@ async function loadUserPlaylist () {
       log('loadUserPlaylist.error', res.message)
       throw new Error(res.message)
     }
-    return res.playlist.map(({ id, coverImgUrl, name, specialType, userId }) => {
-      let type = '收藏'
-      if (specialType === 5) {
-        type = '喜欢'
-      } else if (userId === store.userId) {
-        type = '创建'
+    return res.playlist.map(({ id, coverImgUrl, name, userId }) => {
+      let type = PLAYLIST_TYPE.FAVORIATE
+      if (userId === store.userId) {
+        type = PLAYLIST_TYPE.CRATE
       }
       return { id, picUrl: coverImgUrl, name, type }
     })
@@ -285,7 +293,7 @@ async function loadPlaylist (playlist) {
       }
     }
     const { id, name } = playlist
-    const { songsIndex: normalSongsIndex, songsMap } = tracksToSongs(tracks)
+    const { normalSongsIndex, songsMap } = tracksToSongs(tracks)
     const shuffleSongsIndex = shuffleArray(normalSongsIndex)
     return {
       id,
@@ -310,7 +318,7 @@ function persistStore (change) {
   chrome.storage.sync.set(persistData)
 }
 
-subscribeKey(store, 'song', song => {
+subscribeKey(store, 'selectedSong', song => {
   if (!song) {
     if (audio) audio.pause()
     return

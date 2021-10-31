@@ -20,7 +20,7 @@ import store from './store'
 
 export default function PlayList ({ maxHeight }) {
   const snap = useSnapshot(store)
-  const { song, selectedPlaylist, playlists } = snap
+  const { selectedSong, selectedPlaylist, playlists } = snap
   const playlistRefs = createRefs(playlists)
   const [songs, songRefs] = useMemo(() => {
     const songs = selectedPlaylist?.normalSongsIndex.map(idx => selectedPlaylist.songsMap[idx]) || []
@@ -29,8 +29,8 @@ export default function PlayList ({ maxHeight }) {
   }, [selectedPlaylist])
   useEffect(() => {
     scrollListItemToView(playlistRefs, selectedPlaylist?.id)
-    scrollListItemToView(songRefs, song?.id, { behavior: 'smooth', block: 'center' })
-  }, [song, selectedPlaylist, songRefs, playlistRefs])
+    scrollListItemToView(songRefs, selectedSong?.id, { behavior: 'smooth', block: 'center' })
+  }, [selectedSong, selectedPlaylist, songRefs, playlistRefs])
   return (
     <Grid container>
       <Grid item xs={4} sx={{ background: '#f3f0f0' }}>
@@ -67,7 +67,7 @@ export default function PlayList ({ maxHeight }) {
               {songs.map((song) => (
                 <TableRow
                   key={song.id}
-                  selected={song.id === snap.song?.id}
+                  selected={song.id === snap.selectedSong?.id}
                   ref={songRefs[song.id]}
                   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                 >

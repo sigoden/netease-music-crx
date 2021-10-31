@@ -34,7 +34,7 @@ export default function Player () {
   const {
     userId,
     playing,
-    song,
+    selectedSong,
     volume,
     playMode,
     audioState: {
@@ -79,11 +79,11 @@ export default function Player () {
         </IconButton>
       </Grid>
       <Grid item alignItems='center' sx={{ flexGrow: 1, display: 'flex', mx: 1 }}>
-        <Avatar src={song?.picUrl || ''} alt='song pic' />
+        <Avatar src={selectedSong?.picUrl || ''} alt='song pic' />
         <Grid container direction='column' sx={{ mx: 1 }}>
           <Grid item sx={{ display: 'flex' }}>
-            <Box sx={{ maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song?.name || ''}</Box>
-            <Box sx={{ ml: 2, maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', opacity: 0.6 }}>{song?.artists || ''}</Box>
+            <Box sx={{ maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{selectedSong?.name || ''}</Box>
+            <Box sx={{ ml: 2, maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', opacity: 0.6 }}>{selectedSong?.artists || ''}</Box>
           </Grid>
           <Grid item alignItems='center' sx={{ display: 'flex' }}>
             <Box sx={{ width: '100%', mx: 1 }}>
