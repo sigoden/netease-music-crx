@@ -2,6 +2,16 @@
 
 一款可以让您方便快捷地收听网易云音乐 的 Chrome 扩展程序
 
+## 特性
+
+- 手机号验证码登录
+- 新歌榜
+- 每日推荐
+- 收藏歌曲
+- 播放我创建的歌单
+- 播放我收藏的歌单
+- 歌单播放模式：单曲循环，循环，随机
+
 ## 安装
 
  - 在 [Chrome 网上应用店](https://chrome.google.com/webstore/detail/ekmamdknmdolmmjbgpmnkiobcnihdhhf)安装

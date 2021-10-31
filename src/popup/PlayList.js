@@ -38,7 +38,7 @@ export default function PlayList () {
     <Grid container>
       <Grid item xs={4} sx={{ background: theme.palette.background.playlist }}>
         <List sx={{ maxHeight: 400, overflowY: 'auto', py: 0 }}>
-        {snap.playlistGroup.map(playlist => {
+        {snap.playlistGroup.filter(playlist => playlist?.normalSongsIndex.length > 0).map(playlist => {
           const selected = playlist.id === snap.selectedPlaylistId
           return (
             <ListItemButton

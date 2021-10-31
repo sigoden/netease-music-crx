@@ -41,8 +41,10 @@ export default function Login () {
     const { phone, captcha } = state
     try {
       await store.login(phone, captcha)
-      await store.loadPlaylists()
-      history.push('/')
+      await store.load()
+      setTimeout(() => {
+        history.push('/')
+      }, 2000)
     } catch {}
   }
   return (
@@ -95,7 +97,7 @@ export default function Login () {
             <Alert severity={snap.isErr ? 'error' : 'success'}>{snap.message}</Alert>
           </Box>
         }
-        <Box sx={{ my: 6 }}>
+        <Box sx={{ my: 4 }}>
           <Button
             type='submit'
             fullWidth

@@ -2,9 +2,6 @@ import { proxy } from 'valtio'
 import { subscribeKey } from 'valtio/utils'
 import { STORE_PROPS, log } from '../utils'
 
-const MSG_TIMEOUT = 5000
-let messageTimer
-
 const store = proxy({
   message: '',
   isErr: true,
@@ -42,37 +39,26 @@ const store = proxy({
   captchaSent (phone) {
     return store.doAction('captchaSent', [phone])
   },
-  loadPlaylists () {
-    return store.doAction('loadPlaylists')
-  },
-  fetchTopNew () {
-    return store.doAction('fetchTopNew')
+  load () {
+    return store.doAction('load')
   },
   popupInit () {
     return store.doAction('popupInit')
   },
+  clearMessage () {
+    return store.doAction('clearMessage')
+  },
   doAction (action, params = []) {
     log(action + '.req', params)
     return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({
-        action: 'storeAction',
-        storeFunc: action,
-        params
-      }, response => {
+      chrome.runtime.sendMessage({ action, params }, response => {
         log(action + '.res', response)
         log('store', store)
-        if (response.ok) {
-          if (typeof response.change === 'object') {
-            Object.assign(store, response.change)
-          }
-          if (response.message) {
-            store.message = response.message
-            store.isErr = false
-          }
-          return resolve(response.change)
+        if (!response.isErr) {
+          Object.assign(store, response)
+          return resolve(response)
         } else {
-          store.message = response.message
-          store.isErr = true
+          Object.assign(store, response)
           return reject(response.message)
         }
       })
@@ -81,18 +67,18 @@ const store = proxy({
 })
 
 subscribeKey(store, 'message', () => {
+  let timer
   if (store.message) {
-    clearTimeout(messageTimer)
-    messageTimer = setTimeout(() => {
-      store.isErr = true
-      store.message = ''
-    }, MSG_TIMEOUT)
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      store.clearMessage()
+    }, store.isErr ? 5000 : 3000)
   }
 })
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request) => {
   switch (request.action) {
-    case 'audioState':
+    case 'changeAudioState':
       store.audioState = request.audioState
       break
     default:

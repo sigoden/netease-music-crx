@@ -12,7 +12,7 @@ function createRequester () {
       data
     } = reqInfo
     url = baseURL + url
-    log(url, data)
+    log('api.fetch', url, data)
     return fetch(url, {
       method,
       headers: {

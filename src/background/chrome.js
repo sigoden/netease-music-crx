@@ -6,6 +6,7 @@ const contextMenus = [
     title: '播放/暂停',
     contexts: ['browser_action'],
     onclick: function () {
+      log('contextMenu.togglePlay')
       store.togglePlaying()
     }
   },
@@ -13,6 +14,7 @@ const contextMenus = [
     title: '上一首',
     contexts: ['browser_action'],
     onclick: function () {
+      log('contextMenu.playPrev')
       store.playPrev()
     }
   },
@@ -20,6 +22,7 @@ const contextMenus = [
     title: '下一首',
     contexts: ['browser_action'],
     onclick: function () {
+      log('contextMenu.playNext')
       store.playNext()
     }
   },
@@ -27,6 +30,7 @@ const contextMenus = [
     title: '退出登录',
     contexts: ['browser_action'],
     onclick: function () {
+      log('contextMenu.logout')
       store.logout()
     }
   }
@@ -38,33 +42,26 @@ contextMenus.forEach(menu => {
   chrome.contextMenus.create(menu)
 })
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  switch (request.action) {
-    case 'storeAction':
-    {
-      const fun = store[request.storeFunc]
-      if (fun) {
-        (async () => {
-          try {
-            log(`${request.storeFunc}.req`, request.params)
-            const change = await fun.apply(store, request.params)
-            log(`${request.storeFunc}.res`, change)
-            let message = ''
-            if (change && change.message) {
-              message = change.message
-              delete change.message
-            }
-            sendResponse({ ok: true, change, message })
-          } catch (err) {
-            log(`${request.storeFunc}.err`, err)
-            sendResponse({ ok: false, message: err.message })
-          }
-        })()
+chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
+  const { action, params } = request
+  const fn = store[action]
+  if (fn) {
+    (async () => {
+      try {
+        log(`${action}.params`, params)
+        const change = (await fn.apply(store, request.params)) || {}
+        log(`${action}.result`, change)
+        change.isErr = false
+        sendResponse(change)
+      } catch (err) {
+        log(`${action}.error`, err)
+        sendResponse({ isErr: true, message: err.message })
       }
-      return true
-    }
-    default:
+    })()
+  } else {
+    sendResponse({ isErr: true, message: '未知操作' })
   }
+  return true
 })
 
 chrome.webRequest.onHeadersReceived.addListener(
@@ -80,7 +77,7 @@ chrome.webRequest.onHeadersReceived.addListener(
         const storeCookieStr = serializeCookies(storeCookieObj, true)
         if (storeCookieStr) {
           details.responseHeaders.push({ name: 'set-cookie', value: storeCookieStr })
-          log('webRequest.onHeadersReceived.cookie', storeCookieStr, newCookieObj)
+          log('webRequest.onHeadersReceived.cookie', storeCookieStr)
         }
       }
     }

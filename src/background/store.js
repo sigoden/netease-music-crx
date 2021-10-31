@@ -12,8 +12,11 @@ const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId', 'coo
 let audio
 
 const store = proxy({
-  cookies: '',
   ...STORE_PROPS,
+  async bootstrap () {
+    await store.syncPersistData()
+    await store.load()
+  },
   syncPersistData () {
     return new Promise((resolve) => {
       chrome.storage.sync.get(persistData => {
@@ -23,7 +26,7 @@ const store = proxy({
             if (typeof v !== 'undefined') acc[k] = v
             return acc
           }, {})
-          log('persistData', persistData)
+          log('storage.sync', persistData)
           Object.assign(store, persistData)
         }
         resolve(store)
@@ -36,7 +39,7 @@ const store = proxy({
     }
     store.applyChange({ audioState: { ...store.audioState, currentTime } })
     if (!store.playing) {
-      return store.togglePlaying()
+      store.togglePlaying()
     }
   },
   togglePlaying () {
@@ -108,7 +111,7 @@ const store = proxy({
     const res = await api.cellphoneLogin(phone, password)
     if (res.code === 200) {
       const { userId } = res.profile
-      return store.applyChange({ userId })
+      return store.applyChange({ userId, message: '登录成功' })
     } else {
       throw new Error(res.message)
     }
@@ -139,10 +142,28 @@ const store = proxy({
       throw new Error('获取新歌榜失败')
     }
   },
-  logout () {
-    audio.pause()
-    store.reset()
-    store.bootstrap()
+  async logout () {
+    store.applyChange(STORE_PROPS)
+    await store.load()
+    log('logout', store)
+  },
+  async clearMessage () {
+    return store.applyChange({ message: '' })
+  },
+  async load () {
+    await store.fetchTopNew()
+    if (store.userId) {
+      const res = await api.loginRefresh()
+      if (res.code === 200) {
+        await store.loadPlaylists()
+        await store.changePlaylist()
+      } else if (res.code === 301) { // cookie 失效
+        await store.logout()
+      }
+    } else {
+      await store.changePlaylist(store.playlistGroup[0].id)
+    }
+    return store
   },
   popupInit () {
     return store
@@ -151,29 +172,6 @@ const store = proxy({
     const currentCookieObj = parseCookies([store.cookies])
     const newCookieObj = { ...currentCookieObj, ...cookieObj }
     store.applyChange({ cookies: serializeCookies(newCookieObj) })
-  },
-  async bootstrap () {
-    await store.syncPersistData()
-    await store.fetchTopNew()
-    if (store.userId) {
-      const res = await api.loginRefresh()
-      if (res.code === 200) {
-        await store.loadPlaylists()
-        await store.changePlaylist()
-      } else if (res.code === 301) { // cookie 失效
-        store.reset()
-      }
-    } else {
-      await store.changePlaylist(store.playlistGroup[0].id)
-    }
-  },
-  reset () {
-    store.applyChange({
-      playing: false,
-      cookies: '',
-      userId: null,
-      playlistGroup: []
-    })
   },
   applyChange (change) {
     if (change.song) change.songId = change.song.id
@@ -223,7 +221,7 @@ function getSong (playlist, playMode, currentSongId, dir) {
   const currentSongIndex = songsIndex.findIndex(index => index === currentSongId)
   const nextSongIndex = currentSongIndex === -1 ? 0 : (len + currentSongIndex + dir) % len
   const song = songsMap[songsIndex[nextSongIndex]]
-  return updateSongWithUrl(song).then(song => {
+  return updateSongUrl(song).then(song => {
     if (!song.url) {
       // 有些歌曲可能获取不到链接
       return getSong(playlist, playMode, song.id, dir || 1)
@@ -232,7 +230,7 @@ function getSong (playlist, playMode, currentSongId, dir) {
   })
 }
 
-function updateSongWithUrl (song) {
+function updateSongUrl (song) {
   return api.getSongUrls([song.id]).then(res => {
     if (res.code === 200) {
       const { url } = res.data[0]
@@ -336,13 +334,19 @@ function persistStore (change) {
 }
 
 subscribeKey(store, 'song', song => {
+  if (!song) {
+    if (audio) audio.pause()
+    return
+  }
   if (audio) {
     audio.src = song.url
   } else {
     audio = new Audio(song.url)
   }
   if (store.playing) {
-    audio.autoplay = true
+    audio.play()
+  } else {
+    audio.pause()
   }
   audio.onprogress = () => {
     if (audio.buffered.length) {
@@ -370,7 +374,7 @@ subscribeKey(store, 'song', song => {
     store.playNext()
   }
   audio.onerror = (e) => {
-    log('audio errror', e)
+    log('audio.error', e)
   }
   audio.ontimeupdate = () => {
     updateAudioState({
@@ -384,7 +388,7 @@ function updateAudioState (state) {
   const newAudioState = { ...audioState, ...state }
   store.audioState = newAudioState
   chrome.runtime.sendMessage({
-    action: 'audioState',
+    action: 'changeAudioState',
     audioState: newAudioState
   })
 }

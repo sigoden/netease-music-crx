@@ -13,6 +13,7 @@ export const PLAY_MODE = {
 }
 
 export const STORE_PROPS = {
+  cookies: '',
   playing: false,
   userId: null,
   songId: null,
