@@ -30,6 +30,7 @@ export default function PlayList () {
     const songRefs = createRefs(songs)
     return [songs, songRefs]
   }, [selectedPlaylistId, playlistGroup])
+  const maxHeight = snap.userId ? 500 : 400
   useEffect(() => {
     scrollListItemToView(playlistRefs, selectedPlaylistId)
     scrollListItemToView(songRefs, currentSong?.id, { behavior: 'smooth', block: 'center' })
@@ -37,7 +38,7 @@ export default function PlayList () {
   return (
     <Grid container>
       <Grid item xs={4} sx={{ background: theme.palette.background.playlist }}>
-        <List sx={{ maxHeight: 400, overflowY: 'auto', py: 0 }}>
+        <List sx={{ maxHeight, overflowY: 'auto', py: 0 }}>
         {snap.playlistGroup.filter(playlist => playlist?.normalSongsIndex.length > 0).map(playlist => {
           const selected = playlist.id === snap.selectedPlaylistId
           return (
@@ -56,7 +57,7 @@ export default function PlayList () {
         })}
         </List>
       </Grid>
-      <Grid item xs={8} sx={{ maxHeight: 400, overflowY: 'auto' }}>
+      <Grid item xs={8} sx={{ maxHeight, overflowY: 'auto' }}>
         {songs.length > 0 &&
           <Table stickyHeader size="small">
             <TableHead sx={{ height: '48px' }}>

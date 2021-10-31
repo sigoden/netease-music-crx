@@ -14,7 +14,7 @@ export default function Home () {
   return (
     <Box sx={{ width: 800 }}>
       {snap.song && <Player />}
-      {snap.playlistGroup.length > 0 && <PlayList />}
+      {<PlayList />}
       {snap.message &&
         <Alert severity={snap.isErr ? 'error' : 'success'}>{snap.message}</Alert>
       }
