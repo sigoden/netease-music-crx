@@ -19,12 +19,6 @@
 
 **注意**：非官方渠道的 Chrome 插件版网易云音乐可能会被嵌入恶意代码，所以请一定使用以上两种方式安装。
 
-## 相关链接
-
- + [发布日志](https://github.com/sigoden/netease-music-crx/releases)
- + [报告问题或提议新功能](https://github.com/sigoden/netease-music-crx/issues/new)
-<!--  + [Wiki](https://github.com/sigoden/netease-music-crx/wiki) -->
-
 ## 参与开发
 
 网易云音乐 Chrome 插件版欢迎并鼓励开发者参与开发！请按照以下步骤搭建开发环境：
