@@ -61,7 +61,7 @@ function createRequester () {
         data: {
           offset: 0,
           uid,
-          limit: 100
+          limit: 50
         }
       })
     },
@@ -85,6 +85,13 @@ function createRequester () {
           total: true,
           limit: 50
         }
+      })
+    },
+    // 个性化推荐歌单
+    getRecommendResource () {
+      return createRequest({
+        url: '/weapi/discovery/recommend/resource',
+        data: {}
       })
     },
     // 获取歌曲详情

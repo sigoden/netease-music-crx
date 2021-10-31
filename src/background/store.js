@@ -132,7 +132,7 @@ const store = proxy({
     })
   },
   // 获取榜单
-  async fetchTopList () {
+  async loadTopList () {
     const list = await Promise.all(TOPLIST.map(async id => {
       const res = await api.getPlaylistDetail(id)
       if (res.code === 200) {
@@ -152,7 +152,7 @@ const store = proxy({
     return store.applyChange({ message: '' })
   },
   async load () {
-    await store.fetchTopList()
+    await store.loadTopList()
     if (store.userId) {
       const res = await api.loginRefresh()
       if (res.code === 200) {
@@ -257,48 +257,70 @@ function shuffleArray (array) {
   return _array
 }
 
-function loadAllPlaylists () {
-  const { userId } = store
-  return Promise.all([loadRecommandSongsPlaylist(userId), loadUserPlaylist(userId)]).then(result => {
-    const [recommendSongsPlaylist, userPlaylists] = result
-    return [recommendSongsPlaylist, ...userPlaylists]
-  })
+async function loadAllPlaylists () {
+  const result = await Promise.all([loadRecommandSongsAsPlaylist(), loadRecommendResourcePlaylist(), loadUserPlaylist()])
+  const [recommendSongsAsPlaylist, recommendResourcePlaylist, userPlaylists] = result
+  return [recommendSongsAsPlaylist, ...recommendResourcePlaylist, ...userPlaylists]
 }
 
-function loadRecommandSongsPlaylist (userId) {
+async function loadRecommandSongsAsPlaylist () {
   const playlist = { id: randomId(), name: '每日歌曲推荐' }
-  return loadRecommandSongs(userId).then(songs => {
-    playlist.tracks = songs
-    playlist.coverImgUrl = songs[0].al.picUrl
-    return normalizePlaylist(playlist, '推荐')
-  })
+  const songs = await loadRecommandSongs()
+  playlist.tracks = songs
+  playlist.coverImgUrl = songs[0].al.picUrl
+  return normalizePlaylist(playlist, '推荐')
 }
 
-function loadRecommandSongs (userId) {
-  return api.getRecommendSongs(userId).then(res => {
-    if (res.code === 200) {
-      return res.recommend.map(song => {
-        const { id, name, album: al, artists: ar, duration } = song
-        return { id, name, al, ar, dt: duration }
-      })
-    } else {
-      throw new Error('获取推荐音乐失败')
+async function loadRecommendResourcePlaylist () {
+  try {
+    const res = await api.getRecommendResource()
+    if (res.code !== 200) {
+      log('loadRecommendResourcePlaylist.error', res.message)
+      throw new Error(res.message)
     }
-  })
+    return Promise.all(res.recommend.slice(0, 3).map(playlist => loadPlaylistById(playlist.id, '推荐')))
+  } catch {
+    throw new Error('获取推荐歌单失败')
+  }
 }
 
-function loadUserPlaylist (userId) {
-  return api.getUserPlaylist(userId).then(res => {
-    if (res.code === 200) {
-      return Promise.all(res.playlist.map(playlist => {
-        return api.getPlaylistDetail(playlist.id)
-      })).then(result => {
-        return result.filter(res => res.code === 200).map(res => normalizePlaylist(res.playlist, '收藏'))
-      })
-    } else {
-      throw new Error('获取我的歌单失败')
+async function loadUserPlaylist () {
+  try {
+    const res = await api.getUserPlaylist(store.userId)
+    log('loadUserPlaylist.error', res.message)
+    if (res.code !== 200) {
+      throw new Error(res.message)
     }
-  })
+    return Promise.all(res.playlist.map(playlist => loadPlaylistById(playlist.id, '收藏')))
+  } catch {
+    throw new Error('获取我的歌单失败')
+  }
+}
+
+async function loadRecommandSongs () {
+  try {
+    const res = await api.getRecommendSongs()
+    if (res.code !== 200) {
+      log('loadRecommandSongs.error', res.message)
+      throw new Error(res.message)
+    }
+    return res.recommend.map(song => {
+      const { id, name, album: al, artists: ar, duration } = song
+      return { id, name, al, ar, dt: duration }
+    })
+  } catch {
+    throw new Error('获取推荐音乐失败')
+  }
+}
+
+async function loadPlaylistById (id, type) {
+  const res = await api.getPlaylistDetail(id)
+  if (res.code === 200) {
+    return normalizePlaylist(res.playlist, type)
+  } else {
+    log('loadPlaylistById.error', id, res.message)
+    throw new Error('获取歌单失败')
+  }
 }
 
 function getCurrentPlaylistAndSong () {
