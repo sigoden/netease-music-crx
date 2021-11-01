@@ -77,12 +77,8 @@ subscribeKey(store, 'message', () => {
 })
 
 chrome.runtime.onMessage.addListener((request) => {
-  switch (request.action) {
-    case 'changeAudioState':
-      store.audioState = request.audioState
-      break
-    default:
-  }
+  log('onMessage', request)
+  Object.assign(store, request)
 })
 
 export default store

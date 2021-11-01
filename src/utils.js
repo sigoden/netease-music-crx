@@ -10,6 +10,14 @@ export const PLAYLIST_TYPE = {
   FAVORIATE: 4
 }
 
+// 下一首策略
+export const NEXT_SONG_STRATEGY = {
+  NEXT: 1,
+  PREV: 2,
+  CURRENT: 3,
+  CURRENT_RETRY: 4
+}
+
 // 榜单
 export const PLAYLIST_TOP = [
   {

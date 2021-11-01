@@ -10,7 +10,8 @@ import {
   serializeCookies,
   PLAYLIST_REC_SONGS,
   PLAYLIST_TOP,
-  PLAYLIST_TYPE
+  PLAYLIST_TYPE,
+  NEXT_SONG_STRATEGY
 } from '../utils'
 
 // 剪裁图片
@@ -24,6 +25,8 @@ const LEN_PLAYLIST_REC = 5
 let audio
 // 上次加载推荐歌单时间
 let lastLoadAt = 0
+// 下一首策略
+let nextSongStrategy = NEXT_SONG_STRATEGY.CURRENT
 
 const store = proxy({
   ...STORE_PROPS,
@@ -70,15 +73,15 @@ const store = proxy({
     return store.applyChange({ volume })
   },
   async playPrev () {
-    const selectedSong = await getSong(store.selectedPlaylist, store.selectedSongId, -1, true)
+    const selectedSong = await getSong(store.selectedPlaylist, store.selectedSongId, NEXT_SONG_STRATEGY.PREV)
     return store.applyChange({ selectedSong, playing: true })
   },
   async playNext () {
-    const selectedSong = await getSong(store.selectedPlaylist, store.selectedSongId, 1, true)
+    const selectedSong = await getSong(store.selectedPlaylist, store.selectedSongId, NEXT_SONG_STRATEGY.NEXT)
     return store.applyChange({ selectedSong, playing: true })
   },
   async playSong (songId) {
-    const selectedSong = await getSong(store.selectedPlaylist, songId, 0, false)
+    const selectedSong = await getSong(store.selectedPlaylist, songId, NEXT_SONG_STRATEGY.CURRENT)
     return store.applyChange({ selectedSong, playing: true })
   },
   async updatePlayMode () {
@@ -100,7 +103,7 @@ const store = proxy({
     if (selectedPlaylist.normalSongsIndex.indexOf(v => v === songId) === -1) {
       songId = store.playMode === PLAY_MODE.SHUFFLE ? selectedPlaylist.shuffleSongsIndex[0] : selectedPlaylist.normalSongsIndex[0]
     }
-    const selectedSong = await getSong(selectedPlaylist, songId, 0, true)
+    const selectedSong = await getSong(selectedPlaylist, songId, NEXT_SONG_STRATEGY.CURRENT_RETRY)
     return store.applyChange({ selectedPlaylist, selectedSong })
   },
   async likeSong () {
@@ -138,6 +141,7 @@ const store = proxy({
     log('logout', store)
   },
   async clearMessage () {
+    if (!store.message) return
     return store.applyChange({ message: '' })
   },
   async load () {
@@ -161,6 +165,9 @@ const store = proxy({
   },
   popupInit () {
     return store
+  },
+  sendToPopup (obj) {
+    chrome.runtime.sendMessage(obj)
   },
   saveCookies (cookieObj) {
     const currentCookieObj = parseCookies([store.cookies])
@@ -193,12 +200,27 @@ function compactArtists (artists) {
   return artists.map(artist => artist.name).join('/')
 }
 
-async function getSong (playlistDetail, currentSongId, dir, retry) {
+async function getSong (playlistDetail, currentSongId, strategy) {
+  nextSongStrategy = strategy
   const { playMode } = store
   const { songsMap, shuffleSongsIndex, normalSongsIndex } = playlistDetail
   const songsIndex = playMode === PLAY_MODE.SHUFFLE ? shuffleSongsIndex : normalSongsIndex
   const len = songsIndex.length
   const currentSongIndex = songsIndex.findIndex(index => index === currentSongId)
+  let dir = 0
+  let retry = true
+  switch (strategy) {
+    case NEXT_SONG_STRATEGY.PREV:
+      dir = -1
+      break
+    case NEXT_SONG_STRATEGY.NEXT:
+      dir = 1
+      break
+    case NEXT_SONG_STRATEGY.CURRENT:
+      retry = false
+      break
+    default:
+  }
   const nextSongIndex = currentSongIndex === -1 ? 0 : (len + currentSongIndex + dir) % len
   const song = songsMap[songsIndex[nextSongIndex]]
   if (song.url !== '') {
@@ -365,10 +387,15 @@ function createAudio (song) {
     updateAudioState({
       currentTime: 0
     })
-    store.playNext()
+    playNextSong()
   }
   audio.onerror = (e) => {
-    log('audio.error', e)
+    log('audio.error', song.name, e.message)
+    if (nextSongStrategy === NEXT_SONG_STRATEGY.CURRENT) {
+      notify('歌曲无法该播放', true)
+    } else {
+      playNextSong()
+    }
   }
   audio.ontimeupdate = () => {
     updateAudioState({
@@ -378,13 +405,32 @@ function createAudio (song) {
   return audio
 }
 
+function playNextSong () {
+  if (nextSongStrategy === NEXT_SONG_STRATEGY.PREV) {
+    store.playPrev()
+  } else {
+    store.playNext()
+  }
+  store.sendToPopup({
+    selectedSong: store.selectedSong
+  })
+}
+
 function updateAudioState (state) {
   const { audioState } = store
   const newAudioState = { ...audioState, ...state }
-  store.audioState = newAudioState
-  chrome.runtime.sendMessage({
-    action: 'changeAudioState',
+  store.applyChange({
     audioState: newAudioState
+  })
+  store.sendToPopup({
+    audioState: newAudioState
+  })
+}
+
+function notify (message, isErr = false) {
+  store.sendToPopup({
+    message,
+    isErr
   })
 }
 
