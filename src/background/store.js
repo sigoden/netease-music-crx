@@ -5,6 +5,7 @@ import api from './api'
 import {
   STORE_PROPS,
   PLAY_MODE,
+  IMAGE_CLIP,
   log,
   parseCookies,
   serializeCookies,
@@ -14,8 +15,6 @@ import {
   NEXT_SONG_STRATEGY
 } from '../utils'
 
-// 剪裁图片
-const IMAGE_CLIP = '?param=150y150'
 // 不需要同步的键
 const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId', 'cookies', 'selectedSongId']
 // 推荐歌单数量
@@ -267,7 +266,9 @@ async function loadRecommendResourcePlaylist () {
       log('loadRecommendResourcePlaylist.error', res.message)
       throw new Error(res.message)
     }
-    return res.recommend.slice(0, LEN_PLAYLIST_REC).map(({ id, picUrl, name }) => ({ id, picUrl, name, type: PLAYLIST_TYPE.RECOMMEND }))
+    return res.recommend.slice(0, LEN_PLAYLIST_REC).map(
+      ({ id, picUrl, name }) => ({ id, picUrl: picUrl + IMAGE_CLIP, name, type: PLAYLIST_TYPE.RECOMMEND })
+    )
   } catch {
     throw new Error('获取推荐歌单失败')
   }
@@ -285,7 +286,7 @@ async function loadUserPlaylist () {
       if (userId === store.userId) {
         type = PLAYLIST_TYPE.CRATE
       }
-      return { id, picUrl: coverImgUrl, name, type }
+      return { id, picUrl: coverImgUrl + IMAGE_CLIP, name, type }
     })
   } catch {
     throw new Error('获取我的歌单失败')

@@ -2,6 +2,12 @@ import * as cookieUtils from '@tinyhttp/cookie'
 
 export const DOMAIN = 'https://music.163.com'
 
+// 剪裁图片
+export const IMAGE_CLIP = '?param=40y40'
+
+// 图片占位
+export const DEFAULT_IMAGE = 'http://p1.music.126.net/_-PWshFwqO5nFkOMpM2K4w==/109951166515653261.jpg' + IMAGE_CLIP
+
 // 歌单类型
 export const PLAYLIST_TYPE = {
   TOP: 1,
@@ -24,19 +30,19 @@ export const PLAYLIST_TOP = [
     id: 19723756,
     name: '飙升榜歌单',
     type: PLAYLIST_TYPE.TOP,
-    picUrl: 'https://p1.music.126.net/DrRIg6CrgDfVLEph9SNh7w==/18696095720518497.jpg'
+    picUrl: 'https://p1.music.126.net/DrRIg6CrgDfVLEph9SNh7w==/18696095720518497.jpg' + IMAGE_CLIP
   },
   {
     id: 3779629,
     name: '新歌榜歌单',
     type: PLAYLIST_TYPE.TOP,
-    picUrl: 'https://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg'
+    picUrl: 'https://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg' + IMAGE_CLIP
   },
   {
     id: 3778678,
     name: '热歌榜歌单',
     type: PLAYLIST_TYPE.TOP,
-    picUrl: 'https://p1.music.126.net/GhhuF6Ep5Tq9IEvLsyCN7w==/18708190348409091.jpg'
+    picUrl: 'https://p1.music.126.net/GhhuF6Ep5Tq9IEvLsyCN7w==/18708190348409091.jpg' + IMAGE_CLIP
   }
 ]
 
@@ -44,7 +50,7 @@ export const PLAYLIST_REC_SONGS = {
   id: 1,
   name: '每日歌曲推荐',
   type: PLAYLIST_TYPE.RECOMMEND,
-  picUrl: ''
+  picUrl: DEFAULT_IMAGE
 }
 
 // 播放模式
