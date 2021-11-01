@@ -124,3 +124,15 @@ export function serializeCookies (cookieObj, withOptions = false) {
   }
   return result
 }
+
+export function chunkArr (arr, len) {
+  const chunks = []
+  let i = 0
+  const n = arr.length
+
+  while (i < n) {
+    chunks.push(arr.slice(i, i += len))
+  }
+
+  return chunks
+}

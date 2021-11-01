@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 import Grid from '@mui/material/Grid'
 import List from '@mui/material/List'
@@ -14,12 +14,14 @@ import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
+import LinearProgress from '@mui/material/LinearProgress'
 import { formatScondTime } from '../utils'
 
 import store from './store'
 
 export default function PlayList ({ maxHeight }) {
   const snap = useSnapshot(store)
+  const [loading, setLoading] = useState(false)
   const { selectedSong, selectedPlaylist, playlists } = snap
   const playlistRefs = createRefs(playlists)
   const [songs, songRefs] = useMemo(() => {
@@ -27,6 +29,11 @@ export default function PlayList ({ maxHeight }) {
     const songRefs = createRefs(songs)
     return [songs, songRefs]
   }, [selectedPlaylist])
+  const changePlaylist = async id => {
+    setLoading(true)
+    await store.changePlaylist(id)
+    setLoading(false)
+  }
   useEffect(() => {
     scrollListItemToView(playlistRefs, selectedPlaylist?.id)
     scrollListItemToView(songRefs, selectedSong?.id, { behavior: 'smooth', block: 'center' })
@@ -44,7 +51,7 @@ export default function PlayList ({ maxHeight }) {
               sx={isNewCat ? { borderTop: '1px solid #e0e0e0' } : {}}
               selected={selected}
               ref={playlistRefs[playlist.id]}
-              onClick={_ => store.changePlaylist(playlist.id)}
+              onClick={_ => changePlaylist(playlist.id)}
             >
               <ListItemIcon sx={{ minWidth: 30 }}>
                 <Avatar src={playlist.picUrl} sx={{ width: 24, height: 24 }} />
@@ -87,6 +94,11 @@ export default function PlayList ({ maxHeight }) {
           </Table>
         }
       </Grid>
+      {loading &&
+        <Box sx={{ width: '100%' }}>
+          <LinearProgress />
+        </Box>
+      }
     </Grid>
   )
 }

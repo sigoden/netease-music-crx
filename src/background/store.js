@@ -13,7 +13,8 @@ import {
   PLAYLIST_TOP,
   PLAYLIST_TYPE,
   NEXT_SONG_STRATEGY,
-  EMPTY_AUDIO_STATE
+  EMPTY_AUDIO_STATE,
+  chunkArr
 } from '../utils'
 
 // 不需要同步的键
@@ -337,6 +338,9 @@ async function loadPlaylist (playlist) {
       const res = await api.getPlaylistDetail(playlist.id)
       if (res.code === 200) {
         tracks = res.playlist.tracks
+        const ids = res.playlist.trackIds.slice(tracks.length).map(v => v.id)
+        const tracks2 = await loadTracks(ids)
+        tracks = [...tracks, ...tracks2]
       } else {
         log('getPlaylistDetail.error', playlist.id, res.message)
         throw new Error(res.message)
@@ -357,6 +361,20 @@ async function loadPlaylist (playlist) {
   } catch {
     throw new Error('获取歌单失败')
   }
+}
+
+async function loadTracks (ids) {
+  const chunkIds = chunkArr(ids, 250)
+  const chunkTracks = await Promise.all(chunkIds.map(async ids => {
+    const res = await api.getSongDetail(ids)
+    if (res.code === 200) {
+      return res.songs
+    } else {
+      log('getSongDetail.error', res.message)
+      throw new Error(res.message)
+    }
+  }))
+  return chunkTracks.flatMap(v => v)
 }
 
 async function refreshPlaylist (songId) {
@@ -387,9 +405,9 @@ subscribeKey(store, 'selectedSong', song => {
     audio = createAudio(song)
   }
   if (store.playing) {
-    audio.play()
+    audio.autoplay = true
   } else {
-    audio.pause()
+    audio.autoplay = false
   }
   if (Date.now() - lastLoadAt > 86400000) {
     log('load.daily')
@@ -420,8 +438,8 @@ function createAudio (song) {
     updateAudioState({ ...EMPTY_AUDIO_STATE })
     playNextSong()
   }
-  audio.onerror = (e) => {
-    log('audio.error', song.name, e.message)
+  audio.onerror = () => {
+    log('audio.error', song.name, audio.error.message)
     if (nextSongStrategy === NEXT_SONG_STRATEGY.CURRENT) {
       store.sendToPopup({
         message: '歌曲无法该播放',
