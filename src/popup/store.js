@@ -30,8 +30,11 @@ const store = proxy({
   changePlaylist (playlistId) {
     return store.doAction('changePlaylist', [playlistId])
   },
-  likeSong () {
-    return store.doAction('likeSong')
+  likeSong (playlistId) {
+    return store.doAction('likeSong', [playlistId])
+  },
+  unlikeSong () {
+    return store.doAction('unlikeSong')
   },
   login (phone, captcha) {
     return store.doAction('login', [phone, captcha])

@@ -106,16 +106,33 @@ const store = proxy({
     const selectedSong = await getSong(selectedPlaylist, songId, NEXT_SONG_STRATEGY.CURRENT_RETRY)
     return store.applyChange({ selectedPlaylist, selectedSong })
   },
-  async likeSong () {
+  async likeSong (playlistId) {
     const { selectedSong, playlists } = store
     if (!selectedSong) throw new Error('无选中歌曲')
-    const playlistId = playlists.find(v => v.type === PLAYLIST_TYPE.CRATE)?.id
+    if (!playlistId) {
+      playlistId = playlists.find(v => v.primary)?.id
+    } else {
+      playlistId = playlists.find(v => v.id === playlistId)?.id
+    }
     if (!playlistId) throw new Error('无法收藏')
-    const res = await api.likeSong(playlistId, selectedSong.id)
+    const res = await api.likeSong(playlistId, selectedSong.id, true)
     if (res.code === 200) {
       return store.applyChange({ message: '收藏成功' })
     } else {
-      throw new Error('收藏到我喜欢的音乐失败')
+      throw new Error('收藏歌曲失败')
+    }
+  },
+  async unlikeSong () {
+    const { selectedSong, selectedPlaylist, selectedPlaylistId } = store
+    if (!selectedSong) throw new Error('无选中歌曲')
+    const currentIdx = selectedPlaylist.normalSongsIndex.findIndex(id => id === selectedSong.id)
+    const nextIdx = getNextSongIndex(nextSongStrategy, selectedPlaylist.normalSongsIndex.len, currentIdx)
+    const res = await api.likeSong(selectedPlaylistId, selectedSong.id, false)
+    if (res.code === 200) {
+      store.sendToPopup({ message: '取消收藏成功', isErr: false })
+      await refreshPlaylist(selectedPlaylist.normalSongsIndex[nextIdx])
+    } else {
+      throw new Error('取消收藏歌曲失败')
     }
   },
   async login (phone, password) {
@@ -205,30 +222,16 @@ async function getSong (playlistDetail, currentSongId, strategy) {
   const { playMode } = store
   const { songsMap, shuffleSongsIndex, normalSongsIndex } = playlistDetail
   const songsIndex = playMode === PLAY_MODE.SHUFFLE ? shuffleSongsIndex : normalSongsIndex
-  const len = songsIndex.length
-  const currentSongIndex = songsIndex.findIndex(index => index === currentSongId)
-  let dir = 0
-  let retry = true
-  switch (strategy) {
-    case NEXT_SONG_STRATEGY.PREV:
-      dir = -1
-      break
-    case NEXT_SONG_STRATEGY.NEXT:
-      dir = 1
-      break
-    case NEXT_SONG_STRATEGY.CURRENT:
-      retry = false
-      break
-    default:
-  }
-  const nextSongIndex = currentSongIndex === -1 ? 0 : (len + currentSongIndex + dir) % len
-  const song = songsMap[songsIndex[nextSongIndex]]
+  const currentIdx = songsIndex.findIndex(index => index === currentSongId)
+  const nextIdx = getNextSongIndex(strategy, songsIndex.len, currentIdx)
+  const retry = strategy !== NEXT_SONG_STRATEGY.CURRENT
+  const song = songsMap[songsIndex[nextIdx]]
   if (song.url !== '') {
     const url = await getSongUrl(song.id)
     if (!url) {
       playlistDetail.songsCount -= 1
       if (retry && playlistDetail.songsCount > 0) {
-        return getSong(playlistDetail, song.id, dir || 1)
+        return getSong(playlistDetail, song.id, strategy)
       } else {
         throw new Error('无法播放歌曲')
       }
@@ -236,6 +239,28 @@ async function getSong (playlistDetail, currentSongId, strategy) {
     song.url = url
   }
   return song
+}
+
+function getNextSongIndex (strategy, len, currentIdx) {
+  let nextIds = currentIdx
+  switch (strategy) {
+    case NEXT_SONG_STRATEGY.PREV:
+      if (currentIdx === 0) {
+        nextIds = len - 1
+      } else {
+        nextIds = currentIdx - 1
+      }
+      break
+    case NEXT_SONG_STRATEGY.NEXT:
+      if (currentIdx === len - 1) {
+        nextIds = 0
+      } else {
+        nextIds = currentIdx + 1
+      }
+      break
+    default:
+  }
+  return nextIds
 }
 
 async function getSongUrl (id) {
@@ -282,12 +307,12 @@ async function loadUserPlaylist () {
       log('loadUserPlaylist.error', res.message)
       throw new Error(res.message)
     }
-    return res.playlist.map(({ id, coverImgUrl, name, userId }) => {
+    return res.playlist.map(({ id, coverImgUrl, name, userId, specialType }) => {
       let type = PLAYLIST_TYPE.FAVORIATE
       if (userId === store.userId) {
         type = PLAYLIST_TYPE.CRATE
       }
-      return { id, picUrl: coverImgUrl + IMAGE_CLIP, name, type }
+      return { id, picUrl: coverImgUrl + IMAGE_CLIP, name, type, primary: specialType === 5 }
     })
   } catch {
     throw new Error('获取我的歌单失败')
@@ -317,12 +342,13 @@ async function loadPlaylist (playlist) {
         throw new Error(res.message)
       }
     }
-    const { id, name } = playlist
+    const { id, name, type } = playlist
     const { normalSongsIndex, songsMap } = tracksToSongs(tracks)
     const shuffleSongsIndex = shuffleArray(normalSongsIndex)
     return {
       id,
       name,
+      type,
       songsCount: normalSongsIndex.length,
       songsMap,
       normalSongsIndex,
@@ -331,6 +357,13 @@ async function loadPlaylist (playlist) {
   } catch {
     throw new Error('获取歌单失败')
   }
+}
+
+async function refreshPlaylist (songId) {
+  const playlist = store.playlists.find(v => v.id === store.selectedPlaylistId)
+  const selectedPlaylist = await loadPlaylist(playlist)
+  const selectedSong = await getSong(selectedPlaylist, songId, nextSongStrategy)
+  return store.applyChange({ selectedPlaylist, selectedSong })
 }
 
 function persistStore (change) {
@@ -390,7 +423,10 @@ function createAudio (song) {
   audio.onerror = (e) => {
     log('audio.error', song.name, e.message)
     if (nextSongStrategy === NEXT_SONG_STRATEGY.CURRENT) {
-      notify('歌曲无法该播放', true)
+      store.sendToPopup({
+        message: '歌曲无法该播放',
+        isErr: true
+      })
     } else {
       playNextSong()
     }
@@ -422,13 +458,6 @@ function updateAudioState (state) {
   })
   store.sendToPopup({
     audioState: newAudioState
-  })
-}
-
-function notify (message, isErr = false) {
-  store.sendToPopup({
-    message,
-    isErr
   })
 }
 

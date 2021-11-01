@@ -118,14 +118,14 @@ function createRequester () {
       })
     },
     // 喜欢音乐
-    likeSong (playlistId, songId) {
+    likeSong (playlistId, songId, isLike) {
       return createRequest({
         url: '/weapi/playlist/manipulate/tracks',
         data: {
           tracks: '[object Object]',
           pid: playlistId,
           trackIds: `[${songId}]`,
-          op: 'add'
+          op: isLike ? 'add' : 'del'
         }
       })
     }

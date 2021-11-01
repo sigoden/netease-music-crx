@@ -11,15 +11,28 @@ import PauseIcon from '@mui/icons-material/Pause'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import VolumeUpIcon from '@mui/icons-material/VolumeUp'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
+import FavoriteIcon from '@mui/icons-material/Favorite'
 import LoopIcon from '@mui/icons-material/Loop'
 import ShuffleIcon from '@mui/icons-material/Shuffle'
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
 import store from './store'
-import { PLAY_MODE, DEFAULT_IMAGE, formatScondTime } from '../utils'
+import { PLAY_MODE, DEFAULT_IMAGE, formatScondTime, PLAYLIST_TYPE } from '../utils'
 
 export default function Player () {
   const snap = useSnapshot(store)
   const [showVolumeBar, setShowVolumeBar] = useState(false)
+  const {
+    userId,
+    playing,
+    selectedSong,
+    selectedPlaylist,
+    volume,
+    playMode,
+    audioState: {
+      currentTime,
+      duration
+    }
+  } = snap
 
   const handleTimeChange = (e, percent) => {
     const { audioState: { duration } } = snap
@@ -30,18 +43,6 @@ export default function Player () {
   const handleVolumeChange = (e) => {
     store.updateVolume(1 - e.target.value)
   }
-
-  const {
-    userId,
-    playing,
-    selectedSong,
-    volume,
-    playMode,
-    audioState: {
-      currentTime,
-      duration
-    }
-  } = snap
 
   const currentTimeStr = formatScondTime(currentTime)
   const durationTimeStr = formatScondTime(duration)
@@ -95,10 +96,14 @@ export default function Player () {
       </Grid>
       <Grid item alignItems='center'>
         {userId &&
-          <IconButton onClick={store.likeSong} title='收藏'>
-            <FavoriteBorderIcon />
-          </IconButton>
-        }
+          selectedPlaylist.type === PLAYLIST_TYPE.CRATE
+          ? <IconButton onClick={store.unlikeSong} title='取消收藏'>
+                <FavoriteIcon />
+              </IconButton>
+          : <IconButton onClick={store.likeSong} title='收藏'>
+                <FavoriteBorderIcon />
+              </IconButton>
+          }
         <IconButton onClick={store.updatePlayMode} title={playModeTitle}>
           {playModeIcon}
         </IconButton>
