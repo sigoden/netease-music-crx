@@ -14,19 +14,19 @@ export const PLAYLIST_TYPE = {
 export const PLAYLIST_TOP = [
   {
     id: 19723756,
-    name: '飙升榜',
+    name: '飙升榜歌单',
     type: PLAYLIST_TYPE.TOP,
     picUrl: 'https://p1.music.126.net/DrRIg6CrgDfVLEph9SNh7w==/18696095720518497.jpg'
   },
   {
     id: 3779629,
-    name: '新歌榜',
+    name: '新歌榜歌单',
     type: PLAYLIST_TYPE.TOP,
     picUrl: 'https://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg'
   },
   {
     id: 3778678,
-    name: '热歌榜',
+    name: '热歌榜歌单',
     type: PLAYLIST_TYPE.TOP,
     picUrl: 'https://p1.music.126.net/GhhuF6Ep5Tq9IEvLsyCN7w==/18708190348409091.jpg'
   }

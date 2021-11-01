@@ -156,6 +156,7 @@ const store = proxy({
       store.applyChange({ playlists })
       await store.changePlaylist()
     }
+    store.applyChange({ message: '' })
     return store
   },
   popupInit () {

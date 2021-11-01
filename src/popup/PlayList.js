@@ -35,11 +35,13 @@ export default function PlayList ({ maxHeight }) {
     <Grid container>
       <Grid item xs={4} sx={{ background: '#f3f0f0' }}>
         <List sx={{ maxHeight, overflowY: 'auto', py: 0 }}>
-        {playlists.map(playlist => {
+        {playlists.map((playlist, index) => {
           const selected = playlist.id === selectedPlaylist?.id
+          const isNewCat = playlists[index - 1] && playlists[index - 1].type !== playlist.type
           return (
             <ListItemButton
               key={playlist.id}
+              sx={isNewCat ? { borderTop: '1px solid #e0e0e0' } : {}}
               selected={selected}
               ref={playlistRefs[playlist.id]}
               onClick={_ => store.changePlaylist(playlist.id)}
