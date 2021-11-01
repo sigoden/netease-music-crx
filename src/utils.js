@@ -53,6 +53,12 @@ export const PLAYLIST_REC_SONGS = {
   picUrl: DEFAULT_IMAGE
 }
 
+export const EMPTY_AUDIO_STATE = {
+  duration: 0,
+  currentTime: 0,
+  loadPercentage: 0
+}
+
 // 播放模式
 export const PLAY_MODE = {
   LOOP: 'LOOP', // 循环
@@ -71,11 +77,7 @@ export const STORE_PROPS = {
   selectedPlaylist: null,
   selectedSongId: null,
   selectedSong: null,
-  audioState: {
-    duration: 0,
-    currentTime: 0,
-    loadPercentage: 0
-  }
+  audioState: { ...EMPTY_AUDIO_STATE }
 }
 
 export function log (...args) {

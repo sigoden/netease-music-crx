@@ -12,7 +12,8 @@ import {
   PLAYLIST_REC_SONGS,
   PLAYLIST_TOP,
   PLAYLIST_TYPE,
-  NEXT_SONG_STRATEGY
+  NEXT_SONG_STRATEGY,
+  EMPTY_AUDIO_STATE
 } from '../utils'
 
 // 不需要同步的键
@@ -380,14 +381,10 @@ function createAudio (song) {
     })
   }
   audio.onabort = () => {
-    updateAudioState({
-      currentTime: 0
-    })
+    updateAudioState({ ...EMPTY_AUDIO_STATE })
   }
   audio.onended = () => {
-    updateAudioState({
-      currentTime: 0
-    })
+    updateAudioState({ ...EMPTY_AUDIO_STATE })
     playNextSong()
   }
   audio.onerror = (e) => {
@@ -406,11 +403,11 @@ function createAudio (song) {
   return audio
 }
 
-function playNextSong () {
+async function playNextSong () {
   if (nextSongStrategy === NEXT_SONG_STRATEGY.PREV) {
-    store.playPrev()
+    await store.playPrev()
   } else {
-    store.playNext()
+    await store.playNext()
   }
   store.sendToPopup({
     selectedSong: store.selectedSong

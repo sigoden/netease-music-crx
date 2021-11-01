@@ -45,7 +45,7 @@ export default function Player () {
 
   const currentTimeStr = formatScondTime(currentTime)
   const durationTimeStr = formatScondTime(duration)
-  const percentPlayed = currentTime ? currentTime / duration * 100 : 0
+  const percentPlayed = currentTime / duration * 100 || 0
   let playModeIcon, playModeTitle
   switch (playMode) {
     case PLAY_MODE.SHUFFLE:
