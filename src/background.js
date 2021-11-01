@@ -1,4 +1,4 @@
-import store from './background/store'
+import { bootstrap } from './background/store'
 import './background/chrome'
 
-store.bootstrap()
+bootstrap()

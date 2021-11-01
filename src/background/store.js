@@ -6,15 +6,15 @@ import {
   STORE_PROPS,
   PLAY_MODE,
   IMAGE_CLIP,
-  log,
-  parseCookies,
-  serializeCookies,
   PLAYLIST_REC_SONGS,
   PLAYLIST_TOP,
   PLAYLIST_TYPE,
-  NEXT_SONG_STRATEGY,
   EMPTY_AUDIO_STATE,
-  chunkArr
+  log,
+  parseCookies,
+  serializeCookies,
+  chunkArr,
+  shuffleArr
 } from '../utils'
 
 // 不需要同步的键
@@ -24,260 +24,199 @@ const LEN_PLAYLIST_REC = 5
 
 // 播放器
 let audio
+// 播放状态
+let audioState = { ...EMPTY_AUDIO_STATE }
 // 上次加载推荐歌单时间
 let lastLoadAt = 0
-// 下一首策略
-let nextSongStrategy = NEXT_SONG_STRATEGY.CURRENT
+// 点播
+let isForcePlay = false
 
-const store = proxy({
-  ...STORE_PROPS,
-  async bootstrap () {
-    await store.syncPersistData()
-    await store.load()
-  },
-  syncPersistData () {
-    return new Promise((resolve) => {
-      chrome.storage.sync.get(persistData => {
-        if (persistData) {
-          persistData = PERSIST_KEYS.reduce((acc, k) => {
-            const v = persistData[k]
-            if (typeof v !== 'undefined') acc[k] = v
-            return acc
-          }, {})
-          log('storage.sync', persistData)
-          Object.assign(store, persistData)
-        }
-        resolve(store)
-      })
-    })
-  },
-  updateAudioTime (currentTime) {
-    if (audio) {
-      audio.currentTime = currentTime
-    }
-    store.applyChange({ audioState: { ...store.audioState, currentTime } })
-    if (!store.playing) {
-      store.togglePlaying()
-    }
-  },
-  togglePlaying () {
-    const { playing } = store
-    if (playing) {
-      audio.pause()
-    } else {
-      audio.play()
-    }
-    return store.applyChange({ playing: !playing })
-  },
-  updateVolume (volume) {
-    audio.volume = volume
-    return store.applyChange({ volume })
-  },
-  async playPrev () {
-    const selectedSong = await getSong(store.selectedPlaylist, store.selectedSongId, NEXT_SONG_STRATEGY.PREV)
-    return store.applyChange({ selectedSong, playing: true })
-  },
-  async playNext () {
-    const selectedSong = await getSong(store.selectedPlaylist, store.selectedSongId, NEXT_SONG_STRATEGY.NEXT)
-    return store.applyChange({ selectedSong, playing: true })
-  },
-  async playSong (songId) {
-    const selectedSong = await getSong(store.selectedPlaylist, songId, NEXT_SONG_STRATEGY.CURRENT)
-    return store.applyChange({ selectedSong, playing: true })
-  },
-  async updatePlayMode () {
-    const modeKeys = Object.keys(PLAY_MODE)
-    const modeKeyIndex = modeKeys.findIndex(key => PLAY_MODE[key] === store.playMode)
-    const nextModeKeyIndex = (modeKeyIndex + 1 + modeKeys.length) % modeKeys.length
-    const playMode = PLAY_MODE[modeKeys[nextModeKeyIndex]]
-    return store.applyChange({ playMode })
-  },
-  async changePlaylist (playlistId) {
-    let songId
-    if (!playlistId) {
-      playlistId = store.selectedPlaylistId
-      songId = store.selectedSongId
-    }
-    let playlist = store.playlists.find(playlist => playlist.id === playlistId)
-    if (!playlist) playlist = store.playlists[0]
-    const selectedPlaylist = await loadPlaylist(playlist)
-    if (selectedPlaylist.normalSongsIndex.indexOf(v => v === songId) === -1) {
-      songId = store.playMode === PLAY_MODE.SHUFFLE ? selectedPlaylist.shuffleSongsIndex[0] : selectedPlaylist.normalSongsIndex[0]
-    }
-    const selectedSong = await getSong(selectedPlaylist, songId, NEXT_SONG_STRATEGY.CURRENT_RETRY)
-    return store.applyChange({ selectedPlaylist, selectedSong })
-  },
-  async likeSong (playlistId) {
-    const { selectedSong, playlists } = store
-    if (!selectedSong) throw new Error('无选中歌曲')
-    if (!playlistId) {
-      playlistId = playlists.find(v => v.primary)?.id
-    } else {
-      playlistId = playlists.find(v => v.id === playlistId)?.id
-    }
-    if (!playlistId) throw new Error('无法收藏')
-    const res = await api.likeSong(playlistId, selectedSong.id, true)
-    if (res.code === 200) {
-      return store.applyChange({ message: '收藏成功' })
-    } else {
-      throw new Error('收藏歌曲失败')
-    }
-  },
-  async unlikeSong () {
-    const { selectedSong, selectedPlaylist, selectedPlaylistId } = store
-    if (!selectedSong) throw new Error('无选中歌曲')
-    const currentIdx = selectedPlaylist.normalSongsIndex.findIndex(id => id === selectedSong.id)
-    const nextIdx = getNextSongIndex(nextSongStrategy, selectedPlaylist.normalSongsIndex.len, currentIdx)
-    const res = await api.likeSong(selectedPlaylistId, selectedSong.id, false)
-    if (res.code === 200) {
-      store.sendToPopup({ message: '取消收藏成功', isErr: false })
-      await refreshPlaylist(selectedPlaylist.normalSongsIndex[nextIdx])
-    } else {
-      throw new Error('取消收藏歌曲失败')
-    }
-  },
-  async login (phone, password) {
-    const res = await api.cellphoneLogin(phone, password)
-    if (res.code === 200) {
-      const { userId } = res.profile
-      return store.applyChange({ userId, message: '登录成功' })
-    } else {
-      throw new Error(res.message)
-    }
-  },
-  async captchaSent (phone) {
-    const res = await api.captchaSent(phone)
-    if (res.code === 200) {
-      return store.applyChange({ message: '短信发送成功' })
-    } else {
-      throw new Error(res.message)
-    }
-  },
-  async logout () {
-    store.applyChange(STORE_PROPS)
-    await store.load()
-    log('logout', store)
-  },
-  async clearMessage () {
-    if (!store.message) return
-    return store.applyChange({ message: '' })
-  },
-  async load () {
-    lastLoadAt = Date.now()
-    if (store.userId) {
-      const res = await api.loginRefresh()
-      if (res.code === 200) {
-        const playlists = await loadPlaylists()
-        store.applyChange({ playlists })
-        await store.changePlaylist()
-      } else if (res.code === 301) { // cookie 失效
-        await store.logout()
-      }
-    } else {
-      const playlists = PLAYLIST_TOP
-      store.applyChange({ playlists })
-      await store.changePlaylist()
-    }
-    store.applyChange({ message: '' })
-    return store
-  },
-  popupInit () {
-    return store
-  },
-  sendToPopup (obj) {
-    chrome.runtime.sendMessage(obj)
-  },
-  saveCookies (cookieObj) {
-    const currentCookieObj = parseCookies([store.cookies])
-    const newCookieObj = { ...currentCookieObj, ...cookieObj }
-    store.applyChange({ cookies: serializeCookies(newCookieObj) })
-  },
-  applyChange (change) {
-    if (change.selectedSong) change.selectedSongId = change.selectedSong.id
-    if (change.selectedPlaylist) change.selectedPlaylistId = change.selectedPlaylist.id
-    persistStore(change)
+const store = proxy({ ...STORE_PROPS })
+
+export async function bootstrap () {
+  await persistLoad()
+  await load()
+}
+
+export function updateAudioTime (currentTime) {
+  if (audio) {
+    audio.currentTime = currentTime
+  }
+  audio.play()
+}
+
+export function togglePlaying () {
+  let { playing } = store
+  if (playing) {
+    audio.pause()
+  } else {
+    audio.play()
+  }
+  playing = !playing
+  store.playing = playing
+  return { playing }
+}
+
+export function updateVolume (volume) {
+  audio.volume = volume
+  store.volume = volume
+  persistSave()
+  return { volume }
+}
+
+export async function playPrev () {
+  store.dir = -1
+  const { selectedPlaylist, selectedSongId } = store
+  const songId = getNextSongId(selectedPlaylist, selectedSongId)
+  const selectedSong = await getSongDetail(selectedPlaylist, songId, true)
+  return updateSelectedSong(selectedSong)
+}
+
+export async function playNext () {
+  store.dir = 1
+  const { selectedPlaylist, selectedSongId } = store
+  const songId = getNextSongId(selectedPlaylist, selectedSongId)
+  log('playNext', selectedSongId, songId)
+  const selectedSong = await getSongDetail(selectedPlaylist, songId, true)
+  return updateSelectedSong(selectedSong)
+}
+
+export async function playSong (songId) {
+  isForcePlay = true
+  const selectedSong = await getSongDetail(store.selectedPlaylist, songId, false)
+  return updateSelectedSong(selectedSong)
+}
+
+export async function updatePlayMode () {
+  const modeKeys = Object.keys(PLAY_MODE)
+  const modeKeyIndex = modeKeys.findIndex(key => PLAY_MODE[key] === store.playMode)
+  const nextModeKeyIndex = (modeKeyIndex + 1 + modeKeys.length) % modeKeys.length
+  const playMode = PLAY_MODE[modeKeys[nextModeKeyIndex]]
+  store.playMode = playMode
+  persistSave()
+  return { playMode }
+}
+
+export async function changePlaylist (playlistId) {
+  let songId
+  if (!playlistId) {
+    playlistId = store.selectedPlaylistId
+    songId = store.selectedSongId
+  }
+  let playlist = store.playlists.find(playlist => playlist.id === playlistId)
+  if (!playlist) playlist = store.playlists[0]
+  const selectedPlaylist = await loadPlaylistDetails(playlist)
+  if (!selectedPlaylist.normalSongsIndex.find(v => v === songId)) {
+    const songsIndex = store.playMode === PLAY_MODE.SHUFFLE ? selectedPlaylist.shuffleSongsIndex : selectedPlaylist.normalSongsIndex
+    songId = songsIndex[0]
+  }
+  const selectedSong = await getSongDetail(selectedPlaylist, songId, true)
+  const change = { selectedPlaylist, selectedPlaylistId: selectedPlaylist.id, selectedSong, selectedSongId: selectedSong.id }
+  Object.assign(store, change)
+  persistSave()
+  return change
+}
+
+export async function likeSong (playlistId) {
+  const { selectedSong, playlists } = store
+  if (!selectedSong) throw new Error('无选中歌曲')
+  if (!playlistId) {
+    playlistId = playlists.find(v => v.primary)?.id
+  } else {
+    playlistId = playlists.find(v => v.id === playlistId)?.id
+  }
+  if (!playlistId) throw new Error('无法收藏')
+  const res = await api.likeSong(playlistId, selectedSong.id, true)
+  if (res.code === 200) {
+    return { message: '收藏成功' }
+  } else {
+    throw new Error('收藏歌曲失败')
+  }
+}
+
+export async function unlikeSong () {
+  const { selectedSong, selectedPlaylist, selectedSongId } = store
+  if (!selectedSong) throw new Error('无选中歌曲')
+  const nextSongId = getNextSongId(selectedPlaylist, selectedSongId)
+  if (nextSongId === selectedSongId) throw new Error('取消收藏歌曲失败')
+  const res = await api.likeSong(selectedPlaylist.id, selectedSongId, false)
+  if (res.code === 200) {
+    const { selectedSong, selectedPlaylist } = await refreshPlaylist(nextSongId)
+    const change = { selectedPlaylist, selectedPlaylistId: selectedPlaylist.id, selectedSong, selectedSongId: selectedSong.id }
     Object.assign(store, change)
-    return change
+    persistSave()
+    return { ...change, message: '取消收藏成功' }
+  } else {
+    throw new Error('取消收藏歌曲失败')
   }
-})
-
-function tracksToSongs (tracks) {
-  const songs = tracks.map(track => {
-    const { id, name, al: { picUrl }, ar, dt } = track
-    return { id, name, picUrl: picUrl + IMAGE_CLIP, artists: compactArtists(ar), duration: dt }
-  })
-  const songsMap = songs.reduce((songsMap, song) => {
-    songsMap[song.id] = song
-    return songsMap
-  }, {})
-  const normalSongsIndex = songs.map(song => song.id)
-  return { normalSongsIndex, songsMap }
 }
 
-function compactArtists (artists) {
-  return artists.map(artist => artist.name).join('/')
+export async function login (phone, password) {
+  const res = await api.cellphoneLogin(phone, password)
+  if (res.code === 200) {
+    const { userId } = res.profile
+    store.userId = userId
+    persistSave()
+    return { userId, message: '登录成功' }
+  } else {
+    throw new Error(res.message)
+  }
 }
 
-async function getSong (playlistDetail, currentSongId, strategy) {
-  nextSongStrategy = strategy
-  const { playMode } = store
-  const { songsMap, shuffleSongsIndex, normalSongsIndex } = playlistDetail
-  const songsIndex = playMode === PLAY_MODE.SHUFFLE ? shuffleSongsIndex : normalSongsIndex
-  const currentIdx = songsIndex.findIndex(index => index === currentSongId)
-  const nextIdx = getNextSongIndex(strategy, songsIndex.len, currentIdx)
-  const retry = strategy !== NEXT_SONG_STRATEGY.CURRENT
-  const song = songsMap[songsIndex[nextIdx]]
-  if (song.url !== '') {
-    const url = await getSongUrl(song.id)
-    if (!url) {
-      playlistDetail.songsCount -= 1
-      if (retry && playlistDetail.songsCount > 0) {
-        return getSong(playlistDetail, song.id, strategy)
-      } else {
-        throw new Error('无法播放歌曲')
-      }
+export async function captchaSent (phone) {
+  const res = await api.captchaSent(phone)
+  if (res.code === 200) {
+    return { message: '短信发送成功' }
+  } else {
+    throw new Error(res.message)
+  }
+}
+
+export async function logout () {
+  Object.assign(store, STORE_PROPS)
+  persistSave()
+  await load()
+  log('logout', store)
+}
+
+export async function load () {
+  lastLoadAt = Date.now()
+  if (store.userId) {
+    const res = await api.loginRefresh()
+    if (res.code === 200) {
+      store.playlists = await loadPlaylists()
+      await changePlaylist()
+    } else if (res.code === 301) { // cookie 失效
+      await logout()
     }
-    song.url = url
+  } else {
+    store.playlists = PLAYLIST_TOP
+    await changePlaylist()
   }
-  return song
+  log('load.result', store)
+  return store
 }
 
-function getNextSongIndex (strategy, len, currentIdx) {
-  let nextIds = currentIdx
-  switch (strategy) {
-    case NEXT_SONG_STRATEGY.PREV:
-      if (currentIdx === 0) {
-        nextIds = len - 1
-      } else {
-        nextIds = currentIdx - 1
-      }
-      break
-    case NEXT_SONG_STRATEGY.NEXT:
-      if (currentIdx === len - 1) {
-        nextIds = 0
-      } else {
-        nextIds = currentIdx + 1
-      }
-      break
-    default:
-  }
-  return nextIds
+export function popupInit () {
+  return store
 }
 
-async function getSongUrl (id) {
-  const res = await api.getSongUrls([id])
-  if (res.code !== 200) return ''
-  const { url } = res.data[0]
-  return url || ''
+export function sendToPopup (obj) {
+  chrome.runtime.sendMessage(obj)
 }
 
-function shuffleArray (array) {
-  const _array = array.slice()
-  for (let i = _array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [_array[i], _array[j]] = [_array[j], _array[i]]
-  }
-  return _array
+export function saveCookies (cookieObj) {
+  const currentCookieObj = parseCookies([store.cookies])
+  const newCookieObj = { ...currentCookieObj, ...cookieObj }
+  store.cookies = serializeCookies(newCookieObj)
+  persistSave()
+}
+
+async function refreshPlaylist (songId) {
+  const playlist = store.playlists.find(v => v.id === store.selectedPlaylistId)
+  const selectedPlaylist = await loadPlaylistDetails(playlist)
+  const selectedSong = await getSongDetail(selectedPlaylist, songId, true)
+  return { selectedPlaylist, selectedSong }
 }
 
 async function loadPlaylists () {
@@ -320,7 +259,7 @@ async function loadUserPlaylist () {
   }
 }
 
-async function loadPlaylist (playlist) {
+async function loadPlaylistDetails (playlist) {
   try {
     let tracks
     if (playlist.id === PLAYLIST_REC_SONGS.id) {
@@ -347,8 +286,8 @@ async function loadPlaylist (playlist) {
       }
     }
     const { id, name, type } = playlist
-    const { normalSongsIndex, songsMap } = tracksToSongs(tracks)
-    const shuffleSongsIndex = shuffleArray(normalSongsIndex)
+    const { normalSongsIndex, songsMap } = toSongsMap(tracks)
+    const shuffleSongsIndex = shuffleArr(normalSongsIndex)
     return {
       id,
       name,
@@ -361,6 +300,57 @@ async function loadPlaylist (playlist) {
   } catch {
     throw new Error('获取歌单失败')
   }
+}
+
+async function playNextSong () {
+  let songId = store.selectedSongId
+  if (store.playMode !== PLAY_MODE.ONE) {
+    songId = getNextSongId(store.selectedPlaylist, store.selectedPlaylistId)
+  }
+  const selectedSong = await getSongDetail(songId, true)
+  updateSelectedSong(selectedSong)
+  sendToPopup({ selectedSong })
+}
+
+async function getSongDetail (playlistDetail, songId, retry) {
+  const song = playlistDetail.songsMap[songId]
+  if (song.url !== '') {
+    const url = await getSongUrl(song.id)
+    if (!url) {
+      playlistDetail.songsCount -= 1
+      if (retry && playlistDetail.songsCount > 0) {
+        const newSongId = getNextSongId(playlistDetail, songId)
+        return getSongDetail(playlistDetail, newSongId, retry)
+      } else {
+        throw new Error('无法播放歌曲')
+      }
+    }
+    song.url = url
+  }
+  return song
+}
+
+function getNextSongId (playlistDetail, songId) {
+  const { playMode, dir } = store
+  isForcePlay = false
+  const songsIndex = playMode === PLAY_MODE.SHUFFLE ? playlistDetail.shuffleSongsIndex : playlistDetail.normalSongsIndex
+  const songsCount = songsIndex.length
+  const currentIndex = songsIndex.findIndex(v => v === songId)
+  let nextIndex = currentIndex
+  if (dir === 1) {
+    if (currentIndex === songsCount - 1) {
+      nextIndex = 0
+    } else {
+      nextIndex = currentIndex + 1
+    }
+  } else {
+    if (currentIndex === 0) {
+      nextIndex = songsCount - 1
+    } else {
+      nextIndex = currentIndex - 1
+    }
+  }
+  return songsIndex[nextIndex]
 }
 
 async function loadTracks (ids) {
@@ -377,43 +367,30 @@ async function loadTracks (ids) {
   return chunkTracks.flatMap(v => v)
 }
 
-async function refreshPlaylist (songId) {
-  const playlist = store.playlists.find(v => v.id === store.selectedPlaylistId)
-  const selectedPlaylist = await loadPlaylist(playlist)
-  const selectedSong = await getSong(selectedPlaylist, songId, nextSongStrategy)
-  return store.applyChange({ selectedPlaylist, selectedSong })
-}
-
-function persistStore (change) {
-  const changePersistKeys = Object.keys(change).filter(key => PERSIST_KEYS.indexOf(key) > -1)
-  if (changePersistKeys.length === 0) return
-  const persistData = PERSIST_KEYS.reduce((acc, k) => {
+function persistSave () {
+  const data = PERSIST_KEYS.reduce((acc, k) => {
     acc[k] = store[k]
     return acc
   }, {})
-  chrome.storage.sync.set(persistData)
+  chrome.storage.sync.set(data)
 }
 
-subscribeKey(store, 'selectedSong', song => {
-  if (!song) {
-    if (audio) audio.pause()
-    return
-  }
-  if (audio) {
-    audio.src = song.url
-  } else {
-    audio = createAudio(song)
-  }
-  if (store.playing) {
-    audio.autoplay = true
-  } else {
-    audio.autoplay = false
-  }
-  if (Date.now() - lastLoadAt > 86400000) {
-    log('load.daily')
-    store.load()
-  }
-})
+export function persistLoad () {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(data => {
+      if (data) {
+        data = PERSIST_KEYS.reduce((acc, k) => {
+          const v = data[k]
+          if (typeof v !== 'undefined') acc[k] = v
+          return acc
+        }, {})
+        log('persist.load', data)
+        Object.assign(store, data)
+      }
+      resolve()
+    })
+  })
+}
 
 function createAudio (song) {
   const audio = new Audio(song.url)
@@ -440,11 +417,8 @@ function createAudio (song) {
   }
   audio.onerror = () => {
     log('audio.error', song.name, audio.error.message)
-    if (nextSongStrategy === NEXT_SONG_STRATEGY.CURRENT) {
-      store.sendToPopup({
-        message: '歌曲无法该播放',
-        isErr: true
-      })
+    if (isForcePlay) {
+      sendToPopup({ message: '歌曲无法该播放', isErr: true })
     } else {
       playNextSong()
     }
@@ -457,26 +431,61 @@ function createAudio (song) {
   return audio
 }
 
-async function playNextSong () {
-  if (nextSongStrategy === NEXT_SONG_STRATEGY.PREV) {
-    await store.playPrev()
-  } else {
-    await store.playNext()
-  }
-  store.sendToPopup({
-    selectedSong: store.selectedSong
-  })
+function updateAudioState (state) {
+  audioState = { ...audioState, ...state }
+  sendToPopup({ audioState })
 }
 
-function updateAudioState (state) {
-  const { audioState } = store
-  const newAudioState = { ...audioState, ...state }
-  store.applyChange({
-    audioState: newAudioState
-  })
-  store.sendToPopup({
-    audioState: newAudioState
-  })
+async function updateSelectedSong (selectedSong) {
+  const change = { selectedSong, selectedSongId: selectedSong.id, playing: true }
+  Object.assign(store, change)
+  persistSave()
+  return change
 }
+
+async function getSongUrl (id) {
+  const res = await api.getSongUrls([id])
+  if (res.code !== 200) return ''
+  const { url } = res.data[0]
+  return url || ''
+}
+
+function toSongsMap (tracks) {
+  const songs = tracks.map(track => {
+    const { id, name, al: { picUrl }, ar, dt } = track
+    return { id, name, picUrl: picUrl + IMAGE_CLIP, artists: compactArtists(ar), duration: dt }
+  })
+  const songsMap = songs.reduce((songsMap, song) => {
+    songsMap[song.id] = song
+    return songsMap
+  }, {})
+  const normalSongsIndex = songs.map(song => song.id)
+  return { normalSongsIndex, songsMap }
+}
+
+function compactArtists (artists) {
+  return artists.map(artist => artist.name).join('/')
+}
+
+subscribeKey(store, 'selectedSong', song => {
+  if (!song) {
+    if (audio) audio.pause()
+    return
+  }
+  if (audio) {
+    audio.src = song.url
+  } else {
+    audio = createAudio(song)
+  }
+  if (store.playing) {
+    audio.autoplay = true
+  } else {
+    audio.autoplay = false
+  }
+  if (Date.now() - lastLoadAt > 86400000) {
+    log('load.daily')
+    load()
+  }
+})
 
 export default store

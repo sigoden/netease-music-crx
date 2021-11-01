@@ -15,8 +15,8 @@ import FavoriteIcon from '@mui/icons-material/Favorite'
 import LoopIcon from '@mui/icons-material/Loop'
 import ShuffleIcon from '@mui/icons-material/Shuffle'
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
-import store from './store'
-import { PLAY_MODE, DEFAULT_IMAGE, formatScondTime, PLAYLIST_TYPE } from '../utils'
+import store, * as storeUtils from './store'
+import { PLAY_MODE, DEFAULT_IMAGE, PLAYLIST_TYPE, formatScondTime } from '../utils'
 
 export default function Player () {
   const snap = useSnapshot(store)
@@ -37,11 +37,11 @@ export default function Player () {
   const handleTimeChange = (e, percent) => {
     const { audioState: { duration } } = snap
     const currentTime = percent * duration / 100
-    store.updateAudioTime(currentTime)
+    storeUtils.updateAudioTime(currentTime)
   }
 
   const handleVolumeChange = (e) => {
-    store.updateVolume(1 - e.target.value)
+    storeUtils.updateVolume(1 - e.target.value)
   }
 
   const currentTimeStr = formatScondTime(currentTime)
@@ -66,16 +66,16 @@ export default function Player () {
   return (
     <Grid container alignItems='center' sx={{ background: 'white', p: 1 }}>
       <Grid item alignItems='center'>
-        <IconButton onClick={store.playPrev} title='上一首'>
+        <IconButton onClick={storeUtils.playPrev} title='上一首'>
           <SkipPreviousIcon />
         </IconButton>
-        <IconButton onClick={store.togglePlaying} title='播放/暂停'>
+        <IconButton onClick={storeUtils.togglePlaying} title='播放/暂停'>
             {playing
               ? <PauseIcon />
               : <PlayArrowIcon />
             }
         </IconButton>
-        <IconButton onClick={store.playNext} title='下一首'>
+        <IconButton onClick={storeUtils.playNext} title='下一首'>
           <SkipNextIcon />
         </IconButton>
       </Grid>
@@ -97,14 +97,14 @@ export default function Player () {
       <Grid item alignItems='center'>
         {userId &&
           selectedPlaylist.type === PLAYLIST_TYPE.CRATE
-          ? <IconButton onClick={store.unlikeSong} title='取消收藏'>
+          ? <IconButton onClick={storeUtils.unlikeSong} title='取消收藏'>
                 <FavoriteIcon />
               </IconButton>
-          : <IconButton onClick={store.likeSong} title='收藏'>
+          : <IconButton onClick={storeUtils.likeSong} title='收藏'>
                 <FavoriteBorderIcon />
               </IconButton>
           }
-        <IconButton onClick={store.updatePlayMode} title={playModeTitle}>
+        <IconButton onClick={storeUtils.updatePlayMode} title={playModeTitle}>
           {playModeIcon}
         </IconButton>
         <IconButton onClick={() => setShowVolumeBar(!showVolumeBar)} title='音量'>

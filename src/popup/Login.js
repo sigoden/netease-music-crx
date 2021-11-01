@@ -7,7 +7,7 @@ import Grid from '@mui/material/Grid'
 import Alert from '@mui/material/Alert'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
-import store from './store'
+import store, * as storeUtils from './store'
 import { sleep } from '../utils'
 
 export default function Login () {
@@ -32,7 +32,7 @@ export default function Login () {
     e.preventDefault()
     if (count > 0 || !state.phone) return
     (async () => {
-      await store.captchaSent(state.phone)
+      await storeUtils.captchaSent(state.phone)
       setCount(59)
     })()
   }
@@ -40,8 +40,8 @@ export default function Login () {
     e.preventDefault()
     const { phone, captcha } = state
     try {
-      await store.login(phone, captcha)
-      await store.load()
+      await storeUtils.login(phone, captcha)
+      await storeUtils.load()
       history.push('/')
     } catch {}
   }

@@ -1,4 +1,4 @@
-import store from './store'
+import store, * as storeUtils from './store'
 import { DOMAIN, log, parseCookies, serializeCookies } from '../utils'
 
 const contextMenus = [
@@ -7,7 +7,7 @@ const contextMenus = [
     contexts: ['browser_action'],
     onclick: function () {
       log('contextMenu.togglePlay')
-      store.togglePlaying()
+      storeUtils.togglePlaying()
     }
   },
   {
@@ -15,7 +15,7 @@ const contextMenus = [
     contexts: ['browser_action'],
     onclick: function () {
       log('contextMenu.playPrev')
-      store.playPrev()
+      storeUtils.playPrev()
     }
   },
   {
@@ -23,7 +23,7 @@ const contextMenus = [
     contexts: ['browser_action'],
     onclick: function () {
       log('contextMenu.playNext')
-      store.playNext()
+      storeUtils.playNext()
     }
   },
   {
@@ -31,7 +31,7 @@ const contextMenus = [
     contexts: ['browser_action'],
     onclick: function () {
       log('contextMenu.logout')
-      store.logout()
+      storeUtils.logout()
     }
   }
 ]
@@ -44,12 +44,12 @@ contextMenus.forEach(menu => {
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   const { action, params } = request
-  const fn = store[action]
+  const fn = storeUtils[action]
   if (fn) {
     (async () => {
       try {
         log(`${action}.params`, params)
-        const change = (await fn.apply(store, request.params)) || {}
+        const change = (await fn.apply(storeUtils, request.params)) || {}
         log(`${action}.result`, change)
         sendResponse({ isErr: false, message: '', ...change })
       } catch (err) {
@@ -70,7 +70,7 @@ chrome.webRequest.onHeadersReceived.addListener(
       const cookieValues = details.responseHeaders.filter(h => h.name === 'set-cookie').map(h => h.value)
       if (cookieValues.length > 0) {
         const newCookieObj = parseCookies(cookieValues)
-        store.saveCookies(newCookieObj)
+        storeUtils.saveCookies(newCookieObj)
         const storeCookieObj = parseCookies([store.cookies])
         Object.keys(newCookieObj).forEach(k => delete storeCookieObj[k])
         const storeCookieStr = serializeCookies(storeCookieObj, true)

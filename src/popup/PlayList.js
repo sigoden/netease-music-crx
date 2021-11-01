@@ -16,8 +16,7 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import LinearProgress from '@mui/material/LinearProgress'
 import { formatScondTime } from '../utils'
-
-import store from './store'
+import store, * as storeUtils from './store'
 
 export default function PlayList ({ maxHeight }) {
   const snap = useSnapshot(store)
@@ -31,7 +30,7 @@ export default function PlayList ({ maxHeight }) {
   }, [selectedPlaylist])
   const changePlaylist = async id => {
     setLoading(true)
-    await store.changePlaylist(id)
+    await storeUtils.changePlaylist(id)
     setLoading(false)
   }
   useEffect(() => {
@@ -81,7 +80,7 @@ export default function PlayList ({ maxHeight }) {
                   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                 >
                   <TableCell component="th" scope="row" sx={{ maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', padding: '4px 16px' }}>
-                    <IconButton onClick={() => store.playSong(song.id)}>
+                    <IconButton onClick={() => storeUtils.playSong(song.id)}>
                       <PlayArrowIcon />
                     </IconButton>
                     {song.name}

@@ -2,9 +2,9 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 
 import App from './popup/App'
-import store from './popup/store'
+import { popupInit } from './popup/store'
 
-store.popupInit().then(() => {
+popupInit().then(() => {
   ReactDOM.render(<App />, document.getElementById('root'))
 })
 

@@ -16,14 +16,6 @@ export const PLAYLIST_TYPE = {
   FAVORIATE: 4
 }
 
-// 下一首策略
-export const NEXT_SONG_STRATEGY = {
-  NEXT: 1,
-  PREV: 2,
-  CURRENT: 3,
-  CURRENT_RETRY: 4
-}
-
 // 榜单
 export const PLAYLIST_TOP = [
   {
@@ -68,6 +60,7 @@ export const PLAY_MODE = {
 
 export const STORE_PROPS = {
   userId: null,
+  dir: 1,
   cookies: '',
   playing: false,
   volume: 1,
@@ -76,8 +69,7 @@ export const STORE_PROPS = {
   selectedPlaylistId: null,
   selectedPlaylist: null,
   selectedSongId: null,
-  selectedSong: null,
-  audioState: { ...EMPTY_AUDIO_STATE }
+  selectedSong: null
 }
 
 export function log (...args) {
@@ -135,4 +127,13 @@ export function chunkArr (arr, len) {
   }
 
   return chunks
+}
+
+export function shuffleArr (array) {
+  const _array = array.slice()
+  for (let i = _array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [_array[i], _array[j]] = [_array[j], _array[i]]
+  }
+  return _array
 }
