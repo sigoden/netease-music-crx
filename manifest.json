@@ -16,7 +16,14 @@
     "48" : "icon-128.png",
     "16" : "icon-128.png"
   },
-  "permissions": ["storage", "webRequest", "webRequestBlocking", "https://music.163.com/", "contextMenus"],
+  "permissions": [
+    "storage", 
+    "webRequest",
+    "webRequestBlocking",
+    "contextMenus",
+    "https://music.163.com/",
+    "http://*.kuwo.cn/"
+  ],
   "update_url": "http://clients2.google.com/service/update2/crx",
   "minimum_chrome_version": "29",
   "content_security_policy": "script-src 'self'; object-src 'self'"

@@ -1,5 +1,6 @@
 import * as storeUtils from './store'
 import { DOMAIN, log, parseCookies, serializeCookies } from '../utils'
+import { KUWO_DOMAIN, KUWO_MOBI_DOMAIN } from './kuwo'
 
 const contextMenus = [
   {
@@ -66,25 +67,51 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
 chrome.webRequest.onBeforeSendHeaders.addListener(
   function (details) {
     if (details.initiator.startsWith('chrome-extension://')) {
-      log('webRequest.onBeforeSendHeaders', details.requestHeaders)
-      for (let i = 0; i < details.requestHeaders.length; ++i) {
-        const header = details.requestHeaders[i]
-        if (header.name === 'Origin') {
-          header.value = DOMAIN
-        } else if (header.name === 'Cookie') {
-          if (/\/weapi\/login/.test(details.url)) {
-            const cookieObj = parseCookies(['os=pc; ' + header.value])
-            header.value = serializeCookies(cookieObj)
+      if (details.url.startsWith(DOMAIN)) {
+        for (let i = 0; i < details.requestHeaders.length; ++i) {
+          const header = details.requestHeaders[i]
+          if (header.name === 'Origin') {
+            header.value = DOMAIN
+          } else if (header.name === 'Cookie') {
+            if (/\/weapi\/login/.test(details.url)) {
+              const cookieObj = parseCookies(['os=pc; ' + header.value])
+              header.value = serializeCookies(cookieObj)
+            }
           }
         }
+        log('hookRequest.163', details.requestHeaders)
+        details.requestHeaders.push({ name: 'Referer', value: DOMAIN })
+      } else if (details.url.startsWith(KUWO_DOMAIN)) {
+        let token = ''
+        for (let i = 0; i < details.requestHeaders.length; ++i) {
+          const header = details.requestHeaders[i]
+          if (header.name === 'Origin') {
+            header.value = KUWO_DOMAIN
+          } else if (header.name === 'Cookie') {
+            token = parseCookies([header.value]).kw_token
+          }
+        }
+        if (token) details.requestHeaders.push({ name: 'csrf', value: token })
+        details.requestHeaders.push({ name: 'Referer', value: KUWO_DOMAIN })
+        log('hookRequest.kuwo', details.requestHeaders)
+      } else if (details.url.startsWith(KUWO_MOBI_DOMAIN)) {
+        for (let i = 0; i < details.requestHeaders.length; ++i) {
+          const header = details.requestHeaders[i]
+          if (header.name === 'Origin') {
+            header.value = KUWO_DOMAIN
+          }
+        }
+        details.requestHeaders.push({ name: 'user-agent', value: 'okhttp/3.10.0' })
+        details.requestHeaders.push({ name: 'Referer', value: KUWO_DOMAIN })
+        log('hookRequest.kuwo.mobi', details.requestHeaders)
       }
-      details.requestHeaders.push({ name: 'Referer', value: DOMAIN })
     }
     return { requestHeaders: details.requestHeaders }
   },
   {
     urls: [
-      `${DOMAIN}/weapi/*`
+      `${DOMAIN}/weapi/*`,
+      'http://*.kuwo.cn/*'
     ]
   },
   ['requestHeaders', 'blocking', 'extraHeaders']

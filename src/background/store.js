@@ -1,6 +1,7 @@
 import { proxy } from 'valtio'
 import { subscribeKey } from 'valtio/utils'
 import api from './api'
+import { getKuWoUrl } from './kuwo'
 
 import {
   PLAY_MODE,
@@ -287,7 +288,8 @@ async function loadRecommendResourcePlaylist () {
     return res.recommend.slice(0, LEN_PLAYLIST_REC).map(
       ({ id, picUrl, name }) => ({ id, picUrl: picUrl + IMAGE_CLIP, name, type: PLAYLIST_TYPE.RECOMMEND })
     )
-  } catch {
+  } catch (err) {
+    log('loadRecommendResourcePlaylist.err', err)
     throw new Error('获取推荐歌单失败')
   }
 }
@@ -306,7 +308,8 @@ async function loadUserPlaylist () {
       }
       return { id, picUrl: coverImgUrl + IMAGE_CLIP, name, type, primary: specialType === 5 }
     })
-  } catch {
+  } catch (err) {
+    log('loadUserPlaylist.err', err)
     throw new Error('获取我的歌单失败')
   }
 }
@@ -316,15 +319,13 @@ async function loadPlaylistDetails (playlist) {
     let cachedPlaylistDetail = playlistDetailStore[playlist.id]
     if (cachedPlaylistDetail) return cachedPlaylistDetail
     let normalIndexes = []
-    let invalidIndexes = []
     const dealSongs = songs => {
       const tracks = songs.map(song => {
         const { id, name, album: al, artists: ar, duration } = song
-        return { id, name, al, ar, dt: duration }
+        return { id, name, al, ar, dt: duration, st: 0 }
       })
       const songsMap = tracksToSongsMap(tracks)
       normalIndexes = tracks.map(v => v.id)
-      invalidIndexes = normalIndexes.filter(id => !songsMap[id].valid)
       songsStore[playlist.id] = songsMap
     }
     if (playlist.id === PLAYLIST_REC_SONGS.id) {
@@ -359,12 +360,13 @@ async function loadPlaylistDetails (playlist) {
       name,
       type,
       normalIndexes,
-      invalidIndexes,
+      invalidIndexes: [],
       shuffleIndexes
     }
     playlistDetailStore[playlist.id] = cachedPlaylistDetail
     return cachedPlaylistDetail
-  } catch {
+  } catch (err) {
+    log('loadPlaylistDetails.err', err)
     throw new Error('获取歌单失败')
   }
 }
@@ -380,6 +382,9 @@ async function loadSongDetail (playlistDetail, songId, retry) {
   try {
     if (!song || !song.valid) {
       throw new Error('无法获取播放链接')
+    } else if (song.broken) {
+      const keyword = song.name + ' ' + song.artists
+      song.url = await getKuWoUrl(keyword)
     } else {
       const res = await api.getSongUrls([songId])
       if (res.code !== 200) {
@@ -391,7 +396,8 @@ async function loadSongDetail (playlistDetail, songId, retry) {
       }
       song.url = url
     }
-  } catch {
+  } catch (err) {
+    log('loadSongDetail.err', err)
     if (song) song.valid = false
     invalidIndexes.push(songId)
     if (!retry || normalIndexes.length - invalidIndexes.length < 1) {
@@ -408,7 +414,11 @@ async function loadTracks (ids) {
   const chunkTracks = await Promise.all(chunkIds.map(async ids => {
     const res = await api.getSongDetail(ids)
     if (res.code === 200) {
-      return res.songs
+      const { songs, privileges } = res
+      return songs.map((song, index) => {
+        song.st = privileges[index].st
+        return song
+      })
     } else {
       log('getSongDetail.error', res.message)
       throw new Error(res.message)
@@ -505,11 +515,12 @@ async function updateSelectedSong (selectedSong) {
 
 function tracksToSongsMap (tracks) {
   const songs = tracks.map(track => {
-    const { id, name, al: { picUrl }, ar, dt, noCopyrightRcmd } = track
+    const { id, name, al: { picUrl }, ar, dt, st } = track
     return {
       id,
       name,
-      valid: !noCopyrightRcmd,
+      valid: true,
+      broken: st < 0,
       picUrl: picUrl + IMAGE_CLIP,
       artists: ar.map(v => v.name).join(' / '),
       duration: dt
