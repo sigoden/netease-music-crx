@@ -15,8 +15,6 @@ import {
   shuffleArr
 } from '../utils'
 
-// 不需要同步的键
-const PERSIST_KEYS = ['volume', 'playMode', 'selectedPlaylistId', 'selectedSongId']
 // 推荐歌单数量
 const LEN_PLAYLIST_REC = 5
 
@@ -28,6 +26,8 @@ let audioState = { ...EMPTY_AUDIO_STATE }
 let lastLoadAt = 0
 // 点播
 let isForcePlay = false
+// 持久化缓存信息
+let persistData = null
 // 缓存歌单
 const playlistDetailStore = {}
 // 缓存歌单内歌曲
@@ -36,8 +36,8 @@ const songsStore = {}
 const store = proxy({ ...COMMON_PROPS })
 
 export async function bootstrap () {
-  await persistLoad()
   await refreshLogin()
+  await persistLoad()
   await reload()
 }
 
@@ -69,25 +69,18 @@ export function updateVolume (volume) {
 
 export async function playPrev () {
   store.dir = -1
-  const { selectedPlaylist, selectedSongId } = store
-  const songId = getNextSongId(selectedPlaylist, selectedSongId)
-  const selectedSong = await loadSongDetail(selectedPlaylist, songId, true)
-  return updateSelectedSong(selectedSong)
+  return playNextSong()
 }
 
 export async function playNext () {
   store.dir = 1
-  const { selectedPlaylist, selectedSongId } = store
-  const songId = getNextSongId(selectedPlaylist, selectedSongId)
-  log('playNext', selectedSongId, songId)
-  const selectedSong = await loadSongDetail(selectedPlaylist, songId, true)
-  return updateSelectedSong(selectedSong)
+  return playNextSong()
 }
 
 export async function playSong (songId) {
   isForcePlay = true
-  const selectedSong = await loadSongDetail(store.selectedPlaylist, songId, false)
-  return updateSelectedSong(selectedSong)
+  const newSong = await loadSongDetail(store.selectedPlaylist, songId, false)
+  return updateSelectedSong(newSong)
 }
 
 export async function updatePlayMode () {
@@ -103,8 +96,11 @@ export async function updatePlayMode () {
 export async function changePlaylist (playlistId) {
   let songId
   if (!playlistId) {
-    playlistId = store.selectedPlaylistId
-    songId = store.selectedSongId
+    if (persistData) {
+      playlistId = persistData.playlistId
+      songId = persistData.songId
+      persistData = null
+    }
   }
   let playlist = store.playlists.find(playlist => playlist.id === playlistId)
   if (!playlist) playlist = store.playlists[0]
@@ -114,7 +110,7 @@ export async function changePlaylist (playlistId) {
     songId = songsIndex[0]
   }
   const selectedSong = await loadSongDetail(selectedPlaylist, songId, true)
-  const change = { selectedPlaylist, selectedPlaylistId: selectedPlaylist.id, selectedSong, selectedSongId: selectedSong.id }
+  const change = { selectedPlaylist, selectedSong }
   Object.assign(store, change)
   persistSave()
   return change
@@ -151,14 +147,14 @@ export async function likeSong (playlistId) {
 }
 
 export async function unlikeSong () {
-  const { selectedSong, selectedPlaylist, selectedSongId } = store
+  const { selectedSong, selectedPlaylist } = store
   if (!selectedSong) throw new Error('无选中歌曲')
-  const nextSongId = getNextSongId(selectedPlaylist, selectedSongId)
-  if (nextSongId === selectedSongId) throw new Error('取消收藏歌曲失败')
-  const res = await api.likeSong(selectedPlaylist.id, selectedSongId, false)
+  const nextSongId = getNextSongId(selectedPlaylist, selectedSong.id)
+  if (nextSongId === selectedSong.id) throw new Error('取消收藏歌曲失败')
+  const res = await api.likeSong(selectedPlaylist.id, selectedSong.id, false)
   if (res.code === 200) {
     const { selectedSong, selectedPlaylist } = await refreshPlaylistDetail(nextSongId)
-    const change = { selectedPlaylist, selectedPlaylistId: selectedPlaylist.id, selectedSong, selectedSongId: selectedSong.id }
+    const change = { selectedPlaylist, selectedSong }
     Object.assign(store, change)
     persistSave()
     return { ...change, message: '取消收藏成功' }
@@ -222,35 +218,33 @@ export function sendToPopup (obj) {
 }
 
 function persistSave () {
-  const data = PERSIST_KEYS.reduce((acc, k) => {
-    acc[k] = store[k]
-    return acc
-  }, {})
+  const { volume, playMode, selectedPlaylist, selectedSong } = store
+  const data = { volume, playMode, playlistId: selectedPlaylist?.id || null, songId: selectedSong?.id || null }
   return new Promise(resolve => {
     chrome.storage.sync.set(data, resolve)
   })
-}
-
-function getPopupData () {
-  const { userId, playing, volume, playMode, playlists, selectedPlaylist, selectedSong } = store
-  return { userId, playing, volume, playMode, playlists, selectedPlaylist, selectedSong, audioState }
 }
 
 function persistLoad () {
   return new Promise((resolve) => {
     chrome.storage.sync.get(data => {
       if (data) {
-        data = PERSIST_KEYS.reduce((acc, k) => {
-          const v = data[k]
-          if (typeof v !== 'undefined') acc[k] = v
-          return acc
-        }, {})
+        const { volume = COMMON_PROPS.volume, playMode = COMMON_PROPS.playMode, playlistId, songId } = data
         log('persist.load', data)
-        Object.assign(store, data)
+        if (playlistId) {
+          persistData = { playlistId }
+          if (songId) persistData.songId = songId
+        }
+        Object.assign(store, { volume, playMode })
       }
       resolve()
     })
   })
+}
+
+function getPopupData () {
+  const { userId, playing, volume, playMode, playlists, selectedPlaylist, selectedSong } = store
+  return { userId, playing, volume, playMode, playlists, selectedPlaylist, selectedSong, audioState }
 }
 
 async function refreshLogin () {
@@ -278,7 +272,7 @@ async function loadPlaylists () {
 }
 
 async function refreshPlaylistDetail (songId) {
-  const playlist = store.playlists.find(v => v.id === store.selectedPlaylistId)
+  const playlist = store.playlists.find(v => v.id === store.selectedPlaylist.id)
   const selectedPlaylist = await loadPlaylistDetails(playlist)
   const selectedSong = await loadSongDetail(selectedPlaylist, songId, true)
   return { selectedPlaylist, selectedSong }
@@ -415,14 +409,13 @@ async function loadTracks (ids) {
 }
 
 async function playNextSong () {
-  const { selectedSongId, selectedPlaylist } = store
-  let songId = selectedSongId
+  const { selectedSong, selectedPlaylist } = store
+  let songId = selectedSong.id
   if (store.playMode !== PLAY_MODE.ONE) {
-    songId = getNextSongId(selectedPlaylist, selectedPlaylist.id)
+    songId = getNextSongId(selectedPlaylist, selectedSong.id)
   }
-  const selectedSong = await loadSongDetail(selectedPlaylist, songId, true)
-  updateSelectedSong(selectedSong)
-  sendToPopup({ selectedSong })
+  const newSong = await loadSongDetail(selectedPlaylist, songId, true)
+  return updateSelectedSong(newSong)
 }
 
 function getNextSongId (playlistDetail, songId) {
@@ -467,16 +460,18 @@ function createAudio (url) {
   audio.onabort = () => {
     updateAudioState({ ...EMPTY_AUDIO_STATE })
   }
-  audio.onended = () => {
+  audio.onended = async () => {
     updateAudioState({ ...EMPTY_AUDIO_STATE })
-    playNextSong()
+    const change = await playNextSong()
+    sendToPopup(change)
   }
-  audio.onerror = () => {
+  audio.onerror = async () => {
     log('audio.error', url, audio.error.message)
     if (isForcePlay) {
       sendToPopup({ message: '歌曲无法该播放', isErr: true })
     } else {
-      playNextSong()
+      const change = await playNextSong()
+      sendToPopup(change)
     }
   }
   audio.ontimeupdate = () => {
@@ -493,7 +488,7 @@ function updateAudioState (state) {
 }
 
 async function updateSelectedSong (selectedSong) {
-  const change = { selectedSong, selectedSongId: selectedSong.id, playing: true }
+  const change = { selectedSong, playing: true }
   Object.assign(store, change)
   persistSave()
   return change

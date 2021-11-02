@@ -65,9 +65,7 @@ export const COMMON_PROPS = {
   volume: 1,
   playMode: PLAY_MODE.LOOP,
   playlists: [],
-  selectedPlaylistId: null,
   selectedPlaylist: null,
-  selectedSongId: null,
   selectedSong: null
 }
 
