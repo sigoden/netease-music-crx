@@ -44,18 +44,18 @@ export const PLAYLIST_TOP = [
   }
 ]
 
-export const PLAYLIST_REC_SONGS = {
-  id: 1,
-  name: '每日推荐',
-  type: PLAYLIST_TYPE.RECOMMEND,
-  picUrl: DEFAULT_IMAGE
-}
-
 export const PLAYLIST_NEW_SONGS = {
-  id: 2,
+  id: 10,
   name: '新歌速递',
   type: PLAYLIST_TYPE.RECOMMEND,
-  picUrl: DEFAULT_IMAGE
+  picUrl: ''
+}
+
+export const PLAYLIST_REC_SONGS = {
+  id: 20,
+  name: '每日推荐',
+  type: PLAYLIST_TYPE.RECOMMEND,
+  picUrl: ''
 }
 
 export const EMPTY_AUDIO_STATE = {

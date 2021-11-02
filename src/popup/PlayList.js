@@ -64,7 +64,10 @@ export default function PlayList ({ maxHeight }) {
               onClick={_ => changePlaylist(playlist.id)}
             >
               <ListItemIcon sx={{ minWidth: 30 }}>
-                <Avatar src={playlist.picUrl} sx={{ width: 24, height: 24 }} />
+                {playlist.picUrl
+                  ? <Avatar src={playlist.picUrl} sx={{ width: 24, height: 24 }} />
+                  : <Avatar sx={{ width: 24, height: 24, fontSize: '11px', bgcolor: 'primary.main' }} >{playlist.name}</Avatar>
+                }
               </ListItemIcon>
               <ListItemText primary={playlist.name} sx={{ '.MuiTypography-root': { maxWidth: 180, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' } }} />
             </ListItemButton>
