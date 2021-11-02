@@ -16,11 +16,13 @@ import LoopIcon from '@mui/icons-material/Loop'
 import ShuffleIcon from '@mui/icons-material/Shuffle'
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
 import store, * as storeUtils from './store'
+import SelectPlaylist from './SelectPlaylist'
 import { PLAY_MODE, DEFAULT_IMAGE, PLAYLIST_TYPE, formatScondTime } from '../utils'
 
 export default function Player () {
   const snap = useSnapshot(store)
   const [showVolumeBar, setShowVolumeBar] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const {
     userId,
     playing,
@@ -42,6 +44,11 @@ export default function Player () {
 
   const handleVolumeChange = (e) => {
     storeUtils.updateVolume(1 - e.target.value)
+  }
+
+  const handleLikeSong = (playlistId) => {
+    setShowModal(false)
+    storeUtils.likeSong(playlistId)
   }
 
   const currentTimeStr = formatScondTime(currentTime)
@@ -96,11 +103,11 @@ export default function Player () {
       </Grid>
       <Grid item alignItems='center'>
         {userId &&
-          selectedPlaylist.type === PLAYLIST_TYPE.CRATE
+          selectedPlaylist?.type === PLAYLIST_TYPE.CRATE
           ? <IconButton onClick={storeUtils.unlikeSong} title='取消收藏'>
                 <FavoriteIcon />
               </IconButton>
-          : <IconButton onClick={storeUtils.likeSong} title='收藏'>
+          : <IconButton onClick={() => setShowModal(true)} title='收藏'>
                 <FavoriteBorderIcon />
               </IconButton>
           }
@@ -125,6 +132,12 @@ export default function Player () {
         </Box>
       </Grid>
 
+      <SelectPlaylist
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onChange={handleLikeSong}
+        title='收藏歌曲'
+      />
     </Grid>
   )
 }

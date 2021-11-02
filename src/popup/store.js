@@ -41,8 +41,8 @@ export function changePlaylist (playlistId) {
   return doAction('changePlaylist', [playlistId])
 }
 
-export function likeSong () {
-  return doAction('likeSong')
+export function likeSong (playlistId) {
+  return doAction('likeSong', [playlistId])
 }
 
 export function unlikeSong () {
