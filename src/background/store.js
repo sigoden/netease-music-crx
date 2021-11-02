@@ -502,7 +502,7 @@ function tracksToSongsMap (tracks) {
       name,
       valid: !noCopyrightRcmd,
       picUrl: picUrl + IMAGE_CLIP,
-      artists: ar.map(v => v.name).join('/'),
+      artists: ar.map(v => v.name).join(' / '),
       duration: dt
     }
   })

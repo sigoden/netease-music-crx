@@ -89,9 +89,13 @@ export default function Player () {
       <Grid item alignItems='center' sx={{ flexGrow: 1, display: 'flex', mx: 1 }}>
         <Avatar src={selectedSong?.picUrl || DEFAULT_IMAGE} alt='song pic' />
         <Grid container direction='column' sx={{ mx: 1 }}>
-          <Grid item sx={{ display: 'flex' }}>
-            <Box sx={{ maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{selectedSong?.name || ''}</Box>
-            <Box sx={{ ml: 2, maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', opacity: 0.6 }}>{selectedSong?.artists || ''}</Box>
+          <Grid item sx={{ display: 'flex', alignItems: 'baseline' }}>
+            <Box sx={{ maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+              {selectedSong?.name || ''}
+            </Box>
+            <Box sx={{ ml: 2, maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', fontSize: '14px', opacity: 0.6 }}>
+              {selectedSong?.artists || ''}
+            </Box>
           </Grid>
           <Grid item alignItems='center' sx={{ display: 'flex' }}>
             <Box sx={{ width: '100%', mx: 1 }}>

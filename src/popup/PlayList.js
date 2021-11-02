@@ -82,8 +82,8 @@ export default function PlayList ({ maxHeight }) {
           <Table stickyHeader size="small">
             <TableHead sx={{ height: '48px' }}>
               <TableRow>
-                <TableCell><Box sx={{ paddingLeft: '14px' }}>歌名</Box></TableCell>
-                <TableCell>作者</TableCell>
+                <TableCell><Box sx={{ paddingLeft: '14px' }}>歌曲</Box></TableCell>
+                <TableCell>歌手</TableCell>
                 <TableCell align="right" style={{ minWidth: 64 }}>时长</TableCell>
               </TableRow>
             </TableHead>
