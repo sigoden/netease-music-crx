@@ -1,4 +1,4 @@
-import store, * as storeUtils from './store'
+import * as storeUtils from './store'
 import { DOMAIN, log, parseCookies, serializeCookies } from '../utils'
 
 const contextMenus = [
@@ -63,33 +63,6 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   return true
 })
 
-chrome.webRequest.onHeadersReceived.addListener(
-  function (details) {
-    if (details.tabId === -1) {
-      log('webRequest.onHeadersReceived', details.responseHeaders)
-      const cookieValues = details.responseHeaders.filter(h => h.name === 'set-cookie').map(h => h.value)
-      if (cookieValues.length > 0) {
-        const newCookieObj = parseCookies(cookieValues)
-        storeUtils.saveCookies(newCookieObj)
-        const storeCookieObj = parseCookies([store.cookies])
-        Object.keys(newCookieObj).forEach(k => delete storeCookieObj[k])
-        const storeCookieStr = serializeCookies(storeCookieObj, true)
-        if (storeCookieStr) {
-          details.responseHeaders.push({ name: 'set-cookie', value: storeCookieStr })
-          log('webRequest.onHeadersReceived.cookie', storeCookieStr)
-        }
-      }
-    }
-    return { responseHeaders: details.responseHeaders }
-  },
-  {
-    urls: [
-      `${DOMAIN}/weapi/login/*`
-    ]
-  },
-  ['responseHeaders', 'blocking', 'extraHeaders']
-)
-
 chrome.webRequest.onBeforeSendHeaders.addListener(
   function (details) {
     if (details.tabId === -1) {
@@ -99,7 +72,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
         if (header.name === 'Origin') {
           header.value = DOMAIN
         } else if (header.name === 'Cookie') {
-          const cookieObj = parseCookies([store.cookies + '; os=pc; ' + header.value])
+          const cookieObj = parseCookies(['os=pc; ' + header.value])
           header.value = serializeCookies(cookieObj)
         }
       }

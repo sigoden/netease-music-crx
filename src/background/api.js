@@ -2,15 +2,16 @@ import crypto from 'crypto'
 import bigInt from 'big-integer'
 import { DOMAIN, log } from '../utils'
 
-export default createRequester()
-
 const MODULUS =
   '00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7'
 const NONCE = '0CoJUm6Qyw8W8jud'
 const PUBKEY = '010001'
 
+const api = createRequester()
+export default api
+
 function createRequester () {
-  function createRequest (reqInfo) {
+  async function createRequest (reqInfo) {
     let {
       method = 'post',
       baseURL = DOMAIN,
@@ -19,18 +20,24 @@ function createRequester () {
     } = reqInfo
     url = baseURL + url
     log('api.fetch', url, data)
-    return fetch(url, {
+    const res = await fetch(url, {
       method,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       credentials: 'same-origin',
       body: createQueryParams(data)
-    }).then(res => {
-      return res.json()
     })
+    const result = await res.json()
+    if (result?.code === 301 && !/\/token\/refresh/.test(reqInfo.url)) {
+      log('api.code301')
+      await api.code301()
+    }
+    return result
   }
   return {
+    code301 () {
+    },
     // 手机登录
     cellphoneLogin (phone, captcha) {
       return createRequest({
@@ -58,6 +65,20 @@ function createRequester () {
           cellphone: phone,
           ctcode: '86'
         }
+      })
+    },
+    // 用户账户
+    getUser () {
+      return createRequest({
+        url: '/api/nuser/account/get',
+        data: {}
+      })
+    },
+    // 退出登录
+    logout () {
+      return createRequest({
+        url: '/weapi/logout',
+        data: {}
       })
     },
     // 获取歌单

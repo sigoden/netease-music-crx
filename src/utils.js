@@ -71,10 +71,7 @@ export const COMMON_PROPS = {
   selectedSong: null
 }
 
-export const BG_STORE_PROPS = {
-  ...COMMON_PROPS,
-  cookies: ''
-}
+export const BG_STORE_PROPS = { ...COMMON_PROPS }
 
 export function log (...args) {
   if (process.env.NODE_ENV === 'development') {

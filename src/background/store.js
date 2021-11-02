@@ -12,14 +12,12 @@ import {
   EMPTY_AUDIO_STATE,
   COMMON_PROPS,
   log,
-  parseCookies,
-  serializeCookies,
   chunkArr,
   shuffleArr
 } from '../utils'
 
 // 不需要同步的键
-const PERSIST_KEYS = ['userId', 'volume', 'playMode', 'selectedPlaylistId', 'cookies', 'selectedSongId']
+const PERSIST_KEYS = ['volume', 'playMode', 'selectedPlaylistId', 'selectedSongId']
 // 推荐歌单数量
 const LEN_PLAYLIST_REC = 5
 
@@ -36,7 +34,7 @@ const store = proxy({ ...BG_STORE_PROPS })
 
 export async function bootstrap () {
   await persistLoad()
-  await refreshToken()
+  await refreshLogin()
   await reload()
 }
 
@@ -158,7 +156,6 @@ export async function login (phone, password) {
   if (res.code === 200) {
     const { userId } = res.profile
     store.userId = userId
-    persistSave()
     return { userId, message: '登录成功' }
   } else {
     throw new Error(res.message)
@@ -175,8 +172,8 @@ export async function captchaSent (phone) {
 }
 
 export async function logout () {
+  await api.logout()
   await reset()
-  await reload()
 }
 
 export async function reload () {
@@ -197,13 +194,6 @@ export function popupInit () {
 
 export function sendToPopup (obj) {
   chrome.runtime.sendMessage(obj)
-}
-
-export function saveCookies (cookieObj) {
-  const currentCookieObj = parseCookies([store.cookies])
-  const newCookieObj = { ...currentCookieObj, ...cookieObj }
-  store.cookies = serializeCookies(newCookieObj)
-  persistSave()
 }
 
 function persistSave () {
@@ -240,9 +230,13 @@ function persistLoad () {
   })
 }
 
-async function refreshToken () {
-  const res = await api.loginRefresh()
-  if (res.code === 301) { // cookie 失效
+async function refreshLogin () {
+  await api.loginRefresh()
+  const res = await api.getUser()
+  if (res.code === 200) {
+    const { userId } = res.profile
+    store.userId = userId
+  } else {
     await reset()
   }
 }
@@ -250,6 +244,7 @@ async function refreshToken () {
 async function reset () {
   Object.assign(store, BG_STORE_PROPS)
   await persistSave()
+  await reload()
   log('reset', store)
 }
 
@@ -509,5 +504,7 @@ subscribeKey(store, 'selectedSong', song => {
     bootstrap()
   }
 })
+
+api.code301 = reset
 
 export default store
