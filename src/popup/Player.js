@@ -122,7 +122,7 @@ export default function Player () {
           <VolumeUpIcon />
         </IconButton>
         <Box sx={{
-          height: 100, display: showVolumeBar ? 'block' : 'none', position: 'absolute', zIndex: 99, right: 6
+          height: 100, display: showVolumeBar ? 'block' : 'none', position: 'absolute', zIndex: 99, right: 11
         }}>
           <Slider
             value={1 - volume}
