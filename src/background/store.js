@@ -3,13 +3,14 @@ import { subscribeKey } from 'valtio/utils'
 import api from './api'
 
 import {
-  STORE_PROPS,
+  BG_STORE_PROPS,
   PLAY_MODE,
   IMAGE_CLIP,
   PLAYLIST_REC_SONGS,
   PLAYLIST_TOP,
   PLAYLIST_TYPE,
   EMPTY_AUDIO_STATE,
+  COMMON_PROPS,
   log,
   parseCookies,
   serializeCookies,
@@ -31,11 +32,12 @@ let lastLoadAt = 0
 // 点播
 let isForcePlay = false
 
-const store = proxy({ ...STORE_PROPS })
+const store = proxy({ ...BG_STORE_PROPS })
 
 export async function bootstrap () {
   await persistLoad()
-  await load()
+  await refreshToken()
+  await reload()
 }
 
 export function updateAudioTime (currentTime) {
@@ -68,7 +70,7 @@ export async function playPrev () {
   store.dir = -1
   const { selectedPlaylist, selectedSongId } = store
   const songId = getNextSongId(selectedPlaylist, selectedSongId)
-  const selectedSong = await getSongDetail(selectedPlaylist, songId, true)
+  const selectedSong = await loadSongDetail(selectedPlaylist, songId, true)
   return updateSelectedSong(selectedSong)
 }
 
@@ -77,13 +79,13 @@ export async function playNext () {
   const { selectedPlaylist, selectedSongId } = store
   const songId = getNextSongId(selectedPlaylist, selectedSongId)
   log('playNext', selectedSongId, songId)
-  const selectedSong = await getSongDetail(selectedPlaylist, songId, true)
+  const selectedSong = await loadSongDetail(selectedPlaylist, songId, true)
   return updateSelectedSong(selectedSong)
 }
 
 export async function playSong (songId) {
   isForcePlay = true
-  const selectedSong = await getSongDetail(store.selectedPlaylist, songId, false)
+  const selectedSong = await loadSongDetail(store.selectedPlaylist, songId, false)
   return updateSelectedSong(selectedSong)
 }
 
@@ -106,11 +108,11 @@ export async function changePlaylist (playlistId) {
   let playlist = store.playlists.find(playlist => playlist.id === playlistId)
   if (!playlist) playlist = store.playlists[0]
   const selectedPlaylist = await loadPlaylistDetails(playlist)
-  if (!selectedPlaylist.normalSongsIndex.find(v => v === songId)) {
-    const songsIndex = store.playMode === PLAY_MODE.SHUFFLE ? selectedPlaylist.shuffleSongsIndex : selectedPlaylist.normalSongsIndex
+  if (!selectedPlaylist.normalIndexes.find(v => v === songId)) {
+    const songsIndex = store.playMode === PLAY_MODE.SHUFFLE ? selectedPlaylist.shuffleIndexes : selectedPlaylist.normalIndexes
     songId = songsIndex[0]
   }
-  const selectedSong = await getSongDetail(selectedPlaylist, songId, true)
+  const selectedSong = await loadSongDetail(selectedPlaylist, songId, true)
   const change = { selectedPlaylist, selectedPlaylistId: selectedPlaylist.id, selectedSong, selectedSongId: selectedSong.id }
   Object.assign(store, change)
   persistSave()
@@ -141,7 +143,7 @@ export async function unlikeSong () {
   if (nextSongId === selectedSongId) throw new Error('取消收藏歌曲失败')
   const res = await api.likeSong(selectedPlaylist.id, selectedSongId, false)
   if (res.code === 200) {
-    const { selectedSong, selectedPlaylist } = await refreshPlaylist(nextSongId)
+    const { selectedSong, selectedPlaylist } = await refreshPlaylistDetail(nextSongId)
     const change = { selectedPlaylist, selectedPlaylistId: selectedPlaylist.id, selectedSong, selectedSongId: selectedSong.id }
     Object.assign(store, change)
     persistSave()
@@ -173,32 +175,24 @@ export async function captchaSent (phone) {
 }
 
 export async function logout () {
-  Object.assign(store, STORE_PROPS)
-  persistSave()
-  await load()
-  log('logout', store)
+  await reset()
+  await reload()
 }
 
-export async function load () {
+export async function reload () {
   lastLoadAt = Date.now()
   if (store.userId) {
-    const res = await api.loginRefresh()
-    if (res.code === 200) {
-      store.playlists = await loadPlaylists()
-      await changePlaylist()
-    } else if (res.code === 301) { // cookie 失效
-      await logout()
-    }
+    store.playlists = await loadPlaylists()
+    await changePlaylist()
   } else {
     store.playlists = PLAYLIST_TOP
     await changePlaylist()
   }
-  log('load.result', store)
-  return store
+  return getCommonProps()
 }
 
 export function popupInit () {
-  return store
+  return getCommonProps()
 }
 
 export function sendToPopup (obj) {
@@ -212,17 +206,64 @@ export function saveCookies (cookieObj) {
   persistSave()
 }
 
-async function refreshPlaylist (songId) {
-  const playlist = store.playlists.find(v => v.id === store.selectedPlaylistId)
-  const selectedPlaylist = await loadPlaylistDetails(playlist)
-  const selectedSong = await getSongDetail(selectedPlaylist, songId, true)
-  return { selectedPlaylist, selectedSong }
+function persistSave () {
+  const data = PERSIST_KEYS.reduce((acc, k) => {
+    acc[k] = store[k]
+    return acc
+  }, {})
+  return new Promise(resolve => {
+    chrome.storage.sync.set(data, resolve)
+  })
+}
+
+function getCommonProps () {
+  return Object.keys(COMMON_PROPS).reduce((acc, cur) => {
+    acc[cur] = store[cur]
+    return acc
+  }, {})
+}
+
+function persistLoad () {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(data => {
+      if (data) {
+        data = PERSIST_KEYS.reduce((acc, k) => {
+          const v = data[k]
+          if (typeof v !== 'undefined') acc[k] = v
+          return acc
+        }, {})
+        log('persist.load', data)
+        Object.assign(store, data)
+      }
+      resolve()
+    })
+  })
+}
+
+async function refreshToken () {
+  const res = await api.loginRefresh()
+  if (res.code === 301) { // cookie 失效
+    await reset()
+  }
+}
+
+async function reset () {
+  Object.assign(store, BG_STORE_PROPS)
+  await persistSave()
+  log('reset', store)
 }
 
 async function loadPlaylists () {
   const result = await Promise.all([loadRecommendResourcePlaylist(), loadUserPlaylist()])
   const [recommendResourcePlaylist, userPlaylists] = result
   return [...PLAYLIST_TOP, PLAYLIST_REC_SONGS, ...recommendResourcePlaylist, ...userPlaylists]
+}
+
+async function refreshPlaylistDetail (songId) {
+  const playlist = store.playlists.find(v => v.id === store.selectedPlaylistId)
+  const selectedPlaylist = await loadPlaylistDetails(playlist)
+  const selectedSong = await loadSongDetail(selectedPlaylist, songId, true)
+  return { selectedPlaylist, selectedSong }
 }
 
 async function loadRecommendResourcePlaylist () {
@@ -286,71 +327,47 @@ async function loadPlaylistDetails (playlist) {
       }
     }
     const { id, name, type } = playlist
-    const { normalSongsIndex, songsMap } = toSongsMap(tracks)
-    const shuffleSongsIndex = shuffleArr(normalSongsIndex)
+    const { normalIndexes, songsMap } = tracksToSongsMap(tracks)
+    const shuffleIndexes = shuffleArr(normalIndexes)
     return {
       id,
       name,
       type,
-      songsCount: normalSongsIndex.length,
       songsMap,
-      normalSongsIndex,
-      shuffleSongsIndex
+      normalIndexes,
+      shuffleIndexes
     }
   } catch {
     throw new Error('获取歌单失败')
   }
 }
 
-async function playNextSong () {
-  let songId = store.selectedSongId
-  if (store.playMode !== PLAY_MODE.ONE) {
-    songId = getNextSongId(store.selectedPlaylist, store.selectedPlaylistId)
-  }
-  const selectedSong = await getSongDetail(songId, true)
-  updateSelectedSong(selectedSong)
-  sendToPopup({ selectedSong })
-}
-
-async function getSongDetail (playlistDetail, songId, retry) {
-  const song = playlistDetail.songsMap[songId]
-  if (song.url !== '') {
-    const url = await getSongUrl(song.id)
-    if (!url) {
-      playlistDetail.songsCount -= 1
-      if (retry && playlistDetail.songsCount > 0) {
-        const newSongId = getNextSongId(playlistDetail, songId)
-        return getSongDetail(playlistDetail, newSongId, retry)
-      } else {
-        throw new Error('无法播放歌曲')
+async function loadSongDetail (playlistDetail, songId, retry) {
+  const { songsMap, normalIndexes } = playlistDetail
+  const song = songsMap[songId]
+  try {
+    if (!song.valid) {
+      throw new Error('无法获取播放链接')
+    } else {
+      const res = await api.getSongUrls([songId])
+      if (res.code !== 200) {
+        throw new Error(res.message)
       }
+      const url = res.data.map(v => v.url)[0]
+      if (!url) {
+        throw new Error('无法获取播放链接')
+      }
+      song.url = url
     }
-    song.url = url
+  } catch {
+    song.valid = false
+    if (!retry || normalIndexes.filter(id => songsMap[id].valid).length === 0) {
+      throw new Error('无法播放歌曲')
+    }
+    const newSongId = getNextSongId(playlistDetail, songId)
+    return loadSongDetail(playlistDetail, newSongId, retry)
   }
   return song
-}
-
-function getNextSongId (playlistDetail, songId) {
-  const { playMode, dir } = store
-  isForcePlay = false
-  const songsIndex = playMode === PLAY_MODE.SHUFFLE ? playlistDetail.shuffleSongsIndex : playlistDetail.normalSongsIndex
-  const songsCount = songsIndex.length
-  const currentIndex = songsIndex.findIndex(v => v === songId)
-  let nextIndex = currentIndex
-  if (dir === 1) {
-    if (currentIndex === songsCount - 1) {
-      nextIndex = 0
-    } else {
-      nextIndex = currentIndex + 1
-    }
-  } else {
-    if (currentIndex === 0) {
-      nextIndex = songsCount - 1
-    } else {
-      nextIndex = currentIndex - 1
-    }
-  }
-  return songsIndex[nextIndex]
 }
 
 async function loadTracks (ids) {
@@ -367,33 +384,42 @@ async function loadTracks (ids) {
   return chunkTracks.flatMap(v => v)
 }
 
-function persistSave () {
-  const data = PERSIST_KEYS.reduce((acc, k) => {
-    acc[k] = store[k]
-    return acc
-  }, {})
-  chrome.storage.sync.set(data)
+async function playNextSong () {
+  const { selectedSongId, selectedPlaylist } = store
+  let songId = selectedSongId
+  if (store.playMode !== PLAY_MODE.ONE) {
+    songId = getNextSongId(selectedPlaylist, selectedPlaylist.id)
+  }
+  const selectedSong = await loadSongDetail(selectedPlaylist, songId, true)
+  updateSelectedSong(selectedSong)
+  sendToPopup({ selectedSong })
 }
 
-export function persistLoad () {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(data => {
-      if (data) {
-        data = PERSIST_KEYS.reduce((acc, k) => {
-          const v = data[k]
-          if (typeof v !== 'undefined') acc[k] = v
-          return acc
-        }, {})
-        log('persist.load', data)
-        Object.assign(store, data)
-      }
-      resolve()
-    })
-  })
+function getNextSongId (playlistDetail, songId) {
+  const { playMode, dir } = store
+  isForcePlay = false
+  const songsIndex = playMode === PLAY_MODE.SHUFFLE ? playlistDetail.shuffleIndexes : playlistDetail.normalIndexes
+  const len = songsIndex.length
+  const currentIndex = songsIndex.findIndex(v => v === songId)
+  let nextIndex = currentIndex
+  if (dir === 1) {
+    if (currentIndex === len - 1) {
+      nextIndex = 0
+    } else {
+      nextIndex = currentIndex + 1
+    }
+  } else {
+    if (currentIndex === 0) {
+      nextIndex = len - 1
+    } else {
+      nextIndex = currentIndex - 1
+    }
+  }
+  return songsIndex[nextIndex]
 }
 
-function createAudio (song) {
-  const audio = new Audio(song.url)
+function createAudio (url) {
+  const audio = new Audio(url)
   audio.onprogress = () => {
     if (audio.buffered.length) {
       const loadPercentage = (audio.buffered.end(audio.buffered.length - 1) / audio.duration) * 100
@@ -416,7 +442,7 @@ function createAudio (song) {
     playNextSong()
   }
   audio.onerror = () => {
-    log('audio.error', song.name, audio.error.message)
+    log('audio.error', url, audio.error.message)
     if (isForcePlay) {
       sendToPopup({ message: '歌曲无法该播放', isErr: true })
     } else {
@@ -443,39 +469,35 @@ async function updateSelectedSong (selectedSong) {
   return change
 }
 
-async function getSongUrl (id) {
-  const res = await api.getSongUrls([id])
-  if (res.code !== 200) return ''
-  const { url } = res.data[0]
-  return url || ''
-}
-
-function toSongsMap (tracks) {
+function tracksToSongsMap (tracks) {
   const songs = tracks.map(track => {
     const { id, name, al: { picUrl }, ar, dt } = track
-    return { id, name, picUrl: picUrl + IMAGE_CLIP, artists: compactArtists(ar), duration: dt }
+    return {
+      id,
+      name,
+      valid: true,
+      picUrl: picUrl + IMAGE_CLIP,
+      artists: ar.map(v => v.name).join('/'),
+      duration: dt
+    }
   })
   const songsMap = songs.reduce((songsMap, song) => {
     songsMap[song.id] = song
     return songsMap
   }, {})
-  const normalSongsIndex = songs.map(song => song.id)
-  return { normalSongsIndex, songsMap }
-}
-
-function compactArtists (artists) {
-  return artists.map(artist => artist.name).join('/')
+  const normalIndexes = songs.map(song => song.id)
+  return { normalIndexes, songsMap }
 }
 
 subscribeKey(store, 'selectedSong', song => {
   if (!song) {
-    if (audio) audio.pause()
+    audio?.pause()
     return
   }
   if (audio) {
     audio.src = song.url
   } else {
-    audio = createAudio(song)
+    audio = createAudio(song.url)
   }
   if (store.playing) {
     audio.autoplay = true
@@ -483,8 +505,8 @@ subscribeKey(store, 'selectedSong', song => {
     audio.autoplay = false
   }
   if (Date.now() - lastLoadAt > 86400000) {
-    log('load.daily')
-    load()
+    log('daily.bootstrap')
+    bootstrap()
   }
 })
 

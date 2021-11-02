@@ -41,7 +41,7 @@ export default function Login () {
     const { phone, captcha } = state
     try {
       await storeUtils.login(phone, captcha)
-      await storeUtils.load()
+      await storeUtils.reload()
       history.push('/')
     } catch {}
   }

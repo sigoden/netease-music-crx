@@ -24,7 +24,7 @@ export default function PlayList ({ maxHeight }) {
   const { selectedSong, selectedPlaylist, playlists } = snap
   const playlistRefs = createRefs(playlists)
   const [songs, songRefs] = useMemo(() => {
-    const songs = selectedPlaylist?.normalSongsIndex.map(idx => selectedPlaylist.songsMap[idx]) || []
+    const songs = selectedPlaylist?.normalIndexes.map(idx => selectedPlaylist.songsMap[idx]) || []
     const songRefs = createRefs(songs)
     return [songs, songRefs]
   }, [selectedPlaylist])

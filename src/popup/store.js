@@ -1,12 +1,12 @@
 import { proxy } from 'valtio'
 import { subscribeKey } from 'valtio/utils'
-import { STORE_PROPS, EMPTY_AUDIO_STATE, log } from '../utils'
+import { COMMON_PROPS, EMPTY_AUDIO_STATE, log } from '../utils'
 
 const store = proxy({
   message: '',
   isErr: true,
   audioState: { ...EMPTY_AUDIO_STATE },
-  ...STORE_PROPS
+  ...COMMON_PROPS
 })
 
 export function updateAudioTime (currentTime) {
@@ -57,8 +57,8 @@ export function captchaSent (phone) {
   return doAction('captchaSent', [phone])
 }
 
-export function load () {
-  return doAction('load')
+export function reload () {
+  return doAction('reload')
 }
 
 export function popupInit () {

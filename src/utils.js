@@ -58,10 +58,9 @@ export const PLAY_MODE = {
   ONE: 'ONE' // 单曲循环
 }
 
-export const STORE_PROPS = {
+export const COMMON_PROPS = {
   userId: null,
   dir: 1,
-  cookies: '',
   playing: false,
   volume: 1,
   playMode: PLAY_MODE.LOOP,
@@ -70,6 +69,11 @@ export const STORE_PROPS = {
   selectedPlaylist: null,
   selectedSongId: null,
   selectedSong: null
+}
+
+export const BG_STORE_PROPS = {
+  ...COMMON_PROPS,
+  cookies: ''
 }
 
 export function log (...args) {
