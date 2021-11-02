@@ -93,10 +93,10 @@ export default function PlayList ({ maxHeight }) {
                   key={song.id}
                   selected={song.id === snap.selectedSong?.id}
                   ref={songRefs[song.id]}
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                  sx={{ '&:last-child td, &:last-child th': { border: 0 }, ...(song.valid ? {} : { filter: 'opacity(0.5)' }) }}
                 >
                   <TableCell component="th" scope="row" sx={{ maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', padding: '4px 16px' }}>
-                    <IconButton onClick={() => storeUtils.playSong(song.id)}>
+                    <IconButton disabled={!song.valid} onClick={() => storeUtils.playSong(song.id)}>
                       <PlayArrowIcon />
                     </IconButton>
                     {song.name}

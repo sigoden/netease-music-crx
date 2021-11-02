@@ -496,11 +496,11 @@ async function updateSelectedSong (selectedSong) {
 
 function tracksToSongsMap (tracks) {
   const songs = tracks.map(track => {
-    const { id, name, al: { picUrl }, ar, dt } = track
+    const { id, name, al: { picUrl }, ar, dt, noCopyrightRcmd } = track
     return {
       id,
       name,
-      valid: true,
+      valid: !noCopyrightRcmd,
       picUrl: picUrl + IMAGE_CLIP,
       artists: ar.map(v => v.name).join('/'),
       duration: dt
