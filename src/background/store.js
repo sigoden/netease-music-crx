@@ -3,7 +3,6 @@ import { subscribeKey } from 'valtio/utils'
 import api from './api'
 
 import {
-  BG_STORE_PROPS,
   PLAY_MODE,
   IMAGE_CLIP,
   PLAYLIST_REC_SONGS,
@@ -30,7 +29,7 @@ let lastLoadAt = 0
 // 点播
 let isForcePlay = false
 
-const store = proxy({ ...BG_STORE_PROPS })
+const store = proxy({ ...COMMON_PROPS })
 
 export async function bootstrap () {
   await persistLoad()
@@ -185,11 +184,12 @@ export async function reload () {
     store.playlists = PLAYLIST_TOP
     await changePlaylist()
   }
-  return getCommonProps()
+  log('reload', store)
+  return getPopupData()
 }
 
 export function popupInit () {
-  return getCommonProps()
+  return getPopupData()
 }
 
 export function sendToPopup (obj) {
@@ -206,11 +206,9 @@ function persistSave () {
   })
 }
 
-function getCommonProps () {
-  return Object.keys(COMMON_PROPS).reduce((acc, cur) => {
-    acc[cur] = store[cur]
-    return acc
-  }, {})
+function getPopupData () {
+  const { userId, playing, volume, playMode, playlists, selectedPlaylist, selectedSong } = store
+  return { userId, playing, volume, playMode, playlists, selectedPlaylist, selectedSong, audioState }
 }
 
 function persistLoad () {
@@ -242,7 +240,7 @@ async function refreshLogin () {
 }
 
 async function reset () {
-  Object.assign(store, BG_STORE_PROPS)
+  Object.assign(store, { ...COMMON_PROPS })
   await persistSave()
   await reload()
   log('reset', store)
