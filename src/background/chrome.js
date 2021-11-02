@@ -65,23 +65,26 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
 
 chrome.webRequest.onBeforeSendHeaders.addListener(
   function (details) {
-    if (details.tabId === -1) {
+    if (details.initiator.startsWith('chrome-extension://')) {
       log('webRequest.onBeforeSendHeaders', details.requestHeaders)
       for (let i = 0; i < details.requestHeaders.length; ++i) {
         const header = details.requestHeaders[i]
         if (header.name === 'Origin') {
           header.value = DOMAIN
         } else if (header.name === 'Cookie') {
-          const cookieObj = parseCookies(['os=pc; ' + header.value])
-          header.value = serializeCookies(cookieObj)
+          if (/\/weapi\/login/.test(details.url)) {
+            const cookieObj = parseCookies(['os=pc; ' + header.value])
+            header.value = serializeCookies(cookieObj)
+          }
         }
       }
+      details.requestHeaders.push({ name: 'Referer', value: DOMAIN })
     }
     return { requestHeaders: details.requestHeaders }
   },
   {
     urls: [
-      `${DOMAIN}/weapi/login/*`
+      `${DOMAIN}/weapi/*`
     ]
   },
   ['requestHeaders', 'blocking', 'extraHeaders']

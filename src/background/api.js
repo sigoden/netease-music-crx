@@ -121,6 +121,16 @@ function createRequester () {
         data: {}
       })
     },
+    // 新歌速递
+    discoveryNeSongs (areaId = 0) {
+      return createRequest({
+        url: '/weapi/v1/discovery/new/songs',
+        data: {
+          areaId,
+          total: true
+        }
+      })
+    },
     // 获取歌曲详情
     getSongDetail (ids) {
       const idsHash = ids.map(id => ({ id }))

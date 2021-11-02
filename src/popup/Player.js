@@ -107,14 +107,14 @@ export default function Player () {
       </Grid>
       <Grid item alignItems='center'>
         {userId &&
-          selectedPlaylist?.type === PLAYLIST_TYPE.CRATE
-          ? <IconButton onClick={storeUtils.unlikeSong} title='取消收藏'>
+          (selectedPlaylist?.type === PLAYLIST_TYPE.CRATE
+            ? <IconButton onClick={storeUtils.unlikeSong} title='取消收藏'>
                 <FavoriteIcon />
               </IconButton>
-          : <IconButton onClick={() => setShowModal(true)} title='收藏'>
+            : <IconButton onClick={() => setShowModal(true)} title='收藏'>
                 <FavoriteBorderIcon />
               </IconButton>
-          }
+          )}
         <IconButton onClick={storeUtils.updatePlayMode} title={playModeTitle}>
           {playModeIcon}
         </IconButton>

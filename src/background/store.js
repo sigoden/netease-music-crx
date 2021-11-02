@@ -6,6 +6,7 @@ import {
   PLAY_MODE,
   IMAGE_CLIP,
   PLAYLIST_REC_SONGS,
+  PLAYLIST_NEW_SONGS,
   PLAYLIST_TOP,
   PLAYLIST_TYPE,
   EMPTY_AUDIO_STATE,
@@ -195,7 +196,7 @@ export async function reload () {
     store.playlists = await loadPlaylists()
     await changePlaylist()
   } else {
-    store.playlists = PLAYLIST_TOP
+    store.playlists = [...PLAYLIST_TOP, PLAYLIST_NEW_SONGS]
     await changePlaylist()
   }
   const newPlaylists = store.playlists
@@ -251,8 +252,8 @@ async function refreshLogin () {
   await api.loginRefresh()
   const res = await api.getUser()
   if (res.code === 200) {
-    const { userId } = res.profile
-    store.userId = userId
+    const userId = res?.profile?.userId
+    if (userId) store.userId = userId
   } else {
     await reset()
   }
@@ -268,7 +269,7 @@ async function reset () {
 async function loadPlaylists () {
   const result = await Promise.all([loadRecommendResourcePlaylist(), loadUserPlaylist()])
   const [recommendResourcePlaylist, userPlaylists] = result
-  return [...PLAYLIST_TOP, PLAYLIST_REC_SONGS, ...recommendResourcePlaylist, ...userPlaylists]
+  return [...PLAYLIST_TOP, PLAYLIST_NEW_SONGS, PLAYLIST_REC_SONGS, ...recommendResourcePlaylist, ...userPlaylists]
 }
 
 async function refreshPlaylistDetail (songId) {
@@ -316,22 +317,32 @@ async function loadPlaylistDetails (playlist) {
   try {
     let cachedPlaylistDetail = playlistDetailStore[playlist.id]
     if (cachedPlaylistDetail) return cachedPlaylistDetail
-    let tracks
     let normalIndexes = []
     let invalidIndexes = []
+    const dealSongs = songs => {
+      const tracks = songs.map(song => {
+        const { id, name, album: al, artists: ar, duration } = song
+        return { id, name, al, ar, dt: duration }
+      })
+      const songsMap = tracksToSongsMap(tracks)
+      normalIndexes = tracks.map(v => v.id)
+      invalidIndexes = normalIndexes.filter(id => !songsMap[id].valid)
+      songsStore[playlist.id] = songsMap
+    }
     if (playlist.id === PLAYLIST_REC_SONGS.id) {
       const res = await api.getRecommendSongs()
       if (res.code === 200) {
-        tracks = res.recommend.map(song => {
-          const { id, name, album: al, artists: ar, duration } = song
-          return { id, name, al, ar, dt: duration }
-        })
-        normalIndexes = tracks.map(v => v.id)
-        const songsMap = tracksToSongsMap(tracks)
-        invalidIndexes = normalIndexes.filter(id => !songsMap[id].valid)
-        songsStore[playlist.id] = songsMap
+        dealSongs(res.recommend)
       } else {
         log('getRecommendSongs.error', res.message)
+        throw new Error(res.message)
+      }
+    } else if (playlist.id === PLAYLIST_NEW_SONGS.id) {
+      const res = await api.discoveryNeSongs()
+      if (res.code === 200) {
+        dealSongs(res.data)
+      } else {
+        log('discoveryNeSongs.error', res.message)
         throw new Error(res.message)
       }
     } else {
@@ -369,7 +380,7 @@ async function loadSongDetail (playlistDetail, songId, retry) {
   }
   const song = songsMap[songId]
   try {
-    if (!song.valid) {
+    if (!song || !song.valid) {
       throw new Error('无法获取播放链接')
     } else {
       const res = await api.getSongUrls([songId])
@@ -383,7 +394,7 @@ async function loadSongDetail (playlistDetail, songId, retry) {
       song.url = url
     }
   } catch {
-    song.valid = false
+    if (song) song.valid = false
     invalidIndexes.push(songId)
     if (!retry || normalIndexes.length - invalidIndexes.length < 1) {
       throw new Error('无法播放歌曲')

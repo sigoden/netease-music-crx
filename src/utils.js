@@ -20,19 +20,25 @@ export const PLAYLIST_TYPE = {
 export const PLAYLIST_TOP = [
   {
     id: 19723756,
-    name: '飙升榜歌单',
+    name: '飙升榜',
     type: PLAYLIST_TYPE.TOP,
     picUrl: 'https://p1.music.126.net/DrRIg6CrgDfVLEph9SNh7w==/18696095720518497.jpg' + IMAGE_CLIP
   },
   {
     id: 3779629,
-    name: '新歌榜歌单',
+    name: '新歌榜',
     type: PLAYLIST_TYPE.TOP,
     picUrl: 'https://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg' + IMAGE_CLIP
   },
   {
+    id: 2884035,
+    name: '原创榜',
+    type: PLAYLIST_TYPE.TOP,
+    picUrl: 'http://p2.music.126.net/sBzD11nforcuh1jdLSgX7g==/18740076185638788.jpg' + IMAGE_CLIP
+  },
+  {
     id: 3778678,
-    name: '热歌榜歌单',
+    name: '热歌榜',
     type: PLAYLIST_TYPE.TOP,
     picUrl: 'https://p1.music.126.net/GhhuF6Ep5Tq9IEvLsyCN7w==/18708190348409091.jpg' + IMAGE_CLIP
   }
@@ -40,7 +46,14 @@ export const PLAYLIST_TOP = [
 
 export const PLAYLIST_REC_SONGS = {
   id: 1,
-  name: '每日歌曲推荐',
+  name: '每日推荐',
+  type: PLAYLIST_TYPE.RECOMMEND,
+  picUrl: DEFAULT_IMAGE
+}
+
+export const PLAYLIST_NEW_SONGS = {
+  id: 2,
+  name: '新歌速递',
   type: PLAYLIST_TYPE.RECOMMEND,
   picUrl: DEFAULT_IMAGE
 }
