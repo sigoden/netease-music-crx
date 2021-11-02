@@ -41,6 +41,10 @@ export function changePlaylist (playlistId) {
   return doAction('changePlaylist', [playlistId])
 }
 
+export function loadSongsMap () {
+  return doAction('loadSongsMap')
+}
+
 export function likeSong (playlistId) {
   return doAction('likeSong', [playlistId])
 }

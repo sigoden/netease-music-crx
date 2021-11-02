@@ -28,6 +28,10 @@ let audioState = { ...EMPTY_AUDIO_STATE }
 let lastLoadAt = 0
 // 点播
 let isForcePlay = false
+// 缓存歌单
+const playlistDetailStore = {}
+// 缓存歌单内歌曲
+const songsStore = {}
 
 const store = proxy({ ...COMMON_PROPS })
 
@@ -116,6 +120,19 @@ export async function changePlaylist (playlistId) {
   return change
 }
 
+export async function loadSongsMap () {
+  const { selectedPlaylist } = store
+  if (!selectedPlaylist?.id) return {}
+  let songsMap = songsStore[selectedPlaylist.id]
+  if (songsMap) {
+    return songsMap
+  }
+  const tracks = await loadTracks(selectedPlaylist.normalIndexes)
+  songsMap = tracksToSongsMap(tracks)
+  songsStore[selectedPlaylist.id] = songsMap
+  return songsMap
+}
+
 export async function likeSong (playlistId) {
   const { selectedSong, playlists } = store
   if (!selectedSong) throw new Error('无选中歌曲')
@@ -177,12 +194,20 @@ export async function logout () {
 
 export async function reload () {
   lastLoadAt = Date.now()
+  const oldPlaylistIds = store.playlists.map(v => v.id)
   if (store.userId) {
     store.playlists = await loadPlaylists()
     await changePlaylist()
   } else {
     store.playlists = PLAYLIST_TOP
     await changePlaylist()
+  }
+  const newPlaylists = store.playlists
+  for (const playlistId of oldPlaylistIds) {
+    if (newPlaylists.findIndex(v => v.id === playlistId) === -1) {
+      delete songsStore[playlistId]
+      delete playlistDetailStore[playlistId]
+    }
   }
   log('reload', store)
   return getPopupData()
@@ -295,7 +320,11 @@ async function loadUserPlaylist () {
 
 async function loadPlaylistDetails (playlist) {
   try {
+    let cachedPlaylistDetail = playlistDetailStore[playlist.id]
+    if (cachedPlaylistDetail) return cachedPlaylistDetail
     let tracks
+    let normalIndexes = []
+    let invalidIndexes = []
     if (playlist.id === PLAYLIST_REC_SONGS.id) {
       const res = await api.getRecommendSongs()
       if (res.code === 200) {
@@ -303,6 +332,10 @@ async function loadPlaylistDetails (playlist) {
           const { id, name, album: al, artists: ar, duration } = song
           return { id, name, al, ar, dt: duration }
         })
+        normalIndexes = tracks.map(v => v.id)
+        const songsMap = tracksToSongsMap(tracks)
+        invalidIndexes = normalIndexes.filter(id => !songsMap[id].valid)
+        songsStore[playlist.id] = songsMap
       } else {
         log('getRecommendSongs.error', res.message)
         throw new Error(res.message)
@@ -310,33 +343,36 @@ async function loadPlaylistDetails (playlist) {
     } else {
       const res = await api.getPlaylistDetail(playlist.id)
       if (res.code === 200) {
-        tracks = res.playlist.tracks
-        const ids = res.playlist.trackIds.slice(tracks.length).map(v => v.id)
-        const tracks2 = await loadTracks(ids)
-        tracks = [...tracks, ...tracks2]
+        normalIndexes = res.playlist.trackIds.map(v => v.id)
       } else {
         log('getPlaylistDetail.error', playlist.id, res.message)
         throw new Error(res.message)
       }
     }
     const { id, name, type } = playlist
-    const { normalIndexes, songsMap } = tracksToSongsMap(tracks)
     const shuffleIndexes = shuffleArr(normalIndexes)
-    return {
+    cachedPlaylistDetail = {
       id,
       name,
       type,
-      songsMap,
       normalIndexes,
+      invalidIndexes,
       shuffleIndexes
     }
+    playlistDetailStore[playlist.id] = cachedPlaylistDetail
+    return cachedPlaylistDetail
   } catch {
     throw new Error('获取歌单失败')
   }
 }
 
 async function loadSongDetail (playlistDetail, songId, retry) {
-  const { songsMap, normalIndexes } = playlistDetail
+  const { normalIndexes, invalidIndexes } = playlistDetail
+  let songsMap = songsStore[playlistDetail.id]
+  if (!songsMap || !songsMap[songId]) {
+    const tracks = await loadTracks([songId])
+    songsMap = tracksToSongsMap(tracks)
+  }
   const song = songsMap[songId]
   try {
     if (!song.valid) {
@@ -354,7 +390,8 @@ async function loadSongDetail (playlistDetail, songId, retry) {
     }
   } catch {
     song.valid = false
-    if (!retry || normalIndexes.filter(id => songsMap[id].valid).length === 0) {
+    invalidIndexes.push(songId)
+    if (!retry || normalIndexes.length - invalidIndexes.length < 1) {
       throw new Error('无法播放歌曲')
     }
     const newSongId = getNextSongId(playlistDetail, songId)
@@ -478,8 +515,7 @@ function tracksToSongsMap (tracks) {
     songsMap[song.id] = song
     return songsMap
   }, {})
-  const normalIndexes = songs.map(song => song.id)
-  return { normalIndexes, songsMap }
+  return songsMap
 }
 
 subscribeKey(store, 'selectedSong', song => {

@@ -14,41 +14,52 @@ import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
-import LinearProgress from '@mui/material/LinearProgress'
+import CircularProgress from '@mui/material/CircularProgress'
 import { formatScondTime } from '../utils'
 import store, * as storeUtils from './store'
 
 export default function PlayList ({ maxHeight }) {
   const snap = useSnapshot(store)
   const [loading, setLoading] = useState(false)
+  const [songsMap, setSongsMap] = useState({})
   const { selectedSong, selectedPlaylist, playlists } = snap
+  const currentPlaylistId = selectedPlaylist?.id
   const playlistRefs = createRefs(playlists)
+  useEffect(() => {
+    setLoading(true)
+    storeUtils
+      .loadSongsMap()
+      .then(songsMap => setSongsMap(songsMap))
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [currentPlaylistId])
   const [songs, songRefs] = useMemo(() => {
-    const songs = selectedPlaylist?.normalIndexes.map(idx => selectedPlaylist.songsMap[idx]) || []
+    const songs = selectedPlaylist?.normalIndexes.map(id => songsMap[id]).filter(v => !!v) || []
     const songRefs = createRefs(songs)
     return [songs, songRefs]
-  }, [selectedPlaylist])
-  const changePlaylist = async id => {
-    setLoading(true)
-    await storeUtils.changePlaylist(id)
-    setLoading(false)
+  }, [selectedPlaylist, songsMap])
+  const changePlaylist = id => {
+    storeUtils.changePlaylist(id)
   }
   useEffect(() => {
     scrollListItemToView(playlistRefs, selectedPlaylist?.id)
+  }, [selectedPlaylist, playlistRefs])
+  useEffect(() => {
+    if (loading) return
     scrollListItemToView(songRefs, selectedSong?.id, { behavior: 'smooth', block: 'center' })
-  }, [selectedSong, selectedPlaylist, songRefs, playlistRefs])
+  }, [selectedSong, songRefs, loading])
   return (
     <Grid container>
       <Grid item xs={4} sx={{ background: '#f3f0f0' }}>
         <List sx={{ maxHeight, overflowY: 'auto', py: 0 }}>
         {playlists.map((playlist, index) => {
-          const selected = playlist.id === selectedPlaylist?.id
           const isNewCat = playlists[index - 1] && playlists[index - 1].type !== playlist.type
           return (
             <ListItemButton
               key={playlist.id}
               sx={isNewCat ? { borderTop: '1px solid #e0e0e0' } : {}}
-              selected={selected}
+              selected={playlist.id === currentPlaylistId}
               ref={playlistRefs[playlist.id]}
               onClick={_ => changePlaylist(playlist.id)}
             >
@@ -62,6 +73,11 @@ export default function PlayList ({ maxHeight }) {
         </List>
       </Grid>
       <Grid item xs={8} sx={{ maxHeight, overflowY: 'auto' }}>
+        {loading &&
+          <Box sx={{ display: 'flex', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+            <CircularProgress />
+          </Box>
+        }
         {songs.length > 0 &&
           <Table stickyHeader size="small">
             <TableHead sx={{ height: '48px' }}>
@@ -93,11 +109,6 @@ export default function PlayList ({ maxHeight }) {
           </Table>
         }
       </Grid>
-      {loading &&
-        <Box sx={{ width: '100%' }}>
-          <LinearProgress />
-        </Box>
-      }
     </Grid>
   )
 }
