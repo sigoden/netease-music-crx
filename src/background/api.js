@@ -29,8 +29,7 @@ function createRequester () {
       body: createQueryParams(data)
     })
     const result = await res.json()
-    if (result?.code === 301 && !/\/token\/refresh/.test(reqInfo.url)) {
-      log('api.code301')
+    if (result?.code === 301 && !/\/weapi\/login/.test(reqInfo.url)) {
       await api.code301()
     }
     return result

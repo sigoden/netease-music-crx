@@ -249,19 +249,19 @@ function getPopupData () {
 async function refreshLogin () {
   await api.loginRefresh()
   const res = await api.getUser()
-  if (res.code === 200) {
-    const userId = res?.profile?.userId
-    if (userId) store.userId = userId
+  if (res.code === 200 && res?.profile) {
+    const { userId } = res.profile
+    store.userId = userId
   } else {
     await reset()
   }
 }
 
 async function reset () {
+  log('reset', store)
   Object.assign(store, { ...COMMON_PROPS })
   await persistSave()
   await reload()
-  log('reset', store)
 }
 
 async function loadPlaylists () {

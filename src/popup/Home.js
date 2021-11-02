@@ -23,7 +23,7 @@ export default function Home () {
           <Link href="#" onClick={() => history.push('/login')}>
             登录
           </Link>
-          获取每日推荐和我的歌单
+          获取个性化推荐及我的歌单
         </Box>
       }
     </Box>
