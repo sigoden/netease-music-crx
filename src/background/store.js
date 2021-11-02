@@ -11,13 +11,11 @@ import {
   PLAYLIST_TYPE,
   EMPTY_AUDIO_STATE,
   COMMON_PROPS,
+  LEN_PLAYLIST_REC,
   log,
   chunkArr,
   shuffleArr
 } from '../utils'
-
-// 推荐歌单数量
-const LEN_PLAYLIST_REC = 5
 
 // 播放器
 let audio
