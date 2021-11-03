@@ -106,7 +106,7 @@ export default function PlayList ({ maxHeight }) {
                       </IconButton>
                       <Box sx={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.name}</Box>
                       {song.miss
-                        ? <Chip sx={{ height: '20px', ml: '4px' }} label="miss" size="small" variant="outlined" />
+                        ? <Chip sx={{ height: '16px', ml: '4px' }} label="?" size="small" variant="outlined" />
                         : (song.vip && <Chip sx={{ height: '20px', ml: '4px' }} label="vip" size="small" variant="outlined" />)
                       }
                     </Box>

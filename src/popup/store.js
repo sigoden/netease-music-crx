@@ -97,10 +97,25 @@ subscribeKey(store, 'message', () => {
 })
 
 chrome.runtime.onMessage.addListener((request) => {
-  if (!request.audioState) {
-    log('onMessage', request)
+  switch (request?.topic) {
+    case 'sync':
+      log('sync', request.change)
+      Object.assign(store, request.change)
+      break
+    case 'error':
+      Object.assign(store, { message: request.message, isErr: true })
+      break
+    case 'info':
+      Object.assign(store, { message: request.message, isErr: false })
+      break
+    case 'audioState':
+      Object.assign(store, { audioState: request.audioState })
+      break
+    case 'invalidSong':
+      break
+    default:
+      break
   }
-  Object.assign(store, request)
 })
 
 export default store

@@ -10,6 +10,7 @@ import SkipNextIcon from '@mui/icons-material/SkipNext'
 import PauseIcon from '@mui/icons-material/Pause'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import VolumeUpIcon from '@mui/icons-material/VolumeUp'
+import VolumeOffIcon from '@mui/icons-material/VolumeOff'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import LoopIcon from '@mui/icons-material/Loop'
@@ -119,7 +120,7 @@ export default function Player () {
           {playModeIcon}
         </IconButton>
         <IconButton onClick={() => setShowVolumeBar(!showVolumeBar)} title='音量'>
-          <VolumeUpIcon />
+          {volume === 0 ? <VolumeOffIcon /> : <VolumeUpIcon />}
         </IconButton>
         <Box sx={{
           height: 100, display: showVolumeBar ? 'block' : 'none', position: 'absolute', zIndex: 99, right: 11

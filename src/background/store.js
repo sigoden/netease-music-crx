@@ -390,7 +390,10 @@ async function loadSongDetail (playlistDetail, songId, retry) {
     }
   } catch (err) {
     log('loadSongDetail.err', err)
-    if (song) song.valid = false
+    if (song) {
+      song.valid = false
+      sendToPopup({ topic: 'invalidSong', songId })
+    }
     invalidIndexes.push(songId)
     if (!retry || normalIndexes.length - invalidIndexes.length < 1) {
       throw new Error('无法播放歌曲')
@@ -475,15 +478,15 @@ function createAudio (url) {
   audio.onended = async () => {
     updateAudioState({ ...EMPTY_AUDIO_STATE })
     const change = await playNextSong()
-    sendToPopup(change)
+    sendToPopup({ topic: 'sync', change })
   }
   audio.onerror = async () => {
     log('audio.error', url, audio.error.message)
     if (isForcePlay) {
-      sendToPopup({ message: '歌曲无法该播放', isErr: true })
+      sendToPopup({ topic: 'error', message: '歌曲无法该播放' })
     } else {
       const change = await playNextSong()
-      sendToPopup(change)
+      sendToPopup({ topic: 'sync', change })
     }
   }
   audio.ontimeupdate = () => {
@@ -496,7 +499,7 @@ function createAudio (url) {
 
 function updateAudioState (state) {
   audioState = { ...audioState, ...state }
-  sendToPopup({ audioState })
+  sendToPopup({ topic: 'audioState', audioState })
 }
 
 async function updateSelectedSong (selectedSong) {
