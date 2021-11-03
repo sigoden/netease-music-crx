@@ -2,11 +2,10 @@
   "name": "netease-music-crx",
   "description": "一款可以让您方便快捷地收听网易云音乐的浏览器插件",
   "license": "MIT",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "scripts": {
     "build": "node scripts/build.js",
     "start": "node scripts/webserver.js",
-    "release": "node scripts/release.js",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -34,7 +33,6 @@
     "babel-loader": "^8.2.3",
     "babel-preset-react-app": "^10.0.0",
     "copy-webpack-plugin": "^9.0.1",
-    "crx": "^5.0.1",
     "css-loader": "^6.5.0",
     "eslint": "^8.1.0",
     "eslint-config-react-app": "^6.0.0",
@@ -55,6 +53,7 @@
     "terser-webpack-plugin": "^5.2.4",
     "webpack": "^5.60.0",
     "webpack-cli": "^4.9.1",
-    "webpack-dev-server": "^4.4.0"
+    "webpack-dev-server": "^4.4.0",
+    "zip-webpack-plugin": "^4.0.1"
   }
 }

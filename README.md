@@ -18,7 +18,7 @@
 ## 安装
 
  - 通过[Chrome应用商店](https://chrome.google.com/webstore/detail/ekmamdknmdolmmjbgpmnkiobcnihdhhf)安装
- - 手动下载[CRX安装包](https://github.com/sigoden/netease-music-crx/releases/latest)安装
+ - 手动下载[压缩包](https://github.com/sigoden/netease-music-crx/releases/latest)安装
 
 ## 许可
 

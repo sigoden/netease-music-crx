@@ -3,10 +3,14 @@ const path = require('path')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const TerserPlugin = require('terser-webpack-plugin')
+const ZipPlugin = require('zip-webpack-plugin')
+const pkg = require('./package')
 
 const ASSET_PATH = process.env.ASSET_PATH || '/'
 
 const fileExtensions = ['jpg', 'jpeg', 'png', 'gif', 'eot', 'otf', 'svg', 'ttf', 'woff', 'woff2']
+
+const zipFileName = `${pkg.name}-v${pkg.version}`
 
 const options = {
   mode: process.env.NODE_ENV || 'development',
@@ -133,6 +137,12 @@ if (process.env.NODE_ENV === 'development') {
       })
     ]
   }
+  options.plugins.push(
+    new ZipPlugin({
+      path: __dirname,
+      filename: zipFileName
+    })
+  )
 }
 
 module.exports = options
