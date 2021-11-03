@@ -138,12 +138,13 @@ export async function likeSong (playlistId) {
   } else {
     playlistId = playlists.find(v => v.id === playlistId)?.id
   }
-  if (!playlistId) throw new Error('无法收藏')
+  const errMsg = '收藏失败'
+  if (!playlistId) throw new Error(errMsg)
   const res = await api.likeSong(playlistId, selectedSong.id, true)
   if (res.code === 200) {
     return { message: '收藏成功' }
   } else {
-    throw new Error('收藏歌曲失败')
+    throw new Error(errMsg)
   }
 }
 
@@ -151,7 +152,8 @@ export async function unlikeSong () {
   const { selectedSong, selectedPlaylist } = store
   if (!selectedSong) throw new Error('无选中歌曲')
   const nextSongId = getNextSongId(selectedPlaylist, selectedSong.id)
-  if (nextSongId === selectedSong.id) throw new Error('取消收藏歌曲失败')
+  const errMsg = '取消收藏失败'
+  if (nextSongId === selectedSong.id) throw new Error(errMsg)
   const res = await api.likeSong(selectedPlaylist.id, selectedSong.id, false)
   if (res.code === 200) {
     const { selectedSong, selectedPlaylist } = await refreshPlaylistDetail(nextSongId)
@@ -160,7 +162,7 @@ export async function unlikeSong () {
     persistSave()
     return { ...change, message: '取消收藏成功' }
   } else {
-    throw new Error('取消收藏歌曲失败')
+    throw new Error(errMsg)
   }
 }
 
@@ -370,12 +372,13 @@ async function loadSongDetail (playlistDetail, songId, retry) {
     songsMap = tracksToSongsMap(tracks)
   }
   const song = songsMap[songId]
+  const errMsg = '无法播放'
   try {
     if (!song || !song.valid) {
-      throw new Error('无法播放歌曲')
+      throw new Error(errMsg)
     } else if (song.miss || (song.vip && !store.vip)) {
       const kwSong = await getKuWoSong(song.name, song.artists)
-      if (!kwSong) throw new Error('尝试酷我失败')
+      if (!kwSong) throw new Error('尝试酷我源失败')
       Object.assign(song, kwSong)
     } else {
       const res = await api.getSongUrls([songId])
@@ -384,7 +387,7 @@ async function loadSongDetail (playlistDetail, songId, retry) {
       }
       const url = res.data.map(v => v.url)[0]
       if (!url) {
-        throw new Error('无法获取播放链接')
+        throw new Error(errMsg)
       }
       song.url = url
     }
@@ -396,7 +399,7 @@ async function loadSongDetail (playlistDetail, songId, retry) {
     }
     invalidIndexes.push(songId)
     if (!retry || normalIndexes.length - invalidIndexes.length < 1) {
-      throw new Error('无法播放歌曲')
+      throw new Error(errMsg)
     }
     const newSongId = getNextSongId(playlistDetail, songId)
     return loadSongDetail(playlistDetail, newSongId, retry)
@@ -483,7 +486,7 @@ function createAudio (url) {
   audio.onerror = async () => {
     log('audio.error', url, audio.error.message)
     if (isForcePlay) {
-      sendToPopup({ topic: 'error', message: '歌曲无法该播放' })
+      sendToPopup({ topic: 'error', message: '无法该播放' })
     } else {
       const change = await playNextSong()
       sendToPopup({ topic: 'sync', change })
