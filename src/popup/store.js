@@ -5,7 +5,7 @@ import { COMMON_PROPS, EMPTY_AUDIO_STATE, log } from '../utils'
 const store = proxy({
   message: '',
   isErr: true,
-  invalidSongId: null,
+  songsMapChanged: null,
   audioState: { ...EMPTY_AUDIO_STATE },
   ...COMMON_PROPS
 })
@@ -43,6 +43,7 @@ export function changePlaylist (playlistId) {
 }
 
 export function loadSongsMap () {
+  store.songsMapChanged = null
   return doAction('loadSongsMap')
 }
 
@@ -114,8 +115,9 @@ chrome.runtime.onMessage.addListener((request) => {
     case 'audioState':
       Object.assign(store, { audioState: request.audioState })
       break
-    case 'invalidSong':
-      Object.assign(store, { invalidSongId: request.songId })
+    case 'changeSongsMap':
+      log('sync', request)
+      Object.assign(store, { songsMapChanged: { songId: request.songId, op: request.op } })
       break
     default:
       break

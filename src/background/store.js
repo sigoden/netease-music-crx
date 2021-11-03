@@ -142,6 +142,9 @@ export async function likeSong (playlistId) {
   if (!playlistId) throw new Error(errMsg)
   const res = await api.likeSong(playlistId, selectedSong.id, true)
   if (res.code === 200) {
+    // 更新收藏到歌单
+    const playlist = store.playlists.find(v => v.id === playlistId)
+    await loadPlaylistDetails(playlist)
     return { message: '收藏成功' }
   } else {
     throw new Error(errMsg)
@@ -151,15 +154,20 @@ export async function likeSong (playlistId) {
 export async function unlikeSong () {
   const { selectedSong, selectedPlaylist } = store
   if (!selectedSong) throw new Error('无选中歌曲')
-  const nextSongId = getNextSongId(selectedPlaylist, selectedSong.id)
+  const deleteSongId = selectedSong.id
+  const selectedPlaylistId = selectedPlaylist.id
+  const nextSongId = getNextSongId(selectedPlaylist, deleteSongId)
   const errMsg = '取消收藏失败'
   if (nextSongId === selectedSong.id) throw new Error(errMsg)
-  const res = await api.likeSong(selectedPlaylist.id, selectedSong.id, false)
+  const res = await api.likeSong(selectedPlaylistId, deleteSongId, false)
   if (res.code === 200) {
-    const { selectedSong, selectedPlaylist } = await refreshPlaylistDetail(nextSongId)
+    const playlist = store.playlists.find(v => v.id === selectedPlaylistId)
+    const selectedPlaylist = await loadPlaylistDetails(playlist)
+    const selectedSong = await loadSongDetail(selectedPlaylist, nextSongId, true)
     const change = { selectedPlaylist, selectedSong }
     Object.assign(store, change)
     persistSave()
+    sendToPopup({ topic: 'changeSongsMap', songId: deleteSongId, op: 'remove' })
     return { ...change, message: '取消收藏成功' }
   } else {
     throw new Error(errMsg)
@@ -264,13 +272,6 @@ async function loadPlaylists () {
   return [...PLAYLIST_TOP, PLAYLIST_NEW_SONGS, PLAYLIST_REC_SONGS, ...recommendResourcePlaylist, ...userPlaylists]
 }
 
-async function refreshPlaylistDetail (songId) {
-  const playlist = store.playlists.find(v => v.id === store.selectedPlaylist.id)
-  const selectedPlaylist = await loadPlaylistDetails(playlist)
-  const selectedSong = await loadSongDetail(selectedPlaylist, songId, true)
-  return { selectedPlaylist, selectedSong }
-}
-
 async function loadRecommendResourcePlaylist () {
   try {
     const res = await api.getRecommendResource()
@@ -340,6 +341,7 @@ async function loadPlaylistDetails (playlist) {
     } else {
       const res = await api.getPlaylistDetail(playlist.id)
       if (res.code === 200) {
+        delete songsStore[playlist.id]
         normalIndexes = res.playlist.trackIds.map(v => v.id)
       } else {
         log('getPlaylistDetail.error', playlist.id, res.message)
@@ -395,7 +397,7 @@ async function loadSongDetail (playlistDetail, songId, retry) {
     log('loadSongDetail.err', err)
     if (song) {
       song.valid = false
-      sendToPopup({ topic: 'invalidSong', songId })
+      sendToPopup({ topic: 'changeSongsMap', songId, op: 'invalid' })
     }
     invalidIndexes.push(songId)
     if (!retry || normalIndexes.length - invalidIndexes.length < 1) {
