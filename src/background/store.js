@@ -1,7 +1,7 @@
 import { proxy } from 'valtio'
 import { subscribeKey } from 'valtio/utils'
 import api from './api'
-import { getKuWoUrl } from './kuwo'
+import { getKuWoSong } from './kuwo'
 
 import {
   PLAY_MODE,
@@ -383,8 +383,9 @@ async function loadSongDetail (playlistDetail, songId, retry) {
     if (!song || !song.valid) {
       throw new Error('无法播放歌曲')
     } else if (song.miss || (song.vip && !store.vip)) {
-      const keyword = song.name + ' ' + song.artists
-      song.url = await getKuWoUrl(keyword)
+      const kwSong = await getKuWoSong(song.name, song.artists)
+      if (!kwSong) throw new Error('尝试酷我失败')
+      Object.assign(song, kwSong)
     } else {
       const res = await api.getSongUrls([songId])
       if (res.code !== 200) {

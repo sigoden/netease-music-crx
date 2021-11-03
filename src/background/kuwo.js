@@ -6,8 +6,8 @@ let tokenAt = 0
 export const KUWO_DOMAIN = 'http://www.kuwo.cn'
 export const KUWO_MOBI_DOMAIN = 'http://mobi.kuwo.cn'
 
-export async function getKuWoUrl (keyword) {
-  keyword = encodeURIComponent(keyword)
+export async function getKuWoSong (name, artists) {
+  const keyword = encodeURIComponent(name + ' ' + artists)
   const now = Date.now()
   if (now - tokenAt > TOKEN_TTL) {
     // 获取/刷新KW_TOKEN
@@ -16,14 +16,17 @@ export async function getKuWoUrl (keyword) {
   }
   let res = await fetch(`${KUWO_DOMAIN}/api/www/search/searchMusicBykeyWord?key=${keyword}&pn=1&rn=5`)
   let result = await res.json()
-  const song = result?.data?.list[0]
-  if (!song) return ''
+  const filterSong = song =>
+    song.payInfo.play.endsWith('00') && artists.includes(song.artist.replace(/&nbsp;/g, ' ').split('&')[0])
+  const song = (result?.data?.list || []).filter(filterSong)[0]
+  if (!song) return
   const q = encryptQuery(
     'corp=kuwo&p2p=1&type=convert_url2&sig=0&format=mp3&rid=' + song.rid
   )
   res = await fetch(`${KUWO_MOBI_DOMAIN}/mobi.s?f=kuwo&q=` + q)
   result = await res.text()
-  return (result.match(/http[^\s$"]+/) || [])[0] || ''
+  const url = (result.match(/http[^\s$"]+/) || [])[0] || ''
+  return { url, duration: song.duration * 1000 }
 }
 
 /*
