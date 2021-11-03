@@ -167,7 +167,7 @@ export async function login (phone, password) {
   const res = await api.cellphoneLogin(phone, password)
   if (res.code === 200) {
     const { userId, vipType } = res.profile
-    Object.assign({ userId, vip: vipType > 0 })
+    Object.assign(store, { userId, vip: vipType > 0 })
     return { userId, message: '登录成功' }
   } else {
     throw new Error(res.message)
