@@ -2,18 +2,18 @@
 
 一款可以让您方便快捷地收听网易云音乐的浏览器插件
 
-![应用截图](https://user-images.githubusercontent.com/4012553/139999835-465d3af8-f356-448f-b6b7-80b91c4f8fa1.png)
+![应用截图](https://user-images.githubusercontent.com/4012553/140018584-9f7e41df-f5fd-4f47-a168-0c5f8b0e9698.png)
 
 ## 功能
 
+- 解锁变灰(无版权)歌曲
+- 使用酷我解锁vip歌曲
 - 排行榜
 - 新歌速递
 - 每日推荐
 - 精选歌单
 - 私人歌单
 - 收藏/取消收藏歌曲
-- 解锁变灰(无版权)歌曲
-- 使用酷我解锁vip歌曲
 
 ## 安装
 
