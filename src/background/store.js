@@ -1,5 +1,6 @@
 import { proxy } from 'valtio'
 import { subscribeKey } from 'valtio/utils'
+import { loadData, saveData, sendToPopup } from './chrome'
 import api from './api'
 import { getKuWoSong } from './kuwo'
 
@@ -213,33 +214,23 @@ export function popupInit () {
   return getPopupData()
 }
 
-export function sendToPopup (obj) {
-  chrome.runtime.sendMessage(obj)
-}
-
 function persistSave () {
   const { volume, playMode, selectedPlaylist, selectedSong } = store
   const data = { volume, playMode, playlistId: selectedPlaylist?.id || null, songId: selectedSong?.id || null }
-  return new Promise(resolve => {
-    chrome.storage.sync.set(data, resolve)
-  })
+  return saveData(data)
 }
 
-function persistLoad () {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(data => {
-      if (data) {
-        const { volume = COMMON_PROPS.volume, playMode = COMMON_PROPS.playMode, playlistId, songId } = data
-        log('persist.load', data)
-        if (playlistId) {
-          persistData = { playlistId }
-          if (songId) persistData.songId = songId
-        }
-        Object.assign(store, { volume, playMode })
-      }
-      resolve()
-    })
-  })
+async function persistLoad () {
+  const data = await loadData()
+  if (data) {
+    const { volume = COMMON_PROPS.volume, playMode = COMMON_PROPS.playMode, playlistId, songId } = data
+    log('persist.load', data)
+    if (playlistId) {
+      persistData = { playlistId }
+      if (songId) persistData.songId = songId
+    }
+    Object.assign(store, { volume, playMode })
+  }
 }
 
 function getPopupData () {
