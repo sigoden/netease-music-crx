@@ -18,7 +18,7 @@ import ShuffleIcon from '@mui/icons-material/Shuffle'
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
 import store, * as storeUtils from './store'
 import SelectPlaylist from './SelectPlaylist'
-import { PLAY_MODE, DEFAULT_IMAGE, PLAYLIST_TYPE, formatScondTime } from '../utils'
+import { PLAY_MODE, PLAYLIST_TYPE, formatScondTime } from '../utils'
 
 export default function Player () {
   const snap = useSnapshot(store)
@@ -88,7 +88,10 @@ export default function Player () {
         </IconButton>
       </Grid>
       <Grid item alignItems='center' sx={{ flexGrow: 1, display: 'flex', mx: 1 }}>
-        <Avatar src={selectedSong?.picUrl || DEFAULT_IMAGE} alt='song pic' />
+        {selectedSong?.picUrl
+          ? <Avatar src={selectedSong?.picUrl} alt='song pic' />
+          : <Avatar alt='song pic'>S</Avatar>
+        }
         <Grid container direction='column' sx={{ mx: 1 }}>
           <Grid item sx={{ display: 'flex', alignItems: 'baseline' }}>
             <Box sx={{ maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>

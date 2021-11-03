@@ -5,9 +5,6 @@ export const DOMAIN = 'https://music.163.com'
 // 剪裁图片
 export const IMAGE_CLIP = '?param=40y40'
 
-// 图片占位
-export const DEFAULT_IMAGE = 'http://p1.music.126.net/_-PWshFwqO5nFkOMpM2K4w==/109951166515653261.jpg' + IMAGE_CLIP
-
 // 推荐歌单数量
 export const LEN_PLAYLIST_REC = 3
 

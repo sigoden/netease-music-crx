@@ -8,6 +8,7 @@ import Avatar from '@mui/material/Avatar'
 import Box from '@mui/material/Box'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListItemIcon from '@mui/material/ListItemIcon'
+import QueueMusicIcon from '@mui/icons-material/QueueMusic'
 import ListItemText from '@mui/material/ListItemText'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -77,7 +78,7 @@ export default function PlayList ({ maxHeight }) {
               <ListItemIcon sx={{ minWidth: 30 }}>
                 {playlist.picUrl
                   ? <Avatar src={playlist.picUrl} sx={{ width: 24, height: 24 }} />
-                  : <Avatar sx={{ width: 24, height: 24, fontSize: '11px', bgcolor: 'primary.main' }} >{playlist.name}</Avatar>
+                  : <Avatar sx={{ width: 24, height: 24 }} ><QueueMusicIcon sx={{ bgcolor: '#6ea0df' }} /></Avatar>
                 }
               </ListItemIcon>
               <ListItemText primary={playlist.name} sx={{ '.MuiTypography-root': { maxWidth: 180, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' } }} />
