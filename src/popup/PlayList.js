@@ -109,16 +109,17 @@ export default function PlayList ({ maxHeight }) {
                   ref={songRefs[song.id]}
                   sx={{ '&:last-child td, &:last-child th': { border: 0 }, ...(!song.valid ? { filter: 'opacity(0.5)' } : {}) }}
                 >
-                  <TableCell component="th" scope="row" sx={{ maxWidth: 200, py: '4px', pl: '16px' }}>
+                  <TableCell
+                    component="th"
+                    scope="row"
+                    sx={{ maxWidth: 200, py: '4px', pl: '16px', ...(song.miss ? { filter: 'opacity(0.5)' } : {}) }}
+                  >
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <IconButton disabled={!song.valid} onClick={() => storeUtils.playSong(song.id)}>
                         <PlayArrowIcon />
                       </IconButton>
                       <Box sx={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.name}</Box>
-                      {song.miss
-                        ? <Chip sx={{ height: '16px', ml: '4px' }} label="?" size="small" variant="outlined" />
-                        : (song.vip && <Chip sx={{ height: '20px', ml: '4px' }} label="vip" size="small" variant="outlined" />)
-                      }
+                      {song.vip && (song.vip && <Chip sx={{ height: '20px', ml: '4px' }} label="vip" size="small" variant="outlined" />)}
                     </Box>
                   </TableCell>
                   <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.artists}</TableCell>
