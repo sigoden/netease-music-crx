@@ -23,7 +23,7 @@ export default function PlayList ({ maxHeight }) {
   const snap = useSnapshot(store)
   const [loading, setLoading] = useState(false)
   const [songsMap, setSongsMap] = useState({})
-  const { selectedSong, selectedPlaylist, playlists } = snap
+  const { selectedSong, selectedPlaylist, playlists, invalidSongId } = snap
   const currentPlaylistId = selectedPlaylist?.id
   const playlistRefs = createRefs(playlists)
   useEffect(() => {
@@ -36,10 +36,15 @@ export default function PlayList ({ maxHeight }) {
       })
   }, [currentPlaylistId])
   const [songs, songRefs] = useMemo(() => {
-    const songs = selectedPlaylist?.normalIndexes.map(id => songsMap[id]).filter(v => !!v) || []
+    const songs = selectedPlaylist?.normalIndexes.map(id => {
+      if (id === invalidSongId) {
+        songsMap[id].valid = false
+      }
+      return songsMap[id]
+    }).filter(v => !!v) || []
     const songRefs = createRefs(songs)
     return [songs, songRefs]
-  }, [selectedPlaylist, songsMap])
+  }, [selectedPlaylist, songsMap, invalidSongId])
   const changePlaylist = id => {
     storeUtils.changePlaylist(id)
   }

@@ -5,6 +5,7 @@ import { COMMON_PROPS, EMPTY_AUDIO_STATE, log } from '../utils'
 const store = proxy({
   message: '',
   isErr: true,
+  invalidSongId: null,
   audioState: { ...EMPTY_AUDIO_STATE },
   ...COMMON_PROPS
 })
@@ -114,6 +115,7 @@ chrome.runtime.onMessage.addListener((request) => {
       Object.assign(store, { audioState: request.audioState })
       break
     case 'invalidSong':
+      Object.assign(store, { invalidSongId: request.songId })
       break
     default:
       break
