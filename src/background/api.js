@@ -143,13 +143,12 @@ function createRequester () {
       })
     },
     // 获取音乐 url
-    getSongUrls (ids) {
+    getSongUrls (ids, br = 999000) {
       return createRequest({
-        url: '/weapi/song/enhance/player/url/v1',
+        url: '/weapi/song/enhance/player/url',
         data: {
           ids,
-          level: 'standard',
-          encodeType: 'aac'
+          br
         }
       })
     },
