@@ -166,8 +166,8 @@ export async function unlikeSong () {
 export async function login (phone, password) {
   const res = await api.cellphoneLogin(phone, password)
   if (res.code === 200) {
-    const { userId } = res.profile
-    store.userId = userId
+    const { userId, vipType } = res.profile
+    Object.assign({ userId, vip: vipType > 0 })
     return { userId, message: '登录成功' }
   } else {
     throw new Error(res.message)
@@ -381,8 +381,8 @@ async function loadSongDetail (playlistDetail, songId, retry) {
   const song = songsMap[songId]
   try {
     if (!song || !song.valid) {
-      throw new Error('无法获取播放链接')
-    } else if (song.miss) {
+      throw new Error('无法播放歌曲')
+    } else if (song.miss || (song.vip && !store.vip)) {
       const keyword = song.name + ' ' + song.artists
       song.url = await getKuWoUrl(keyword)
     } else {

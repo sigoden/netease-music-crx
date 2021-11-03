@@ -76,6 +76,7 @@ export const PLAY_MODE = {
 
 export const COMMON_PROPS = {
   userId: null,
+  vip: false,
   dir: 1,
   playing: false,
   volume: 1,
