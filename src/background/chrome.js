@@ -1,5 +1,5 @@
 import * as storeUtils from './store'
-import { DOMAIN, log, parseCookies, serializeCookies } from '../utils'
+import { DOMAIN, log, debug, parseCookies, serializeCookies } from '../utils'
 import { KUWO_DOMAIN, KUWO_MOBI_DOMAIN } from './kuwo'
 
 export function init () {
@@ -76,7 +76,9 @@ function initMessageHandler () {
         try {
           log(`${action}.params`, params)
           const change = (await fn.apply(storeUtils, request.params)) || {}
-          log(`${action}.result`, change)
+          if (action !== 'loadSongsMap') {
+            log(`${action}.result`, change)
+          }
           sendResponse({ isErr: false, message: '', ...change })
         } catch (err) {
           log(`${action}.error`, err)
@@ -106,7 +108,7 @@ function setNetworkHandler () {
               }
             }
           }
-          log('hookRequest.163', details.requestHeaders)
+          debug('hookRequest.163', details.requestHeaders)
           details.requestHeaders.push({ name: 'Referer', value: DOMAIN })
         } else if (details.url.startsWith(KUWO_DOMAIN)) {
           let token = ''
@@ -120,7 +122,7 @@ function setNetworkHandler () {
           }
           if (token) details.requestHeaders.push({ name: 'csrf', value: token })
           details.requestHeaders.push({ name: 'Referer', value: KUWO_DOMAIN })
-          log('hookRequest.kuwo', details.requestHeaders)
+          debug('hookRequest.kuwo', details.requestHeaders)
         } else if (details.url.startsWith(KUWO_MOBI_DOMAIN)) {
           for (let i = 0; i < details.requestHeaders.length; ++i) {
             const header = details.requestHeaders[i]
@@ -130,7 +132,7 @@ function setNetworkHandler () {
           }
           details.requestHeaders.push({ name: 'user-agent', value: 'okhttp/3.10.0' })
           details.requestHeaders.push({ name: 'Referer', value: KUWO_DOMAIN })
-          log('hookRequest.kuwo.mobi', details.requestHeaders)
+          debug('hookRequest.kuwo.mobi', details.requestHeaders)
         }
       }
       return { requestHeaders: details.requestHeaders }

@@ -74,7 +74,9 @@ function doAction (action, params = []) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ action, params }, response => {
       log(action + '.res', response)
-      log('store', store)
+      if (action === 'popupInit') {
+        log('store', store)
+      }
       if (!response.isErr) {
         Object.assign(store, response)
         return resolve(response)

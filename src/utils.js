@@ -92,6 +92,10 @@ export function log (...args) {
   }
 }
 
+export function debug (...args) {
+  // log(...args)
+}
+
 // 格式化秒 90 -> 1:30
 export function formatScondTime (timeInSeconds) {
   const minutes = Math.floor(timeInSeconds / 60)
