@@ -372,7 +372,7 @@ async function loadSongDetail (playlistDetail, songId, retry) {
     songsMap = tracksToSongsMap(tracks)
   }
   const song = songsMap[songId]
-  const errMsg = '无法播放'
+  const errMsg = '无法播放歌曲'
   try {
     if (!song || !song.valid) {
       throw new Error(errMsg)
