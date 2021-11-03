@@ -16,8 +16,10 @@ export async function getKuWoSong (name, artists) {
   }
   let res = await fetch(`${KUWO_DOMAIN}/api/www/search/searchMusicBykeyWord?key=${keyword}&pn=1&rn=5`)
   let result = await res.json()
-  const filterSong = song =>
-    song.payInfo.play.endsWith('00') && artists.includes(song.artist.replace(/&nbsp;/g, ' ').split('&')[0])
+  const filterSong = song => {
+    return song.payInfo.play !== '1111' &&
+    song.artist.replace(/&nbsp;/g, ' ').split('&').some(v => artists.includes(v.trim()))
+  }
   const song = (result?.data?.list || []).filter(filterSong)[0]
   if (!song) return
   const q = encryptQuery(
