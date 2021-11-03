@@ -524,7 +524,7 @@ function tracksToSongsMap (tracks) {
       miss: st < 0,
       vip: !(fee === 0 || fee === 8),
       picUrl: picUrl + IMAGE_CLIP,
-      artists: ar.map(v => v.name).join(' / '),
+      artists: ar.map(v => v.name).join(' & '),
       duration: dt
     }
   })
