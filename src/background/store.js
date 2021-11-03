@@ -251,8 +251,8 @@ async function refreshLogin () {
   await api.loginRefresh()
   const res = await api.getUser()
   if (res.code === 200 && res?.profile) {
-    const { userId } = res.profile
-    store.userId = userId
+    const { userId, vipType } = res.profile
+    Object.assign(store, { userId, vip: vipType > 0 })
   } else {
     await reset()
   }
