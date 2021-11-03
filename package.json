@@ -1,6 +1,6 @@
 {
   "name": "netease-music-crx",
-  "description": "一款可以让您方便快捷地收听网易云音乐览器插件",
+  "description": "一款可以让您方便快捷地收听网易云音乐的浏览器插件",
   "license": "MIT",
   "version": "3.0.0",
   "scripts": {
