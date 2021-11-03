@@ -1,8 +1,8 @@
 # 网易云音乐浏览器插件版
 
-一款可以让您方便快捷地收听网易云音乐览器插件版
+一款可以让您方便快捷地收听网易云音乐览器插件
 
-![应用截图](https://user-images.githubusercontent.com/4012553/139994638-6993a963-ebfe-430f-b677-2e64d72c0ec5.png)
+![应用截图](https://user-images.githubusercontent.com/4012553/139999835-465d3af8-f356-448f-b6b7-80b91c4f8fa1.png)
 
 ## 功能
 
@@ -12,13 +12,13 @@
 - 精选歌单
 - 私人歌单
 - 收藏/取消收藏歌曲
-- 解锁无版权歌曲
+- 解锁变灰(无版权)歌曲
 - 使用酷我解锁vip歌曲
 
 ## 安装
 
- - [Chrome应用商店](https://chrome.google.com/webstore/detail/ekmamdknmdolmmjbgpmnkiobcnihdhhf)安装
- - [下载crx安装包](https://github.com/sigoden/netease-music-crx/releases/latest)手动安装
+ - 通过[Chrome应用商店](https://chrome.google.com/webstore/detail/ekmamdknmdolmmjbgpmnkiobcnihdhhf)安装
+ - 手动下载[CRX安装包](https://github.com/sigoden/netease-music-crx/releases/latest)安装
 
 ## 许可
 

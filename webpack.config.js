@@ -98,7 +98,7 @@ const options = {
     new CopyWebpackPlugin({
       patterns: [
         {
-          from: 'assets',
+          from: 'src/assets',
           to: path.join(__dirname, 'build'),
           force: true
         }
