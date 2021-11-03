@@ -14,7 +14,7 @@ import {
   EMPTY_AUDIO_STATE,
   COMMON_PROPS,
   LEN_PLAYLIST_REC,
-  log,
+  logger,
   chunkArr,
   shuffleArr
 } from '../utils'
@@ -216,7 +216,7 @@ export async function reload () {
       delete playlistDetailStore[playlistId]
     }
   }
-  log('reload', store)
+  logger.debug('reload', store)
   return getPopupData()
 }
 
@@ -234,7 +234,7 @@ async function persistLoad () {
   const data = await loadData()
   if (data) {
     const { volume = COMMON_PROPS.volume, playMode = COMMON_PROPS.playMode, playlistId, songId } = data
-    log('persist.load', data)
+    logger.debug('persist.load', data)
     if (playlistId) {
       persistData = { playlistId }
       if (songId) persistData.songId = songId
@@ -260,7 +260,7 @@ async function refreshLogin () {
 }
 
 async function reset () {
-  log('reset', store)
+  logger.debug('reset', store)
   Object.assign(store, { ...COMMON_PROPS })
   await persistSave()
   await reload()
@@ -276,14 +276,14 @@ async function loadRecommendResourcePlaylist () {
   try {
     const res = await api.getRecommendResource()
     if (res.code !== 200) {
-      log('loadRecommendResourcePlaylist.error', res.message)
+      logger.error('loadRecommendResourcePlaylist.error', res.message)
       throw new Error(res.message)
     }
     return res.recommend.slice(0, LEN_PLAYLIST_REC).map(
       ({ id, picUrl, name }) => ({ id, picUrl: picUrl + IMAGE_CLIP, name, type: PLAYLIST_TYPE.RECOMMEND })
     )
   } catch (err) {
-    log('loadRecommendResourcePlaylist.err', err)
+    logger.error('loadRecommendResourcePlaylist.err', err)
     throw new Error('获取推荐歌单失败')
   }
 }
@@ -292,7 +292,7 @@ async function loadUserPlaylist () {
   try {
     const res = await api.getUserPlaylist(store.userId)
     if (res.code !== 200) {
-      log('loadUserPlaylist.error', res.message)
+      logger.error('loadUserPlaylist.error', res.message)
       throw new Error(res.message)
     }
     return res.playlist.map(({ id, coverImgUrl, name, userId, specialType }) => {
@@ -303,7 +303,7 @@ async function loadUserPlaylist () {
       return { id, picUrl: coverImgUrl + IMAGE_CLIP, name, type, primary: specialType === 5 }
     })
   } catch (err) {
-    log('loadUserPlaylist.err', err)
+    logger.error('loadUserPlaylist.err', err)
     throw new Error('获取我的歌单失败')
   }
 }
@@ -327,7 +327,7 @@ async function loadPlaylistDetails (playlist) {
       if (res.code === 200) {
         dealSongs(res.recommend)
       } else {
-        log('getRecommendSongs.error', res.message)
+        logger.error('getRecommendSongs.error', res.message)
         throw new Error(res.message)
       }
     } else if (playlist.id === PLAYLIST_NEW_SONGS.id) {
@@ -335,7 +335,7 @@ async function loadPlaylistDetails (playlist) {
       if (res.code === 200) {
         dealSongs(res.data)
       } else {
-        log('discoveryNeSongs.error', res.message)
+        logger.error('discoveryNeSongs.error', res.message)
         throw new Error(res.message)
       }
     } else {
@@ -344,7 +344,7 @@ async function loadPlaylistDetails (playlist) {
         delete songsStore[playlist.id]
         normalIndexes = res.playlist.trackIds.map(v => v.id)
       } else {
-        log('getPlaylistDetail.error', playlist.id, res.message)
+        logger.error('getPlaylistDetail.error', playlist.id, res.message)
         throw new Error(res.message)
       }
     }
@@ -361,7 +361,7 @@ async function loadPlaylistDetails (playlist) {
     playlistDetailStore[playlist.id] = cachedPlaylistDetail
     return cachedPlaylistDetail
   } catch (err) {
-    log('loadPlaylistDetails.err', err)
+    logger.error('loadPlaylistDetails.err', err)
     throw new Error('获取歌单失败')
   }
 }
@@ -394,7 +394,7 @@ async function loadSongDetail (playlistDetail, songId, retry) {
       song.url = url
     }
   } catch (err) {
-    log('loadSongDetail.err', err)
+    logger.error('loadSongDetail.err', err)
     if (song) {
       song.valid = false
       sendToPopup({ topic: 'changeSongsMap', songId, op: 'invalid' })
@@ -420,7 +420,7 @@ async function loadTracks (ids) {
         return song
       })
     } else {
-      log('getSongDetail.error', res.message)
+      logger.error('getSongDetail.error', res.message)
       throw new Error(res.message)
     }
   }))
@@ -486,7 +486,7 @@ function createAudio (url) {
     sendToPopup({ topic: 'sync', change })
   }
   audio.onerror = async () => {
-    log('audio.error', url, audio.error.message)
+    logger.error('audio.error', url, audio.error.message)
     if (isForcePlay) {
       sendToPopup({ topic: 'error', message: '无法该播放' })
     } else {
@@ -551,7 +551,7 @@ subscribeKey(store, 'selectedSong', song => {
     audio.autoplay = false
   }
   if (Date.now() - lastLoadAt > 86400000) {
-    log('daily.bootstrap')
+    logger.info('daily.bootstrap')
     bootstrap()
   }
 })

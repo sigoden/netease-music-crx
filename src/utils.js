@@ -86,15 +86,40 @@ export const COMMON_PROPS = {
   selectedSong: null
 }
 
-export function log (...args) {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(...args)
+const LOG_LEVEL = {
+  verbose: 0,
+  debug: 1,
+  info: 2,
+  error: 3
+}
+
+export const logger = {
+  level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
+  log (level, ...args) {
+    if (level === 'error') {
+      console.error(...args)
+    }
+    const levelValue = LOG_LEVEL[level]
+    const configLevelValue = LOG_LEVEL[logger.level]
+    if (levelValue >= configLevelValue) {
+      console.log(...args)
+    }
+  },
+  verbose (...args) {
+    logger.log('verbose', ...args)
+  },
+  debug (...args) {
+    logger.log('debug', ...args)
+  },
+  info (...args) {
+    logger.log('info', ...args)
+  },
+  error (...args) {
+    logger.log('error', ...args)
   }
 }
 
-export function debug (...args) {
-  // log(...args)
-}
+globalThis.logger = logger
 
 // 格式化秒 90 -> 1:30
 export function formatScondTime (timeInSeconds) {

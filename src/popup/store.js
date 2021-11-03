@@ -1,6 +1,6 @@
 import { proxy } from 'valtio'
 import { subscribeKey } from 'valtio/utils'
-import { COMMON_PROPS, EMPTY_AUDIO_STATE, log } from '../utils'
+import { COMMON_PROPS, EMPTY_AUDIO_STATE, logger } from '../utils'
 
 const store = proxy({
   message: '',
@@ -72,12 +72,12 @@ export function popupInit () {
 }
 
 function doAction (action, params = []) {
-  log(action + '.req', params)
+  logger.debug(action + '.req', params)
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ action, params }, response => {
-      log(action + '.res', response)
+      logger.debug(action + '.res', response)
       if (action === 'popupInit') {
-        log('store', store)
+        logger.debug('store', store)
       }
       if (!response.isErr) {
         Object.assign(store, response)
@@ -103,7 +103,7 @@ subscribeKey(store, 'message', () => {
 chrome.runtime.onMessage.addListener((request) => {
   switch (request?.topic) {
     case 'sync':
-      log('sync', request.change)
+      logger.debug('sync', request.change)
       Object.assign(store, request.change)
       break
     case 'error':
@@ -116,7 +116,7 @@ chrome.runtime.onMessage.addListener((request) => {
       Object.assign(store, { audioState: request.audioState })
       break
     case 'changeSongsMap':
-      log('sync', request)
+      logger.debug('sync', request)
       Object.assign(store, { songsMapChanged: { songId: request.songId, op: request.op } })
       break
     default:

@@ -1,5 +1,5 @@
 import * as storeUtils from './store'
-import { DOMAIN, log, debug, parseCookies, serializeCookies } from '../utils'
+import { DOMAIN, logger, parseCookies, serializeCookies } from '../utils'
 import { KUWO_DOMAIN, KUWO_MOBI_DOMAIN } from './kuwo'
 
 export function init () {
@@ -30,7 +30,7 @@ function initContextMenu () {
       title: '播放/暂停',
       contexts: ['browser_action'],
       onclick: function () {
-        log('contextMenu.togglePlay')
+        logger.debug('contextMenu.togglePlay')
         storeUtils.togglePlaying()
       }
     },
@@ -38,7 +38,7 @@ function initContextMenu () {
       title: '上一首',
       contexts: ['browser_action'],
       onclick: function () {
-        log('contextMenu.playPrev')
+        logger.debug('contextMenu.playPrev')
         storeUtils.playPrev()
       }
     },
@@ -46,7 +46,7 @@ function initContextMenu () {
       title: '下一首',
       contexts: ['browser_action'],
       onclick: function () {
-        log('contextMenu.playNext')
+        logger.debug('contextMenu.playNext')
         storeUtils.playNext()
       }
     },
@@ -54,7 +54,7 @@ function initContextMenu () {
       title: '退出登录',
       contexts: ['browser_action'],
       onclick: function () {
-        log('contextMenu.logout')
+        logger.debug('contextMenu.logout')
         storeUtils.logout()
       }
     }
@@ -74,14 +74,14 @@ function initMessageHandler () {
     if (fn) {
       (async () => {
         try {
-          log(`${action}.params`, params)
+          logger.debug(`${action}.params`, params)
           const change = (await fn.apply(storeUtils, request.params)) || {}
           if (action !== 'loadSongsMap') {
-            log(`${action}.result`, change)
+            logger.debug(`${action}.result`, change)
           }
           sendResponse({ isErr: false, message: '', ...change })
         } catch (err) {
-          log(`${action}.error`, err)
+          logger.debug(`${action}.error`, err)
           sendResponse({ isErr: true, message: err.message })
         }
       })()
@@ -108,7 +108,7 @@ function setNetworkHandler () {
               }
             }
           }
-          debug('hookRequest.163', details.requestHeaders)
+          logger.verbose('hookRequest.163', details.requestHeaders)
           details.requestHeaders.push({ name: 'Referer', value: DOMAIN })
         } else if (details.url.startsWith(KUWO_DOMAIN)) {
           let token = ''
@@ -122,7 +122,7 @@ function setNetworkHandler () {
           }
           if (token) details.requestHeaders.push({ name: 'csrf', value: token })
           details.requestHeaders.push({ name: 'Referer', value: KUWO_DOMAIN })
-          debug('hookRequest.kuwo', details.requestHeaders)
+          logger.verbose('hookRequest.kuwo', details.requestHeaders)
         } else if (details.url.startsWith(KUWO_MOBI_DOMAIN)) {
           for (let i = 0; i < details.requestHeaders.length; ++i) {
             const header = details.requestHeaders[i]
@@ -132,7 +132,7 @@ function setNetworkHandler () {
           }
           details.requestHeaders.push({ name: 'user-agent', value: 'okhttp/3.10.0' })
           details.requestHeaders.push({ name: 'Referer', value: KUWO_DOMAIN })
-          debug('hookRequest.kuwo.mobi', details.requestHeaders)
+          logger.verbose('hookRequest.kuwo.mobi', details.requestHeaders)
         }
       }
       return { requestHeaders: details.requestHeaders }
