@@ -1,0 +1,25 @@
+name: release
+
+on: 
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+    - run: yarn 
+    - run: yarn build
+    - uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        prerelease: true
+        files: |
+          netease-music-crx-*.zip
