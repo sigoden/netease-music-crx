@@ -95,7 +95,7 @@ function initMessageHandler () {
 function setNetworkHandler () {
   chrome.webRequest.onBeforeSendHeaders.addListener(
     function (details) {
-      if (details.initiator.startsWith('chrome-extension://')) {
+      if (details?.initiator && details.initiator.startsWith('chrome-extension://')) {
         if (details.url.startsWith(DOMAIN)) {
           for (let i = 0; i < details.requestHeaders.length; ++i) {
             const header = details.requestHeaders[i]
