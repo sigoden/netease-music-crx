@@ -3,7 +3,7 @@ const { encryptQuery } = kwDes()
 const TOKEN_TTL = 30 * 60 * 1000
 let tokenAt = 0
 
-export const KUWO_DOMAIN = 'http://www.kuwo.cn'
+export const KUWO_DOMAIN = 'https://www.kuwo.cn'
 export const KUWO_MOBI_DOMAIN = 'http://mobi.kuwo.cn'
 
 export async function getKuWoSong (name, artists) {

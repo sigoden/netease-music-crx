@@ -22,7 +22,7 @@
     "webRequestBlocking",
     "contextMenus",
     "https://music.163.com/",
-    "http://*.kuwo.cn/"
+    "*://*.kuwo.cn/"
   ],
   "update_url": "http://clients2.google.com/service/update2/crx",
   "minimum_chrome_version": "29",

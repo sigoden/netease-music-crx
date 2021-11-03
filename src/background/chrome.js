@@ -111,7 +111,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
   {
     urls: [
       `${DOMAIN}/weapi/*`,
-      'http://*.kuwo.cn/*'
+      '*://*.kuwo.cn/*'
     ]
   },
   ['requestHeaders', 'blocking', 'extraHeaders']
