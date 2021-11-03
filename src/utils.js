@@ -134,6 +134,25 @@ export async function sleep (ms) {
   })
 }
 
+export function race (values) {
+  return new Promise((resolve, reject) => {
+    let rejected = 0
+    const errors = Array.from(Array(values.length))
+
+    values.forEach((value, index) => {
+      Promise.resolve(value)
+        .then(resolve)
+        .catch(error => {
+          rejected += 1
+          errors[index] = error
+          if (rejected === values.length) {
+            reject(errors)
+          }
+        })
+    })
+  })
+}
+
 const OMIT_COOKIE_KEYS = ['Expires', 'Max-Age', 'Domain', 'Path', 'Secure', 'HttpOnly', 'SameSite', 'SameSite', 'Domain']
 
 export function parseCookies (cookieValues) {

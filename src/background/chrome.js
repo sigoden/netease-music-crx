@@ -1,11 +1,13 @@
 import * as storeUtils from './store'
 import { DOMAIN, logger, parseCookies, serializeCookies } from '../utils'
 import { KUWO_DOMAIN, KUWO_MOBI_DOMAIN } from './kuwo'
+import { MIGU_DOMAIN } from './migu'
 
 export function init () {
   initContextMenu()
   initMessageHandler()
-  setNetworkHandler()
+  initRequestHook()
+  initResponseHook()
 }
 
 export function sendToPopup (data) {
@@ -92,7 +94,7 @@ function initMessageHandler () {
   })
 }
 
-function setNetworkHandler () {
+function initRequestHook () {
   chrome.webRequest.onBeforeSendHeaders.addListener(
     function (details) {
       if (details?.initiator && details.initiator.startsWith('chrome-extension://')) {
@@ -108,7 +110,7 @@ function setNetworkHandler () {
               }
             }
           }
-          logger.verbose('hookRequest.163', details.requestHeaders)
+          logger.verbose('requestHook.163', details.requestHeaders)
           details.requestHeaders.push({ name: 'Referer', value: DOMAIN })
         } else if (details.url.startsWith(KUWO_DOMAIN)) {
           let token = ''
@@ -122,7 +124,7 @@ function setNetworkHandler () {
           }
           if (token) details.requestHeaders.push({ name: 'csrf', value: token })
           details.requestHeaders.push({ name: 'Referer', value: KUWO_DOMAIN })
-          logger.verbose('hookRequest.kuwo', details.requestHeaders)
+          logger.verbose('requestHook.kuwo', details.requestHeaders)
         } else if (details.url.startsWith(KUWO_MOBI_DOMAIN)) {
           for (let i = 0; i < details.requestHeaders.length; ++i) {
             const header = details.requestHeaders[i]
@@ -132,17 +134,47 @@ function setNetworkHandler () {
           }
           details.requestHeaders.push({ name: 'user-agent', value: 'okhttp/3.10.0' })
           details.requestHeaders.push({ name: 'Referer', value: KUWO_DOMAIN })
-          logger.verbose('hookRequest.kuwo.mobi', details.requestHeaders)
+          logger.verbose('requestHook.kuwo.mobi', details.requestHeaders)
+        } else if (details.url.startsWith(MIGU_DOMAIN)) {
+          for (let i = 0; i < details.requestHeaders.length; ++i) {
+            const header = details.requestHeaders[i]
+            if (header.name === 'Origin') {
+              header.value = MIGU_DOMAIN
+            }
+          }
+          details.requestHeaders.push({ name: 'Referer', value: MIGU_DOMAIN })
+          logger.verbose('requestHook.migu', details.requestHeaders)
         }
       }
       return { requestHeaders: details.requestHeaders }
     },
     {
       urls: [
-      `${DOMAIN}/weapi/*`,
-      '*://*.kuwo.cn/*'
+        `${DOMAIN}/weapi/*`,
+        '*://*.kuwo.cn/*',
+        '*://*.migu.cn/*'
       ]
     },
     ['requestHeaders', 'blocking', 'extraHeaders']
+  )
+}
+
+function initResponseHook () {
+  chrome.webRequest.onHeadersReceived.addListener(
+    function (details) {
+      if (details?.initiator && details.initiator.startsWith('chrome-extension://')) {
+        if (details.url.startsWith(MIGU_DOMAIN)) {
+          details.responseHeaders.push({ name: 'Access-Control-Allow-Origin', value: '*' })
+          logger.verbose('responseHook.migu', details.requestHeaders)
+        }
+      }
+      return { responseHeaders: details.responseHeaders }
+    },
+    {
+      urls: [
+        '*://*.migu.cn/*'
+      ]
+    },
+    ['responseHeaders', 'blocking', 'extraHeaders']
   )
 }

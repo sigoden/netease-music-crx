@@ -3,6 +3,7 @@ import { subscribeKey } from 'valtio/utils'
 import { loadData, saveData, sendToPopup } from './chrome'
 import api from './api'
 import { getKuWoSong } from './kuwo'
+import { getMiGuSong } from './migu'
 
 import {
   PLAY_MODE,
@@ -16,7 +17,8 @@ import {
   LEN_PLAYLIST_REC,
   logger,
   chunkArr,
-  shuffleArr
+  shuffleArr,
+  race
 } from '../utils'
 
 // 播放器
@@ -379,9 +381,14 @@ async function loadSongDetail (playlistDetail, songId, retry) {
     if (!song || !song.valid) {
       throw new Error(errMsg)
     } else if (song.miss || (song.vip && !store.vip)) {
-      const kwSong = await getKuWoSong(song.name, song.artists)
-      if (!kwSong) throw new Error('尝试酷我源失败')
-      Object.assign(song, kwSong)
+      try {
+        song.url = await race([
+          getKuWoSong(song.name, song.artists),
+          getMiGuSong(song.name, song.artists)
+        ])
+      } catch {
+        throw new Error('换源失败')
+      }
     } else {
       const res = await api.getSongUrls([songId])
       if (res.code !== 200) {

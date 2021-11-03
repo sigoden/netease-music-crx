@@ -21,14 +21,15 @@ export async function getKuWoSong (name, artists) {
     song.artist.replace(/&nbsp;/g, ' ').split('&').some(v => artists.includes(v.trim()))
   }
   const song = (result?.data?.list || []).filter(filterSong)[0]
-  if (!song) return
+  if (!song) throw new Error()
   const q = encryptQuery(
     'corp=kuwo&p2p=1&type=convert_url2&sig=0&format=mp3&rid=' + song.rid
   )
   res = await fetch(`${KUWO_MOBI_DOMAIN}/mobi.s?f=kuwo&q=` + q)
   result = await res.text()
-  const url = (result.match(/http[^\s$"]+/) || [])[0] || ''
-  return { url, duration: song.duration * 1000 }
+  const url = (result.match(/http[^\s$"]+/) || [])[0]
+  if (!url) throw new Error()
+  return url
 }
 
 /*
