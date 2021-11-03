@@ -321,8 +321,8 @@ async function loadPlaylistDetails (playlist) {
     let normalIndexes = []
     const dealSongs = songs => {
       const tracks = songs.map(song => {
-        const { id, name, album: al, artists: ar, duration } = song
-        return { id, name, al, ar, dt: duration, st: 0 }
+        const { id, name, album: al, artists: ar, duration, fee } = song
+        return { id, name, al, ar, dt: duration, st: 0, fee }
       })
       const songsMap = tracksToSongsMap(tracks)
       normalIndexes = tracks.map(v => v.id)
@@ -382,7 +382,7 @@ async function loadSongDetail (playlistDetail, songId, retry) {
   try {
     if (!song || !song.valid) {
       throw new Error('无法获取播放链接')
-    } else if (song.broken) {
+    } else if (song.miss) {
       const keyword = song.name + ' ' + song.artists
       song.url = await getKuWoUrl(keyword)
     } else {
@@ -515,12 +515,13 @@ async function updateSelectedSong (selectedSong) {
 
 function tracksToSongsMap (tracks) {
   const songs = tracks.map(track => {
-    const { id, name, al: { picUrl }, ar, dt, st } = track
+    const { id, name, al: { picUrl }, ar, dt, st = 0, fee } = track
     return {
       id,
       name,
       valid: true,
-      broken: st < 0,
+      miss: st < 0,
+      vip: !(fee === 0 || fee === 8),
       picUrl: picUrl + IMAGE_CLIP,
       artists: ar.map(v => v.name).join(' / '),
       duration: dt

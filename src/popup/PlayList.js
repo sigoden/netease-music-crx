@@ -14,6 +14,7 @@ import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
+import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
 import { formatScondTime } from '../utils'
 import store, * as storeUtils from './store'
@@ -96,13 +97,19 @@ export default function PlayList ({ maxHeight }) {
                   key={song.id}
                   selected={song.id === snap.selectedSong?.id}
                   ref={songRefs[song.id]}
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 }, ...(!song.broken ? {} : { filter: 'opacity(0.5)' }) }}
+                  sx={{ '&:last-child td, &:last-child th': { border: 0 }, ...(!song.valid ? { filter: 'opacity(0.5)' } : {}) }}
                 >
-                  <TableCell component="th" scope="row" sx={{ maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', padding: '4px 16px' }}>
-                    <IconButton disabled={!song.valid} onClick={() => storeUtils.playSong(song.id)}>
-                      <PlayArrowIcon />
-                    </IconButton>
-                    {song.name}
+                  <TableCell component="th" scope="row" sx={{ maxWidth: 200, py: '4px', pl: '16px' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <IconButton disabled={!song.valid} onClick={() => storeUtils.playSong(song.id)}>
+                        <PlayArrowIcon />
+                      </IconButton>
+                      <Box sx={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.name}</Box>
+                      {song.miss
+                        ? <Chip sx={{ height: '20px', ml: '4px' }} label="miss" size="small" variant="outlined" />
+                        : (song.vip && <Chip sx={{ height: '20px', ml: '4px' }} label="vip" size="small" variant="outlined" />)
+                      }
+                    </Box>
                   </TableCell>
                   <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.artists}</TableCell>
                   <TableCell align="right">{formatScondTime(song.duration / 1000)}</TableCell>
