@@ -463,6 +463,7 @@ function getNextSongId (playlistDetail, songId) {
 
 function createAudio (url) {
   const audio = new Audio(url)
+  audio.volume = store.volume
   audio.onprogress = () => {
     if (audio.buffered.length) {
       const loadPercentage = (audio.buffered.end(audio.buffered.length - 1) / audio.duration) * 100
