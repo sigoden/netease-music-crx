@@ -62,7 +62,7 @@ export function togglePlaying () {
 
 export function toggleMute () {
   if (store.volume === 0) {
-    updateVolume(volumeMute)
+    updateVolume(volumeMute || COMMON_PROPS.volume)
   } else {
     volumeMute = store.volume
     updateVolume(0)
@@ -150,9 +150,7 @@ export async function likeSong (playlistId) {
   if (!playlistId) throw new Error(errMsg)
   const res = await api.likeSong(playlistId, selectedSong.id, true)
   if (res.code === 200) {
-    // 更新收藏到歌单
-    const playlist = store.playlists.find(v => v.id === playlistId)
-    await loadPlaylistDetails(playlist)
+    refreshPlaylistDetails(playlistId)
     return { message: '收藏成功' }
   } else {
     throw new Error(errMsg)
@@ -380,6 +378,13 @@ async function loadPlaylistDetails (playlist) {
     logger.error('loadPlaylistDetails.err', err)
     throw new Error('获取歌单失败')
   }
+}
+
+async function refreshPlaylistDetails (playlistId) {
+  const playlist = store.playlists.find(v => v.id === playlistId)
+  delete playlistDetailStore[playlistId]
+  await loadPlaylistDetails(playlist)
+  logger.debug('refreshPlaylistDetails', playlist.name)
 }
 
 async function loadSongDetail (playlistDetail, songId, retry) {
