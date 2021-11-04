@@ -590,11 +590,11 @@ subscribeKey(store, 'playing', playing => {
 
 setInterval(() => {
   bootstrap()
-}, 12 * 60 * 60 * 1000)
+}, 10 * 60 * 60 * 1000)
 
 setInterval(() => {
   refreshLogin()
-}, 51 * 60 * 100)
+}, 51 * 60 * 1000)
 
 api.code301 = reset
 
