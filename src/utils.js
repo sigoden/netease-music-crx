@@ -95,6 +95,7 @@ export const logger = {
   log (level, ...args) {
     if (level === 'error') {
       console.error(...args)
+      return
     }
     const levelValue = LOG_LEVEL[level]
     const configLevelValue = LOG_LEVEL[logger.level]

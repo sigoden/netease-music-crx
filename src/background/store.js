@@ -36,6 +36,8 @@ let isForcePlay = false
 let persistData = null
 // 静音前音量
 let volumeMute = 0
+// 上次重启时间
+let rebootAt = 0
 
 const store = proxy({ ...COMMON_PROPS })
 
@@ -45,6 +47,7 @@ export async function bootstrap () {
     refreshLogin()
   ])
   await refreshPlaylists()
+  rebootAt = Date.now()
   logger.info('bootstrap', store)
 }
 
@@ -261,13 +264,19 @@ function getPopupData () {
 }
 
 async function refreshLogin () {
-  await api.loginRefresh()
-  const res = await api.getUser()
-  if (res.code === 200 && res?.profile) {
-    const { userId, vipType } = res.profile
-    Object.assign(store, { userId, vip: vipType > 0 })
-  } else {
+  const res = await api.loginRefresh()
+  if (res.code !== 200) {
     await reset()
+    return
+  }
+  if (store.userId === null) {
+    const res = await api.getUser()
+    if (res.code === 200 && res?.profile) {
+      const { userId, vipType } = res.profile
+      Object.assign(store, { userId, vip: vipType > 0 })
+    } else {
+      await reset()
+    }
   }
 }
 
@@ -393,12 +402,13 @@ async function loadSongDetail (playlistDetail, songId, retry) {
     songsMap = tracksToSongsMap(tracks)
   }
   const song = songsMap[songId]
+  let url
   try {
     if (!song || !song.valid) {
       throw new Error('歌曲无法播放')
     } else if (song.miss || (song.vip && !store.vip)) {
       try {
-        song.url = await race([
+        url = await race([
           getKuWoSong(song.name, song.artists),
           getMiGuSong(song.name, song.artists)
         ])
@@ -410,11 +420,10 @@ async function loadSongDetail (playlistDetail, songId, retry) {
       if (res.code !== 200) {
         throw new Error(res.message)
       }
-      const url = res.data.map(v => v.url)[0]
+      url = res.data.map(v => v.url)[0]
       if (!url) {
         throw new Error('获取资源失败')
       }
-      song.url = url
     }
   } catch (err) {
     logger.error('loadSongDetail.err', err)
@@ -429,7 +438,7 @@ async function loadSongDetail (playlistDetail, songId, retry) {
     const newSongId = getNextSongId(playlistDetail, songId)
     return loadSongDetail(playlistDetail, newSongId, retry)
   }
-  return song
+  return { ...song, url }
 }
 
 async function loadTracks (ids) {
@@ -513,7 +522,7 @@ function createAudio (url) {
     sendToPopup({ topic: 'sync', change })
   }
   audio.onerror = async () => {
-    logger.error('audio.error', url, audio.error.message)
+    logger.error('audio.error', store.selectedSong, audio.error.message)
     if (isForcePlay) {
       sendToPopup({ topic: 'error', message: '无法该播放' })
     } else {
@@ -588,13 +597,12 @@ subscribeKey(store, 'playing', playing => {
   }
 })
 
-setInterval(() => {
-  bootstrap()
-}, 10 * 60 * 60 * 1000)
-
-setInterval(() => {
-  refreshLogin()
-}, 51 * 60 * 1000)
+setInterval(async () => {
+  await refreshLogin()
+  if (Date.now() - rebootAt > 13 * 60 * 60 * 1000) {
+    await bootstrap()
+  }
+}, 33 * 60 * 1000)
 
 api.code301 = reset
 
