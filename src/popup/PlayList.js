@@ -65,43 +65,48 @@ export default function PlayList ({ maxHeight }) {
     <Grid container>
       <Grid item xs={4} sx={{ background: '#f3f0f0' }}>
         <List sx={{ maxHeight, overflowY: 'auto', py: 0 }}>
-        {playlists.map((playlist, index) => {
-          const isNewCat = playlists[index - 1] && playlists[index - 1].type !== playlist.type
-          return (
-            <ListItemButton
-              key={playlist.id}
-              sx={isNewCat ? { borderTop: '1px solid #e0e0e0' } : {}}
-              selected={playlist.id === currentPlaylistId}
-              ref={playlistRefs[playlist.id]}
-              onClick={_ => changePlaylist(playlist.id)}
-            >
-              <ListItemIcon sx={{ minWidth: 30 }}>
-                {playlist.picUrl
-                  ? <Avatar src={playlist.picUrl} sx={{ width: 24, height: 24 }} />
-                  : <Avatar sx={{ width: 24, height: 24, color: 'white', background: '#ff8058' }} >
-                      <QueueMusicIcon sx={{ fontSize: '15px' }} />
-                    </Avatar>
-                }
-              </ListItemIcon>
-              <ListItemText primary={playlist.name} sx={{ '.MuiTypography-root': { maxWidth: 180, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' } }} />
-            </ListItemButton>
-          )
-        })}
+          {playlists.map((playlist, index) => {
+            const isNewCat = playlists[index - 1] && playlists[index - 1].type !== playlist.type
+            const renderAvatar = () => {
+              if (playlist.picUrl) {
+                return <Avatar src={playlist.picUrl} sx={{ width: 24, height: 24 }} />
+              } else {
+                return (
+                  <Avatar sx={{ width: 24, height: 24, color: 'white', background: '#ff8058' }}>
+                    <QueueMusicIcon sx={{ fontSize: '15px' }} />
+                  </Avatar>
+                )
+              }
+            }
+            return (
+              <ListItemButton
+                key={playlist.id}
+                sx={isNewCat ? { borderTop: '1px solid #e0e0e0' } : {}}
+                selected={playlist.id === currentPlaylistId}
+                ref={playlistRefs[playlist.id]}
+                onClick={_ => changePlaylist(playlist.id)}
+              >
+                <ListItemIcon sx={{ minWidth: 30 }}>
+                  {renderAvatar()}
+                </ListItemIcon>
+                <ListItemText primary={playlist.name} sx={{ '.MuiTypography-root': { maxWidth: 180, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' } }} />
+              </ListItemButton>
+            )
+          })}
         </List>
       </Grid>
       <Grid item xs={8} sx={{ maxHeight, overflowY: 'auto' }}>
         {loading &&
           <Box sx={{ display: 'flex', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
             <CircularProgress />
-          </Box>
-        }
+          </Box>}
         {songs.length > 0 &&
-          <Table stickyHeader size="small">
+          <Table stickyHeader size='small'>
             <TableHead sx={{ height: '48px' }}>
               <TableRow>
                 <TableCell><Box sx={{ paddingLeft: '14px' }}>歌曲</Box></TableCell>
                 <TableCell>歌手</TableCell>
-                <TableCell align="right" style={{ minWidth: 64 }}>时长</TableCell>
+                <TableCell align='right' style={{ minWidth: 64 }}>时长</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -113,8 +118,8 @@ export default function PlayList ({ maxHeight }) {
                   sx={{ '&:last-child td, &:last-child th': { border: 0 }, ...(!song.valid ? { filter: 'opacity(0.5)' } : {}) }}
                 >
                   <TableCell
-                    component="th"
-                    scope="row"
+                    component='th'
+                    scope='row'
                     sx={{ maxWidth: 200, py: '4px', pl: '16px', ...(song.miss ? { filter: 'opacity(0.5)' } : {}) }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -122,16 +127,15 @@ export default function PlayList ({ maxHeight }) {
                         <PlayArrowIcon />
                       </IconButton>
                       <Box sx={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.name}</Box>
-                      {song.vip && (song.vip && <Chip sx={{ height: '20px', ml: '4px' }} label="vip" size="small" variant="outlined" />)}
+                      {song.vip && (song.vip && <Chip sx={{ height: '20px', ml: '4px' }} label='vip' size='small' variant='outlined' />)}
                     </Box>
                   </TableCell>
                   <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.artists}</TableCell>
-                  <TableCell align="right">{formatScondTime(song.duration / 1000)}</TableCell>
+                  <TableCell align='right'>{formatScondTime(song.duration / 1000)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
-        }
+          </Table>}
       </Grid>
     </Grid>
   )

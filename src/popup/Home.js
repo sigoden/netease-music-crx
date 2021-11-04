@@ -14,18 +14,16 @@ export default function Home () {
   return (
     <Box sx={{ width: 800 }}>
       <Player />
-      {<PlayList maxHeight={400} />}
+      <PlayList maxHeight={400} />
       {snap.message &&
-        <Alert severity={snap.isErr ? 'error' : 'success'}>{snap.message}</Alert>
-      }
+        <Alert severity={snap.isErr ? 'error' : 'success'}>{snap.message}</Alert>}
       {!snap.userId &&
         <Box sx={{ p: 3, textAlign: 'center', background: 'white' }}>
-          <Link href="#" onClick={() => history.push('/login')}>
+          <Link href='#' onClick={() => history.push('/login')}>
             登录
           </Link>
           获取个性化推荐及我的歌单
-        </Box>
-      }
+        </Box>}
     </Box>
   )
 }

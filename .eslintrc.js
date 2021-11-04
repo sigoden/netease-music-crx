@@ -4,10 +4,15 @@ module.exports = {
   parser: '@babel/eslint-parser',
   extends: [
     'react-app',
-    'standard'
+    'standard',
+    'standard-jsx',
+    'standard-react'
   ],
   globals: {
     chrome: 'readonly'
   },
-  ignorePatterns: ['build', 'tmp']
+  ignorePatterns: ['build', 'tmp'],
+  rules: {
+    'react/prop-types': 0
+  }
 }

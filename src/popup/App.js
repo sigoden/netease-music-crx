@@ -16,10 +16,10 @@ export default function App () {
       <CssBaseline />
       <Router>
         <Switch>
-          <Route exact path="/">
+          <Route exact path='/'>
             <Home />
           </Route>
-          <Route path="/login">
+          <Route path='/login'>
             <Login />
           </Route>
         </Switch>

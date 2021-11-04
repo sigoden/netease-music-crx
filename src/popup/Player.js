@@ -55,7 +55,26 @@ export default function Player () {
   const currentTimeStr = formatScondTime(currentTime)
   const durationTimeStr = formatScondTime(duration)
   const percentPlayed = currentTime / duration * 100 || 0
+
+  const renderLikeBtn = () => {
+    if (!userId) return
+    if (selectedPlaylist?.type === PLAYLIST_TYPE.CRATE) {
+      return (
+        <IconButton onClick={() => storeUtils.unlikeSong()} title='取消收藏'>
+          <FavoriteIcon />
+        </IconButton>
+      )
+    } else {
+      return (
+        <IconButton onClick={() => setShowModal(true)} title='收藏'>
+          <FavoriteBorderIcon />
+        </IconButton>
+      )
+    }
+  }
+
   let playModeIcon, playModeTitle
+
   switch (playMode) {
     case PLAY_MODE.SHUFFLE:
       playModeIcon = <ShuffleIcon />
@@ -74,24 +93,22 @@ export default function Player () {
   return (
     <Grid container alignItems='center' sx={{ background: 'white', p: 1 }}>
       <Grid item alignItems='center'>
-        <IconButton onClick={storeUtils.playPrev} title='上一首'>
+        <IconButton onClick={() => storeUtils.playPrev()} title='上一首'>
           <SkipPreviousIcon />
         </IconButton>
-        <IconButton onClick={storeUtils.togglePlaying} title='播放/暂停'>
-            {playing
-              ? <PauseIcon />
-              : <PlayArrowIcon />
-            }
+        <IconButton onClick={() => storeUtils.togglePlaying()} title='播放/暂停'>
+          {playing
+            ? <PauseIcon />
+            : <PlayArrowIcon />}
         </IconButton>
-        <IconButton onClick={storeUtils.playNext} title='下一首'>
+        <IconButton onClick={() => storeUtils.playNext()} title='下一首'>
           <SkipNextIcon />
         </IconButton>
       </Grid>
       <Grid item alignItems='center' sx={{ flexGrow: 1, display: 'flex', mx: 1 }}>
         {selectedSong?.picUrl
           ? <Avatar src={selectedSong?.picUrl} alt='song pic' />
-          : <Avatar alt='song pic'>S</Avatar>
-        }
+          : <Avatar alt='song pic'>S</Avatar>}
         <Grid container direction='column' sx={{ mx: 1 }}>
           <Grid item sx={{ display: 'flex', alignItems: 'baseline' }}>
             <Box sx={{ maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
@@ -110,16 +127,8 @@ export default function Player () {
         <Box sx={{ whiteSpace: 'nowrap' }}>{currentTimeStr} / {durationTimeStr}</Box>
       </Grid>
       <Grid item alignItems='center'>
-        {userId &&
-          (selectedPlaylist?.type === PLAYLIST_TYPE.CRATE
-            ? <IconButton onClick={storeUtils.unlikeSong} title='取消收藏'>
-                <FavoriteIcon />
-              </IconButton>
-            : <IconButton onClick={() => setShowModal(true)} title='收藏'>
-                <FavoriteBorderIcon />
-              </IconButton>
-          )}
-        <IconButton onClick={storeUtils.updatePlayMode} title={playModeTitle}>
+        {renderLikeBtn()}
+        <IconButton onClick={() => storeUtils.updatePlayMode()} title={playModeTitle}>
           {playModeIcon}
         </IconButton>
         <IconButton onClick={() => setShowVolumeBar(!showVolumeBar)} title='音量'>
@@ -127,7 +136,8 @@ export default function Player () {
         </IconButton>
         <Box sx={{
           height: 100, display: showVolumeBar ? 'block' : 'none', position: 'absolute', zIndex: 99, right: 11
-        }}>
+        }}
+        >
           <Slider
             value={1 - volume}
             orientation='vertical'

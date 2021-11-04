@@ -93,8 +93,7 @@ export default function Login () {
         {snap.message &&
           <Box sx={{ my: 2 }}>
             <Alert severity={snap.isErr ? 'error' : 'success'}>{snap.message}</Alert>
-          </Box>
-        }
+          </Box>}
         <Box sx={{ mt: 2, mb: 5 }}>
           <Button
             type='submit'
