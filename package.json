@@ -1,8 +1,8 @@
 {
   "name": "netease-music-crx",
-  "description": "一款可以让您方便快捷地收听网易云音乐的浏览器插件",
+  "description": "能够免费收听VIP或变灰歌曲的网易云音乐播放器",
   "license": "MIT",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "scripts": {
     "build": "node scripts/build.js",
     "start": "node scripts/webserver.js",
