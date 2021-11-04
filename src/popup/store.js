@@ -63,8 +63,8 @@ export function captchaSent (phone) {
   return doAction('captchaSent', [phone])
 }
 
-export function reload () {
-  return doAction('reload')
+export function refreshPlaylists () {
+  return doAction('refreshPlaylists')
 }
 
 export function popupInit () {

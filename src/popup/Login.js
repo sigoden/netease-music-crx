@@ -41,7 +41,7 @@ export default function Login () {
     const { phone, captcha } = state
     try {
       await storeUtils.login(phone, captcha)
-      await storeUtils.reload()
+      await storeUtils.refreshPlaylists()
       history.push('/')
     } catch {}
   }

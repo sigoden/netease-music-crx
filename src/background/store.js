@@ -25,8 +25,6 @@ import {
 let audio
 // 播放状态
 let audioState = { ...EMPTY_AUDIO_STATE }
-// 上次加载推荐歌单时间
-let lastLoadAt = 0
 // 点播
 let isForcePlay = false
 // 持久化缓存信息
@@ -39,9 +37,12 @@ const songsStore = {}
 const store = proxy({ ...COMMON_PROPS })
 
 export async function bootstrap () {
-  await refreshLogin()
-  await persistLoad()
-  await reload()
+  await Promise.all([
+    persistLoad(),
+    refreshLogin()
+  ])
+  await refreshPlaylists()
+  logger.info('bootstrap', store)
 }
 
 export function updateAudioTime (currentTime) {
@@ -52,15 +53,8 @@ export function updateAudioTime (currentTime) {
 }
 
 export function togglePlaying () {
-  let { playing } = store
-  if (playing) {
-    audio.pause()
-  } else {
-    audio.play()
-  }
-  playing = !playing
-  store.playing = playing
-  return { playing }
+  store.playing = !store.playing
+  return { playing: store.playing }
 }
 
 export function updateVolume (volume) {
@@ -201,8 +195,7 @@ export async function logout () {
   await reset()
 }
 
-export async function reload () {
-  lastLoadAt = Date.now()
+export async function refreshPlaylists () {
   const oldPlaylistIds = store.playlists.map(v => v.id)
   if (store.userId) {
     store.playlists = await loadPlaylists()
@@ -218,7 +211,6 @@ export async function reload () {
       delete playlistDetailStore[playlistId]
     }
   }
-  logger.debug('reload', store)
   return getPopupData()
 }
 
@@ -265,7 +257,7 @@ async function reset () {
   logger.debug('reset', store)
   Object.assign(store, { ...COMMON_PROPS })
   await persistSave()
-  await reload()
+  await refreshPlaylists()
 }
 
 async function loadPlaylists () {
@@ -438,7 +430,7 @@ async function playNextSong () {
   const { selectedSong, selectedPlaylist } = store
   let songId = selectedSong.id
   if (store.playMode !== PLAY_MODE.ONE) {
-    songId = getNextSongId(selectedPlaylist, selectedSong.id)
+    songId = getNextSongId(selectedPlaylist, songId)
   }
   const newSong = await loadSongDetail(selectedPlaylist, songId, true)
   return updateSelectedSong(newSong)
@@ -452,13 +444,17 @@ function getNextSongId (playlistDetail, songId) {
   const currentIndex = songsIndex.findIndex(v => v === songId)
   let nextIndex = currentIndex
   if (dir === 1) {
-    if (currentIndex === len - 1) {
+    if (currentIndex === -1) {
+      nextIndex = 0
+    } else if (currentIndex === len - 1) {
       nextIndex = 0
     } else {
       nextIndex = currentIndex + 1
     }
   } else {
-    if (currentIndex === 0) {
+    if (currentIndex === -1) {
+      nextIndex = len - 1
+    } else if (currentIndex === 0) {
       nextIndex = len - 1
     } else {
       nextIndex = currentIndex - 1
@@ -557,11 +553,24 @@ subscribeKey(store, 'selectedSong', song => {
   } else {
     audio.autoplay = false
   }
-  if (Date.now() - lastLoadAt > 86400000) {
-    logger.info('daily.bootstrap')
-    bootstrap()
+})
+
+subscribeKey(store, 'playing', playing => {
+  if (!audio) return
+  if (playing) {
+    if (audio.paused) audio.play()
+  } else {
+    if (!audio.paused) audio.pause()
   }
 })
+
+setInterval(() => {
+  bootstrap()
+}, 12 * 60 * 60 * 1000)
+
+setInterval(() => {
+  refreshLogin()
+}, 51 * 60 * 100)
 
 api.code301 = reset
 
