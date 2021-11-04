@@ -53,6 +53,14 @@ function initContextMenu () {
       }
     },
     {
+      title: '静音/取消静音',
+      contexts: ['browser_action'],
+      onclick: function () {
+        logger.debug('contextMenu.mute')
+        storeUtils.toggleMute()
+      }
+    },
+    {
       title: '退出登录',
       contexts: ['browser_action'],
       onclick: function () {

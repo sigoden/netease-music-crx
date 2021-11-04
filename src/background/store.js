@@ -21,6 +21,11 @@ import {
   race
 } from '../utils'
 
+// 缓存歌单
+const playlistDetailStore = {}
+// 缓存歌单内歌曲
+const songsStore = {}
+
 // 播放器
 let audio
 // 播放状态
@@ -29,10 +34,8 @@ let audioState = { ...EMPTY_AUDIO_STATE }
 let isForcePlay = false
 // 持久化缓存信息
 let persistData = null
-// 缓存歌单
-const playlistDetailStore = {}
-// 缓存歌单内歌曲
-const songsStore = {}
+// 静音前音量
+let volumeMute = 0
 
 const store = proxy({ ...COMMON_PROPS })
 
@@ -55,6 +58,15 @@ export function updateAudioTime (currentTime) {
 export function togglePlaying () {
   store.playing = !store.playing
   return { playing: store.playing }
+}
+
+export function toggleMute () {
+  if (store.volume === 0) {
+    updateVolume(volumeMute)
+  } else {
+    volumeMute = store.volume
+    updateVolume(0)
+  }
 }
 
 export function updateVolume (volume) {
@@ -220,14 +232,24 @@ export function popupInit () {
 
 function persistSave () {
   const { volume, playMode, selectedPlaylist, selectedSong } = store
-  const data = { volume, playMode, playlistId: selectedPlaylist?.id || null, songId: selectedSong?.id || null }
+  const data = {
+    volume,
+    playMode,
+    playlistId: selectedPlaylist?.id || null,
+    songId: selectedSong?.id || null
+  }
   return saveData(data)
 }
 
 async function persistLoad () {
   const data = await loadData()
   if (data) {
-    const { volume = COMMON_PROPS.volume, playMode = COMMON_PROPS.playMode, playlistId, songId } = data
+    const {
+      volume = COMMON_PROPS.volume,
+      playMode = COMMON_PROPS.playMode,
+      playlistId,
+      songId
+    } = data
     logger.debug('persist.load', data)
     if (playlistId) {
       persistData = { playlistId }
