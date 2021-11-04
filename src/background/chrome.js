@@ -16,13 +16,13 @@ export function sendToPopup (data) {
 
 export function saveData (data) {
   return new Promise(resolve => {
-    chrome.storage.sync.set(data, resolve)
+    chrome.storage.local.set(data, resolve)
   })
 }
 
 export function loadData () {
   return new Promise(resolve => {
-    chrome.storage.sync.get(resolve)
+    chrome.storage.local.get(resolve)
   })
 }
 
