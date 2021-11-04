@@ -146,14 +146,13 @@ export async function likeSong (playlistId) {
   } else {
     playlistId = playlists.find(v => v.id === playlistId)?.id
   }
-  const errMsg = '收藏失败'
-  if (!playlistId) throw new Error(errMsg)
+  if (!playlistId) throw new Error('无法定位当前歌单')
   const res = await api.likeSong(playlistId, selectedSong.id, true)
   if (res.code === 200) {
     refreshPlaylistDetails(playlistId)
     return { message: '收藏成功' }
   } else {
-    throw new Error(errMsg)
+    throw new Error(res.message)
   }
 }
 
@@ -163,8 +162,7 @@ export async function unlikeSong () {
   const deleteSongId = selectedSong.id
   const selectedPlaylistId = selectedPlaylist.id
   const nextSongId = getNextSongId(selectedPlaylist, deleteSongId)
-  const errMsg = '取消收藏失败'
-  if (nextSongId === selectedSong.id) throw new Error(errMsg)
+  if (nextSongId === selectedSong.id) throw new Error('无法取消收藏歌单中的唯一一首歌曲')
   const res = await api.likeSong(selectedPlaylistId, deleteSongId, false)
   if (res.code === 200) {
     const playlist = store.playlists.find(v => v.id === selectedPlaylistId)
@@ -176,7 +174,7 @@ export async function unlikeSong () {
     sendToPopup({ topic: 'changeSongsMap', songId: deleteSongId, op: 'remove' })
     return { ...change, message: '取消收藏成功' }
   } else {
-    throw new Error(errMsg)
+    throw new Error(res.message)
   }
 }
 
@@ -376,7 +374,7 @@ async function loadPlaylistDetails (playlist) {
     return cachedPlaylistDetail
   } catch (err) {
     logger.error('loadPlaylistDetails.err', err)
-    throw new Error('获取歌单失败')
+    throw new Error(`获取歌单(${playlist.name})失败`)
   }
 }
 
@@ -395,10 +393,9 @@ async function loadSongDetail (playlistDetail, songId, retry) {
     songsMap = tracksToSongsMap(tracks)
   }
   const song = songsMap[songId]
-  const errMsg = '无法播放歌曲'
   try {
     if (!song || !song.valid) {
-      throw new Error(errMsg)
+      throw new Error('歌曲无法播放')
     } else if (song.miss || (song.vip && !store.vip)) {
       try {
         song.url = await race([
@@ -415,7 +412,7 @@ async function loadSongDetail (playlistDetail, songId, retry) {
       }
       const url = res.data.map(v => v.url)[0]
       if (!url) {
-        throw new Error(errMsg)
+        throw new Error('获取资源失败')
       }
       song.url = url
     }
@@ -427,7 +424,7 @@ async function loadSongDetail (playlistDetail, songId, retry) {
     }
     invalidIndexes.push(songId)
     if (!retry || normalIndexes.length - invalidIndexes.length < 1) {
-      throw new Error(errMsg)
+      throw new Error('歌曲无法播放')
     }
     const newSongId = getNextSongId(playlistDetail, songId)
     return loadSongDetail(playlistDetail, newSongId, retry)
