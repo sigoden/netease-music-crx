@@ -24,9 +24,6 @@ const options = {
     clean: true,
     publicPath: ASSET_PATH
   },
-  chromeExtensionBoilerplate: {
-    notHotReload: ['contentScript', 'devtools']
-  },
   module: {
     rules: [
       {
@@ -120,10 +117,7 @@ const options = {
       chunks: ['background'],
       cache: false
     })
-  ],
-  infrastructureLogging: {
-    level: 'info'
-  }
+  ]
 }
 
 if (process.env.NODE_ENV === 'development') {

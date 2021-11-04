@@ -8,11 +8,9 @@ const config = require('../webpack.config')
 const path = require('path')
 
 const PORT = process.env.PORT || 3000
-const options = config.chromeExtensionBoilerplate || {}
-const excludeEntriesToHotReload = options.notHotReload || []
 
 for (const entryName in config.entry) {
-  if (excludeEntriesToHotReload.indexOf(entryName) === -1) {
+  if (['popup', 'background'].indexOf(entryName) > -1) {
     config.entry[entryName] = [
       'webpack/hot/dev-server',
       `webpack-dev-server/client?hot=true&hostname=localhost&port=${PORT}`
@@ -20,11 +18,7 @@ for (const entryName in config.entry) {
   }
 }
 
-config.plugins = [new webpack.HotModuleReplacementPlugin()].concat(
-  config.plugins || []
-)
-
-delete config.chromeExtensionBoilerplate
+config.plugins = [new webpack.HotModuleReplacementPlugin(), ...(config.plugins || [])]
 
 const compiler = webpack(config)
 

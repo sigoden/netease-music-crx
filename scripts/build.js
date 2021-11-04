@@ -6,8 +6,6 @@ const shell = require('shelljs')
 const webpack = require('webpack')
 const config = require('../webpack.config')
 
-delete config.chromeExtensionBoilerplate
-
 config.mode = 'production'
 
 shell.rm('-rf', 'build')
