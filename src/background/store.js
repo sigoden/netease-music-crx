@@ -39,7 +39,7 @@ let volumeMute = 0
 // 上次重启时间
 let rebootAt = 0
 
-const store = proxy({ ...COMMON_PROPS })
+const store = proxy({ ...COMMON_PROPS, dir: 1, songUrl: '' })
 
 export async function bootstrap () {
   await Promise.all([
@@ -91,8 +91,8 @@ export async function playNext () {
 
 export async function playSong (songId) {
   isForcePlay = true
-  const newSong = await loadSongDetail(store.selectedPlaylist, songId, false)
-  return updateSelectedSong(newSong)
+  const [newSong, songUrl] = await loadSongDetails(store.selectedPlaylist, songId, false)
+  return updateSelectedSong(newSong, songUrl)
 }
 
 export async function updatePlayMode () {
@@ -121,8 +121,8 @@ export async function changePlaylist (playlistId) {
     const songsIndex = store.playMode === PLAY_MODE.SHUFFLE ? selectedPlaylist.shuffleIndexes : selectedPlaylist.normalIndexes
     songId = songsIndex[0]
   }
-  const selectedSong = await loadSongDetail(selectedPlaylist, songId, true)
-  const change = { selectedPlaylist, selectedSong }
+  const [selectedSong, songUrl] = await loadSongDetails(selectedPlaylist, songId, true)
+  const change = { selectedPlaylist, selectedSong, songUrl }
   Object.assign(store, change)
   persistSave()
   return change
@@ -170,12 +170,11 @@ export async function unlikeSong () {
   if (res.code === 200) {
     const playlist = store.playlists.find(v => v.id === selectedPlaylistId)
     const selectedPlaylist = await loadPlaylistDetails(playlist)
-    const selectedSong = await loadSongDetail(selectedPlaylist, nextSongId, true)
-    const change = { selectedPlaylist, selectedSong }
-    Object.assign(store, change)
+    const [selectedSong, songUrl] = await loadSongDetails(selectedPlaylist, nextSongId, true)
+    Object.assign(store, { selectedPlaylist, selectedSong, songUrl })
     persistSave()
     sendToPopup({ topic: 'changeSongsMap', songId: deleteSongId, op: 'remove' })
-    return { ...change, message: '取消收藏成功' }
+    return { selectedPlaylist, selectedSong, message: '取消收藏成功' }
   } else {
     throw new Error(res.message)
   }
@@ -394,7 +393,7 @@ async function refreshPlaylistDetails (playlistId) {
   logger.debug('refreshPlaylistDetails', playlist.name)
 }
 
-async function loadSongDetail (playlistDetail, songId, retry) {
+async function loadSongDetails (playlistDetail, songId, retry) {
   const { normalIndexes, invalidIndexes } = playlistDetail
   let songsMap = songsStore[playlistDetail.id]
   if (!songsMap || !songsMap[songId]) {
@@ -413,7 +412,7 @@ async function loadSongDetail (playlistDetail, songId, retry) {
           getMiGuSong(song.name, song.artists)
         ])
       } catch {
-        throw new Error('换源失败')
+        throw new Error('尝试第三方获取歌曲失败')
       }
     } else {
       const res = await api.getSongUrls([songId])
@@ -436,9 +435,9 @@ async function loadSongDetail (playlistDetail, songId, retry) {
       throw new Error('歌曲无法播放')
     }
     const newSongId = getNextSongId(playlistDetail, songId)
-    return loadSongDetail(playlistDetail, newSongId, retry)
+    return loadSongDetails(playlistDetail, newSongId, retry)
   }
-  return { ...song, url }
+  return [song, url]
 }
 
 async function loadTracks (ids) {
@@ -465,8 +464,8 @@ async function playNextSong () {
   if (store.playMode !== PLAY_MODE.ONE) {
     songId = getNextSongId(selectedPlaylist, songId)
   }
-  const newSong = await loadSongDetail(selectedPlaylist, songId, true)
-  return updateSelectedSong(newSong)
+  const [newSong, songUrl] = await loadSongDetails(selectedPlaylist, songId, true)
+  return updateSelectedSong(newSong, songUrl)
 }
 
 function getNextSongId (playlistDetail, songId) {
@@ -522,9 +521,9 @@ function createAudio (url) {
     sendToPopup({ topic: 'sync', change })
   }
   audio.onerror = async () => {
-    logger.error('audio.error', store.selectedSong, audio.error.message)
+    logger.error('audio.error', store.selectedSong.id, store.selectedSong.name, audio.error.message)
     if (isForcePlay) {
-      sendToPopup({ topic: 'error', message: '无法该播放' })
+      sendToPopup({ topic: 'error', message: '歌曲无法播放' })
     } else {
       const change = await playNextSong()
       sendToPopup({ topic: 'sync', change })
@@ -543,11 +542,10 @@ function updateAudioState (state) {
   sendToPopup({ topic: 'audioState', audioState })
 }
 
-async function updateSelectedSong (selectedSong) {
-  const change = { selectedSong, playing: true }
-  Object.assign(store, change)
+async function updateSelectedSong (selectedSong, songUrl) {
+  Object.assign(store, { selectedSong, songUrl, playing: true })
   persistSave()
-  return change
+  return { selectedSong, playing: true }
 }
 
 function tracksToSongsMap (tracks) {
@@ -571,15 +569,15 @@ function tracksToSongsMap (tracks) {
   return songsMap
 }
 
-subscribeKey(store, 'selectedSong', song => {
-  if (!song) {
-    audio?.pause()
+subscribeKey(store, 'songUrl', songUrl => {
+  if (!songUrl) {
+    audio.src = ''
     return
   }
   if (audio) {
-    audio.src = song.url
+    audio.src = songUrl
   } else {
-    audio = createAudio(song.url)
+    audio = createAudio(songUrl)
   }
   if (store.playing) {
     audio.autoplay = true
