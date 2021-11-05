@@ -114,11 +114,11 @@ export default function Login () {
             href={DOMAIN}
             color='primary'
             target='_blank'
-            title='扩展版与网页版共享登录态。一个登录，另一个自动也登录'
+            title='扩展版与网页版共享登录态，一个登录，另一个自动也登录'
             rel='noreferrer'
             sx={{ fontSize: '1.2rem' }}
           >
-            网易云音乐网页版登录
+            网页版登录
           </Button>
         </Box>
       </form>
