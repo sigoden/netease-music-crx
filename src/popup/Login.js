@@ -8,7 +8,7 @@ import Alert from '@mui/material/Alert'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import store, * as storeUtils from './store'
-import { sleep } from '../utils'
+import { DOMAIN, sleep } from '../utils'
 
 export default function Login () {
   const snap = useSnapshot(store)
@@ -94,16 +94,31 @@ export default function Login () {
           <Box sx={{ my: 2 }}>
             <Alert severity={snap.isErr ? 'error' : 'success'}>{snap.message}</Alert>
           </Box>}
-        <Box sx={{ mt: 2, mb: 5 }}>
+        <Box sx={{ mt: 2 }}>
           <Button
             type='submit'
             fullWidth
             size='large'
             variant='contained'
-            color='secondary'
+            color='primary'
             sx={{ fontSize: '1.2rem' }}
           >
             登录
+          </Button>
+        </Box>
+        <Box sx={{ mt: 2, mb: 5 }}>
+          <Button
+            fullWidth
+            size='large'
+            variant='outlined'
+            href={DOMAIN}
+            color='primary'
+            target='_blank'
+            title='扩展版与网页版共享登录态。一个登录，另一个自动也登录'
+            rel='noreferrer'
+            sx={{ fontSize: '1.2rem' }}
+          >
+            网易云音乐网页版登录
           </Button>
         </Box>
       </form>
