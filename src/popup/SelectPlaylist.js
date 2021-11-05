@@ -27,7 +27,7 @@ export default function SelectPlaylist ({ open, onClose, onChange, title }) {
         width: 400,
         bgcolor: 'background.paper',
         boxShadow: 24,
-        p: 4
+        p: 4,
       }}
       >
         <Typography id='modal-modal-title' variant='h6' component='h2'>
@@ -43,8 +43,8 @@ export default function SelectPlaylist ({ open, onClose, onChange, title }) {
               maxWidth: 350,
               whiteSpace: 'nowrap',
               textOverflow: 'ellipsis',
-              overflow: 'hidden'
-            }
+              overflow: 'hidden',
+            },
           }}
         >
           <RadioGroup

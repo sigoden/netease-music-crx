@@ -18,7 +18,7 @@ import {
   logger,
   chunkArr,
   shuffleArr,
-  race
+  race,
 } from '../utils'
 
 // 缓存歌单
@@ -42,7 +42,7 @@ const store = proxy({ ...COMMON_PROPS, dir: 1, songUrl: '' })
 export async function bootstrap () {
   await Promise.all([
     persistLoad(),
-    refreshLogin()
+    refreshLogin(),
   ])
   await refreshPlaylists()
   rebootAt = Date.now()
@@ -233,7 +233,7 @@ function persistSave () {
     volume,
     playMode,
     playlistId: selectedPlaylist?.id || null,
-    songId: selectedSong?.id || null
+    songId: selectedSong?.id || null,
   }
   return saveData(data)
 }
@@ -245,7 +245,7 @@ async function persistLoad () {
       volume = COMMON_PROPS.volume,
       playMode = COMMON_PROPS.playMode,
       playlistId,
-      songId
+      songId,
     } = data
     logger.debug('persist.load', data)
     if (playlistId) {
@@ -299,7 +299,7 @@ async function loadRecommendResourcePlaylist () {
       throw new Error(res.message)
     }
     return res.recommend.slice(0, LEN_PLAYLIST_REC).map(
-      ({ id, picUrl, name }) => ({ id, picUrl: picUrl + IMAGE_CLIP, name, type: PLAYLIST_TYPE.RECOMMEND })
+      ({ id, picUrl, name }) => ({ id, picUrl: picUrl + IMAGE_CLIP, name, type: PLAYLIST_TYPE.RECOMMEND }),
     )
   } catch (err) {
     logger.error('loadRecommendResourcePlaylist.err', err)
@@ -375,7 +375,7 @@ async function loadPlaylistDetails (playlist) {
       type,
       normalIndexes,
       invalidIndexes: [],
-      shuffleIndexes
+      shuffleIndexes,
     }
     playlistDetailStore[playlist.id] = cachedPlaylistDetail
     return cachedPlaylistDetail
@@ -408,7 +408,7 @@ async function loadSongDetails (playlistDetail, songId, retry) {
       try {
         url = await race([
           getKuWoSong(song.name, song.artists),
-          getMiGuSong(song.name, song.artists)
+          getMiGuSong(song.name, song.artists),
         ])
       } catch {
         throw new Error('尝试第三方获取歌曲失败')
@@ -501,14 +501,14 @@ function createAudio (url) {
     if (audio.buffered.length) {
       const loadPercentage = (audio.buffered.end(audio.buffered.length - 1) / audio.duration) * 100
       updateAudioState({
-        loadPercentage
+        loadPercentage,
       })
     }
   }
   audio.oncanplay = () => {
     audio.onprogress()
     updateAudioState({
-      duration: audio.duration
+      duration: audio.duration,
     })
   }
   audio.onabort = () => {
@@ -530,7 +530,7 @@ function createAudio (url) {
   }
   audio.ontimeupdate = () => {
     updateAudioState({
-      currentTime: audio.currentTime
+      currentTime: audio.currentTime,
     })
   }
   return audio
@@ -558,7 +558,7 @@ function tracksToSongsMap (tracks) {
       vip: !(fee === 0 || fee === 8),
       picUrl: picUrl + IMAGE_CLIP,
       artists: ar.map(v => v.name).join(' & '),
-      duration: dt
+      duration: dt,
     }
   })
   const songsMap = songs.reduce((songsMap, song) => {

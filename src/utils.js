@@ -13,7 +13,7 @@ export const PLAYLIST_TYPE = {
   TOP: 1,
   RECOMMEND: 2,
   CRATE: 3,
-  FAVORIATE: 4
+  FAVORIATE: 4,
 }
 
 // 榜单
@@ -22,53 +22,53 @@ export const PLAYLIST_TOP = [
     id: 19723756,
     name: '飙升榜',
     type: PLAYLIST_TYPE.TOP,
-    picUrl: 'https://p1.music.126.net/DrRIg6CrgDfVLEph9SNh7w==/18696095720518497.jpg' + IMAGE_CLIP
+    picUrl: 'https://p1.music.126.net/DrRIg6CrgDfVLEph9SNh7w==/18696095720518497.jpg' + IMAGE_CLIP,
   },
   {
     id: 3779629,
     name: '新歌榜',
     type: PLAYLIST_TYPE.TOP,
-    picUrl: 'https://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg' + IMAGE_CLIP
+    picUrl: 'https://p1.music.126.net/N2HO5xfYEqyQ8q6oxCw8IQ==/18713687906568048.jpg' + IMAGE_CLIP,
   },
   {
     id: 2884035,
     name: '原创榜',
     type: PLAYLIST_TYPE.TOP,
-    picUrl: 'http://p2.music.126.net/sBzD11nforcuh1jdLSgX7g==/18740076185638788.jpg' + IMAGE_CLIP
+    picUrl: 'http://p2.music.126.net/sBzD11nforcuh1jdLSgX7g==/18740076185638788.jpg' + IMAGE_CLIP,
   },
   {
     id: 3778678,
     name: '热歌榜',
     type: PLAYLIST_TYPE.TOP,
-    picUrl: 'https://p1.music.126.net/GhhuF6Ep5Tq9IEvLsyCN7w==/18708190348409091.jpg' + IMAGE_CLIP
-  }
+    picUrl: 'https://p1.music.126.net/GhhuF6Ep5Tq9IEvLsyCN7w==/18708190348409091.jpg' + IMAGE_CLIP,
+  },
 ]
 
 export const PLAYLIST_NEW_SONGS = {
   id: 10,
   name: '新歌速递',
   type: PLAYLIST_TYPE.RECOMMEND,
-  picUrl: ''
+  picUrl: '',
 }
 
 export const PLAYLIST_REC_SONGS = {
   id: 20,
   name: '每日推荐',
   type: PLAYLIST_TYPE.RECOMMEND,
-  picUrl: ''
+  picUrl: '',
 }
 
 export const EMPTY_AUDIO_STATE = {
   duration: 0,
   currentTime: 0,
-  loadPercentage: 0
+  loadPercentage: 0,
 }
 
 // 播放模式
 export const PLAY_MODE = {
   LOOP: 'LOOP', // 循环
   SHUFFLE: 'SHUFFLE', // 随机
-  ONE: 'ONE' // 单曲循环
+  ONE: 'ONE', // 单曲循环
 }
 
 export const COMMON_PROPS = {
@@ -79,14 +79,14 @@ export const COMMON_PROPS = {
   playMode: PLAY_MODE.LOOP,
   playlists: [],
   selectedPlaylist: null,
-  selectedSong: null
+  selectedSong: null,
 }
 
 const LOG_LEVEL = {
   verbose: 0,
   debug: 1,
   info: 2,
-  error: 3
+  error: 3,
 }
 
 export const logger = {
@@ -113,7 +113,7 @@ export const logger = {
   },
   error (...args) {
     logger.log('error', ...args)
-  }
+  },
 }
 
 globalThis.logger = logger
@@ -170,7 +170,7 @@ export function serializeCookies (cookieObj, withOptions = false) {
     result += cookieUtils.serialize('k', 'v', {
       expires: date,
       path: '/',
-      domain: '.music.163.com'
+      domain: '.music.163.com',
     }).slice(3)
   }
   return result

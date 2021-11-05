@@ -16,17 +16,17 @@ function createRequester () {
       method = 'post',
       baseURL = DOMAIN,
       url,
-      data
+      data,
     } = reqInfo
     url = baseURL + url
     logger.verbose('api.fetch', url, data)
     const res = await fetch(url, {
       method,
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
       credentials: 'same-origin',
-      body: createQueryParams(data)
+      body: createQueryParams(data),
     })
     const result = await res.json()
     if (result?.code === 301 && !/\/weapi\/login/.test(reqInfo.url)) {
@@ -45,15 +45,15 @@ function createRequester () {
           phone,
           captcha,
           countrycode: '86',
-          rememberLogin: 'true'
-        }
+          rememberLogin: 'true',
+        },
       })
     },
     // 刷新登录态
     loginRefresh () {
       return createRequest({
         url: '/weapi/login/token/refresh',
-        data: {}
+        data: {},
       })
     },
     // 发送验证码
@@ -62,22 +62,22 @@ function createRequester () {
         url: '/weapi/sms/captcha/sent',
         data: {
           cellphone: phone,
-          ctcode: '86'
-        }
+          ctcode: '86',
+        },
       })
     },
     // 用户账户
     getUser () {
       return createRequest({
         url: '/api/nuser/account/get',
-        data: {}
+        data: {},
       })
     },
     // 退出登录
     logout () {
       return createRequest({
         url: '/weapi/logout',
-        data: {}
+        data: {},
       })
     },
     // 获取歌单
@@ -87,8 +87,8 @@ function createRequester () {
         data: {
           offset: 0,
           uid,
-          limit: 50
-        }
+          limit: 50,
+        },
       })
     },
     // 获取歌单详情
@@ -98,8 +98,8 @@ function createRequester () {
         data: {
           id,
           n: 1000,
-          s: 8
-        }
+          s: 8,
+        },
       })
     },
     // 获取每日推荐歌曲
@@ -109,15 +109,15 @@ function createRequester () {
         data: {
           offset: 0,
           total: true,
-          limit: 50
-        }
+          limit: 50,
+        },
       })
     },
     // 个性化推荐歌单
     getRecommendResource () {
       return createRequest({
         url: '/weapi/discovery/recommend/resource',
-        data: {}
+        data: {},
       })
     },
     // 新歌速递
@@ -126,8 +126,8 @@ function createRequester () {
         url: '/weapi/v1/discovery/new/songs',
         data: {
           areaId,
-          total: true
-        }
+          total: true,
+        },
       })
     },
     // 获取歌曲详情
@@ -138,8 +138,8 @@ function createRequester () {
         url: '/weapi/v3/song/detail',
         data: {
           c: JSON.stringify(idsHash),
-          ids: idsStringify
-        }
+          ids: idsStringify,
+        },
       })
     },
     // 获取音乐 url
@@ -148,8 +148,8 @@ function createRequester () {
         url: '/weapi/song/enhance/player/url',
         data: {
           ids,
-          br
-        }
+          br,
+        },
       })
     },
     // 喜欢音乐
@@ -160,10 +160,10 @@ function createRequester () {
           tracks: '[object Object]',
           pid: playlistId,
           trackIds: `[${songId}]`,
-          op: isLike ? 'add' : 'del'
-        }
+          op: isLike ? 'add' : 'del',
+        },
       })
-    }
+    },
   }
 }
 
@@ -182,7 +182,7 @@ function encryptData (obj) {
   const encSecKey = rsaEncrypt(secKey, PUBKEY, MODULUS)
   return {
     params: encText,
-    encSecKey: encSecKey
+    encSecKey: encSecKey,
   }
 }
 

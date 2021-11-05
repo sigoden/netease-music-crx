@@ -15,7 +15,7 @@ export default function Login () {
   const history = useHistory()
   const [state, setState] = useState({
     phone: '',
-    captcha: ''
+    captcha: '',
   })
   const [count, setCount] = useState(0)
   const formFieldUpdate = (field, value) => {

@@ -16,13 +16,13 @@ const options = {
   mode: process.env.NODE_ENV || 'development',
   entry: {
     popup: path.join(__dirname, 'src/popup.js'),
-    background: path.join(__dirname, 'src/background.js')
+    background: path.join(__dirname, 'src/background.js'),
   },
   output: {
     path: path.resolve(__dirname, 'build'),
     filename: '[name].bundle.js',
     clean: true,
-    publicPath: ASSET_PATH
+    publicPath: ASSET_PATH,
   },
   module: {
     rules: [
@@ -32,50 +32,50 @@ const options = {
         // in the `src` directory
         use: [
           {
-            loader: 'style-loader'
+            loader: 'style-loader',
           },
           {
-            loader: 'css-loader'
-          }
-        ]
+            loader: 'css-loader',
+          },
+        ],
       },
       {
         test: new RegExp('.(' + fileExtensions.join('|') + ')$'),
         loader: 'file-loader',
         options: {
-          name: '[name].[ext]'
+          name: '[name].[ext]',
         },
-        exclude: /node_modules/
+        exclude: /node_modules/,
       },
       {
         test: /\.(js|jsx)$/,
         use: [
           {
-            loader: 'source-map-loader'
+            loader: 'source-map-loader',
           },
           {
-            loader: 'babel-loader'
-          }
+            loader: 'babel-loader',
+          },
         ],
-        exclude: /node_modules/
-      }
-    ]
+        exclude: /node_modules/,
+      },
+    ],
   },
   resolve: {
     alias: {
       'react-dom': '@hot-loader/react-dom',
       crypto: require.resolve('crypto-browserify'),
-      stream: require.resolve('stream-browserify')
+      stream: require.resolve('stream-browserify'),
     },
     extensions: fileExtensions
       .map((extension) => '.' + extension)
-      .concat(['.js', '.jsx', '.css'])
+      .concat(['.js', '.jsx', '.css']),
   },
   plugins: [
     new webpack.ProgressPlugin(),
     new webpack.EnvironmentPlugin(['NODE_ENV']),
     new webpack.ProvidePlugin({
-      Buffer: [require.resolve('buffer/'), 'Buffer']
+      Buffer: [require.resolve('buffer/'), 'Buffer'],
     }),
     new CopyWebpackPlugin({
       patterns: [
@@ -89,35 +89,35 @@ const options = {
               JSON.stringify({
                 description: process.env.npm_package_description,
                 version: process.env.npm_package_version,
-                ...JSON.parse(content.toString())
-              })
+                ...JSON.parse(content.toString()),
+              }),
             )
-          }
-        }
-      ]
+          },
+        },
+      ],
     }),
     new CopyWebpackPlugin({
       patterns: [
         {
           from: 'src/assets',
           to: path.join(__dirname, 'build'),
-          force: true
-        }
-      ]
+          force: true,
+        },
+      ],
     }),
     new HtmlWebpackPlugin({
       template: path.join(__dirname, 'src/popup.html'),
       filename: 'popup.html',
       chunks: ['popup'],
-      cache: false
+      cache: false,
     }),
     new HtmlWebpackPlugin({
       template: path.join(__dirname, 'src/background.html'),
       filename: 'background.html',
       chunks: ['background'],
-      cache: false
-    })
-  ]
+      cache: false,
+    }),
+  ],
 }
 
 if (process.env.NODE_ENV === 'development') {
@@ -127,15 +127,15 @@ if (process.env.NODE_ENV === 'development') {
     minimize: true,
     minimizer: [
       new TerserPlugin({
-        extractComments: false
-      })
-    ]
+        extractComments: false,
+      }),
+    ],
   }
   options.plugins.push(
     new ZipPlugin({
       path: __dirname,
-      filename: zipFileName
-    })
+      filename: zipFileName,
+    }),
   )
 }
 

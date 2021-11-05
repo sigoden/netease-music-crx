@@ -7,7 +7,7 @@ const store = proxy({
   isErr: true,
   songsMapChanged: null,
   audioState: { ...EMPTY_AUDIO_STATE },
-  ...COMMON_PROPS
+  ...COMMON_PROPS,
 })
 
 export function updateAudioTime (currentTime) {

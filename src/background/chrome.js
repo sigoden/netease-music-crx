@@ -33,25 +33,25 @@ function initContextMenu () {
   const contextMenus = {
     togglePlaying: (playing = COMMON_PROPS.playing) => ({
       title: playing ? '暂停' : '播放',
-      contexts
+      contexts,
     }),
     playPrev: () => ({
       title: '上一首',
-      contexts
+      contexts,
     }),
     playNext: () => ({
       title: '下一首',
-      contexts
+      contexts,
     }),
     toggleMute: volumeMute => ({
       title: volumeMute ? '取消静音' : '静音',
-      contexts
+      contexts,
     }),
     logout: userId => ({
       title: '退出登录',
       contexts,
-      visible: !!userId
-    })
+      visible: !!userId,
+    }),
   }
 
   chrome.contextMenus.removeAll()
@@ -59,7 +59,7 @@ function initContextMenu () {
   Object.keys(contextMenus).forEach(id => {
     chrome.contextMenus.create({
       id,
-      ...contextMenus[id]()
+      ...contextMenus[id](),
     })
   })
 
@@ -176,10 +176,10 @@ function initRequestHook () {
       urls: [
         `${DOMAIN}/weapi/*`,
         '*://*.kuwo.cn/*',
-        '*://*.migu.cn/*'
-      ]
+        '*://*.migu.cn/*',
+      ],
     },
-    ['requestHeaders', 'blocking', 'extraHeaders']
+    ['requestHeaders', 'blocking', 'extraHeaders'],
   )
 }
 
@@ -196,9 +196,9 @@ function initResponseHook () {
     },
     {
       urls: [
-        '*://*.migu.cn/*'
-      ]
+        '*://*.migu.cn/*',
+      ],
     },
-    ['responseHeaders', 'blocking', 'extraHeaders']
+    ['responseHeaders', 'blocking', 'extraHeaders'],
   )
 }

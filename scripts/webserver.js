@@ -13,7 +13,7 @@ for (const entryName in config.entry) {
   if (['popup', 'background'].indexOf(entryName) > -1) {
     config.entry[entryName] = [
       'webpack/hot/dev-server',
-      `webpack-dev-server/client?hot=true&hostname=localhost&port=${PORT}`
+      `webpack-dev-server/client?hot=true&hostname=localhost&port=${PORT}`,
     ].concat(config.entry[entryName])
   }
 }
@@ -30,18 +30,18 @@ const server = new WebpackDevServer(
     host: 'localhost',
     port: PORT,
     static: {
-      directory: path.join(__dirname, '../build')
+      directory: path.join(__dirname, '../build'),
     },
     devMiddleware: {
       publicPath: `http://localhost:${PORT}/`,
-      writeToDisk: true
+      writeToDisk: true,
     },
     headers: {
-      'Access-Control-Allow-Origin': '*'
+      'Access-Control-Allow-Origin': '*',
     },
-    allowedHosts: 'all'
+    allowedHosts: 'all',
   },
-  compiler
+  compiler,
 )
 
 if (process.env.NODE_ENV === 'development' && module.hot) {

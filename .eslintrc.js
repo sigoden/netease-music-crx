@@ -6,13 +6,14 @@ module.exports = {
     'react-app',
     'standard',
     'standard-jsx',
-    'standard-react'
+    'standard-react',
   ],
   globals: {
-    chrome: 'readonly'
+    chrome: 'readonly',
   },
   ignorePatterns: ['build', 'tmp'],
   rules: {
-    'react/prop-types': 0
-  }
+    'react/prop-types': 0,
+    'comma-dangle': ['error', 'always-multiline'],
+  },
 }

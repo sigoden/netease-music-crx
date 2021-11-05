@@ -23,7 +23,7 @@ export async function getKuWoSong (name, artists) {
   const song = (result?.data?.list || []).filter(filterSong)[0]
   if (!song) throw new Error()
   const q = encryptQuery(
-    'corp=kuwo&p2p=1&type=convert_url2&sig=0&format=mp3&rid=' + song.rid
+    'corp=kuwo&p2p=1&type=convert_url2&sig=0&format=mp3&rid=' + song.rid,
   )
   res = await fetch(`${KUWO_MOBI_DOMAIN}/mobi.s?f=kuwo&q=` + q)
   result = await res.text()

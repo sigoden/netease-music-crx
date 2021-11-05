@@ -33,8 +33,8 @@ export default function Player () {
     playMode,
     audioState: {
       currentTime,
-      duration
-    }
+      duration,
+    },
   } = snap
 
   const handleTimeChange = (e, percent) => {
@@ -135,7 +135,7 @@ export default function Player () {
           {volume === 0 ? <VolumeOffIcon /> : <VolumeUpIcon />}
         </IconButton>
         <Box sx={{
-          height: 100, display: showVolumeBar ? 'block' : 'none', position: 'absolute', zIndex: 99, right: 11
+          height: 100, display: showVolumeBar ? 'block' : 'none', position: 'absolute', zIndex: 99, right: 11,
         }}
         >
           <Slider

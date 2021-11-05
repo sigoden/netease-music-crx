@@ -5,18 +5,18 @@ import { createTheme } from '@mui/material/styles'
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#c20c0c'
+      main: '#c20c0c',
     },
     secondary: {
-      main: '#0c72c3'
+      main: '#0c72c3',
     },
     error: {
-      main: red.A400
+      main: red.A400,
     },
     background: {
-      default: grey.A100
-    }
-  }
+      default: grey.A100,
+    },
+  },
 })
 
 export default theme
