@@ -1,6 +1,6 @@
 {
   "name": "netease-music-crx",
-  "description": "能够免费收听VIP或变灰歌曲的网易云音乐播放器",
+  "description": "能够收听VIP或变灰歌曲的网易云音乐播放器",
   "license": "MIT",
   "version": "5.0.0",
   "scripts": {
