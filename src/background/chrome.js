@@ -1,5 +1,6 @@
-import * as storeUtils from './store'
-import { DOMAIN, logger, parseCookies, serializeCookies } from '../utils'
+import store, * as storeUtils from './store'
+import { subscribeKey } from 'valtio/utils'
+import { COMMON_PROPS, DOMAIN, logger, parseCookies, serializeCookies } from '../utils'
 import { KUWO_DOMAIN, KUWO_MOBI_DOMAIN } from './kuwo'
 import { MIGU_DOMAIN } from './migu'
 
@@ -27,53 +28,68 @@ export function loadData () {
 }
 
 function initContextMenu () {
-  const contextMenus = [
-    {
-      title: '播放/暂停',
-      contexts: ['browser_action'],
-      onclick: function () {
-        logger.debug('contextMenu.togglePlay')
-        storeUtils.togglePlaying()
-      }
-    },
-    {
+  const contexts = ['browser_action']
+
+  const contextMenus = {
+    togglePlaying: (playing = COMMON_PROPS.playing) => ({
+      title: playing ? '暂停' : '播放',
+      contexts
+    }),
+    playPrev: () => ({
       title: '上一首',
-      contexts: ['browser_action'],
-      onclick: function () {
-        logger.debug('contextMenu.playPrev')
-        storeUtils.playPrev()
-      }
-    },
-    {
+      contexts
+    }),
+    playNext: () => ({
       title: '下一首',
-      contexts: ['browser_action'],
-      onclick: function () {
-        logger.debug('contextMenu.playNext')
-        storeUtils.playNext()
-      }
-    },
-    {
-      title: '静音/取消静音',
-      contexts: ['browser_action'],
-      onclick: function () {
-        logger.debug('contextMenu.mute')
-        storeUtils.toggleMute()
-      }
-    },
-    {
+      contexts
+    }),
+    toggleMute: volumeMute => ({
+      title: volumeMute ? '取消静音' : '静音',
+      contexts
+    }),
+    logout: userId => ({
       title: '退出登录',
-      contexts: ['browser_action'],
-      onclick: function () {
-        logger.debug('contextMenu.logout')
-        storeUtils.logout()
-      }
-    }
-  ]
+      contexts,
+      visible: !!userId
+    })
+  }
 
   chrome.contextMenus.removeAll()
 
-  contextMenus.forEach(menu => {
-    chrome.contextMenus.create(menu)
+  Object.keys(contextMenus).forEach(id => {
+    chrome.contextMenus.create({
+      id,
+      ...contextMenus[id]()
+    })
+  })
+
+  chrome.contextMenus.onClicked.addListener(item => {
+    logger.debug(`contextMenu.${item}`)
+    switch (item.menuItemId) {
+      case 'togglePlaying':
+      case 'playPrev':
+      case 'playNext':
+      case 'toggleMute':
+      case 'logout':
+        storeUtils[item.menuItemId]()
+        break
+      default:
+    }
+  })
+
+  subscribeKey(store, 'playing', playing => {
+    const id = 'togglePlaying'
+    chrome.contextMenus.update(id, contextMenus[id](playing))
+  })
+
+  subscribeKey(store, 'userId', userId => {
+    const id = 'logout'
+    chrome.contextMenus.update(id, contextMenus[id](userId))
+  })
+
+  subscribeKey(store, 'volumeMute', volumeMute => {
+    const id = 'toggleMute'
+    chrome.contextMenus.update(id, contextMenus[id](volumeMute))
   })
 }
 

@@ -29,13 +29,11 @@ const songsStore = {}
 // 播放器
 let audio
 // 播放状态
-let audioState = { ...EMPTY_AUDIO_STATE }
+let audioState = { ...EMPTY_AUDIO_STATE, volumeMute: null }
 // 点播
 let isForcePlay = false
 // 持久化缓存信息
 let persistData = null
-// 静音前音量
-let volumeMute = 0
 // 上次重启时间
 let rebootAt = 0
 
@@ -65,9 +63,10 @@ export function togglePlaying () {
 
 export function toggleMute () {
   if (store.volume === 0) {
-    updateVolume(volumeMute || COMMON_PROPS.volume)
+    updateVolume(store.volumeMute || COMMON_PROPS.volume)
+    store.volumeMute = null
   } else {
-    volumeMute = store.volume
+    store.volumeMute = store.volume
     updateVolume(0)
   }
 }
