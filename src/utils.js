@@ -131,6 +131,11 @@ export async function sleep (ms) {
   })
 }
 
+export function randChinaIp () {
+  const rand = () => Math.floor(Math.random() * 256)
+  return `113.88.${rand()}.${rand()}`
+}
+
 export function race (values) {
   return new Promise((resolve, reject) => {
     let rejected = 0

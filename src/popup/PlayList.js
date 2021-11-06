@@ -120,7 +120,7 @@ export default function PlayList ({ maxHeight }) {
                   <TableCell
                     component='th'
                     scope='row'
-                    sx={{ maxWidth: 200, py: '4px', pl: '16px', ...(song.miss ? { filter: 'opacity(0.5)' } : {}) }}
+                    sx={{ maxWidth: 200, py: '4px', pl: '16px', ...(song.st < 0 ? { filter: 'opacity(0.5)' } : {}) }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <IconButton disabled={!song.valid} onClick={() => storeUtils.playSong(song.id)}>

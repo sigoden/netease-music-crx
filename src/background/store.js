@@ -19,12 +19,13 @@ import {
   chunkArr,
   shuffleArr,
   race,
+  randChinaIp,
 } from '../utils'
 
 // 缓存歌单
 const playlistDetailStore = {}
 // 缓存歌单内歌曲
-const songsStore = {}
+const songsMapStore = {}
 
 // 播放器
 let audio
@@ -34,19 +35,15 @@ let audioState = { ...EMPTY_AUDIO_STATE, volumeMute: null }
 let isForcePlay = false
 // 持久化缓存信息
 let persistData = null
-// 上次重启时间
-let rebootAt = 0
+// 上次刷新时间
+let refreshAt = 0
 
-const store = proxy({ ...COMMON_PROPS, dir: 1, songUrl: '' })
+const store = proxy({ ...COMMON_PROPS, dir: 1, songUrl: '', chinaIp: null })
 
 export async function bootstrap () {
-  await Promise.all([
-    persistLoad(),
-    refreshLogin(),
-  ])
-  await refreshPlaylists()
-  rebootAt = Date.now()
-  logger.info('bootstrap', store)
+  await persistLoad()
+  await refreshStore()
+  await detectOversea()
 }
 
 export function updateAudioTime (currentTime) {
@@ -130,13 +127,13 @@ export async function changePlaylist (playlistId) {
 export async function loadSongsMap () {
   const { selectedPlaylist } = store
   if (!selectedPlaylist?.id) return {}
-  let songsMap = songsStore[selectedPlaylist.id]
+  let songsMap = songsMapStore[selectedPlaylist.id]
   if (songsMap) {
     return songsMap
   }
   const tracks = await loadTracks(selectedPlaylist.normalIndexes)
   songsMap = tracksToSongsMap(tracks)
-  songsStore[selectedPlaylist.id] = songsMap
+  songsMapStore[selectedPlaylist.id] = songsMap
   return songsMap
 }
 
@@ -216,7 +213,7 @@ export async function refreshPlaylists () {
   const newPlaylists = store.playlists
   for (const playlistId of oldPlaylistIds) {
     if (newPlaylists.findIndex(v => v.id === playlistId) === -1) {
-      delete songsStore[playlistId]
+      delete songsMapStore[playlistId]
       delete playlistDetailStore[playlistId]
     }
   }
@@ -228,10 +225,11 @@ export function popupInit () {
 }
 
 function persistSave () {
-  const { volume, playMode, selectedPlaylist, selectedSong } = store
+  const { volume, playMode, selectedPlaylist, selectedSong, chinaIp } = store
   const data = {
     volume,
     playMode,
+    chinaIp,
     playlistId: selectedPlaylist?.id || null,
     songId: selectedSong?.id || null,
   }
@@ -244,6 +242,7 @@ async function persistLoad () {
     const {
       volume = COMMON_PROPS.volume,
       playMode = COMMON_PROPS.playMode,
+      chinaIp = null,
       playlistId,
       songId,
     } = data
@@ -252,13 +251,20 @@ async function persistLoad () {
       persistData = { playlistId }
       if (songId) persistData.songId = songId
     }
-    Object.assign(store, { volume, playMode })
+    Object.assign(store, { volume, playMode, chinaIp })
   }
 }
 
 function getPopupData () {
   const { userId, playing, volume, playMode, playlists, selectedPlaylist, selectedSong } = store
   return { userId, playing, volume, playMode, playlists, selectedPlaylist, selectedSong, audioState }
+}
+
+async function refreshStore () {
+  await refreshLogin()
+  await refreshPlaylists()
+  refreshAt = Date.now()
+  logger.debug('refreshStore')
 }
 
 async function refreshLogin () {
@@ -339,7 +345,7 @@ async function loadPlaylistDetails (playlist) {
       })
       const songsMap = tracksToSongsMap(tracks)
       normalIndexes = tracks.map(v => v.id)
-      songsStore[playlist.id] = songsMap
+      songsMapStore[playlist.id] = songsMap
     }
     if (playlist.id === PLAYLIST_REC_SONGS.id) {
       const res = await api.getRecommendSongs()
@@ -360,7 +366,7 @@ async function loadPlaylistDetails (playlist) {
     } else {
       const res = await api.getPlaylistDetail(playlist.id)
       if (res.code === 200) {
-        delete songsStore[playlist.id]
+        delete songsMapStore[playlist.id]
         normalIndexes = res.playlist.trackIds.map(v => v.id)
       } else {
         logger.error('getPlaylistDetail.error', playlist.id, res.message)
@@ -394,7 +400,7 @@ async function refreshPlaylistDetails (playlistId) {
 
 async function loadSongDetails (playlistDetail, songId, retry) {
   const { normalIndexes, invalidIndexes } = playlistDetail
-  let songsMap = songsStore[playlistDetail.id]
+  let songsMap = songsMapStore[playlistDetail.id]
   if (!songsMap || !songsMap[songId]) {
     const tracks = await loadTracks([songId])
     songsMap = tracksToSongsMap(tracks)
@@ -404,7 +410,7 @@ async function loadSongDetails (playlistDetail, songId, retry) {
   try {
     if (!song || !song.valid) {
       throw new Error('歌曲无法播放')
-    } else if (song.miss || (song.vip && !store.vip)) {
+    } else if (song.st < 0 || (song.vip && !store.vip)) {
       try {
         url = await race([
           getKuWoSong(song.name, song.artists),
@@ -421,6 +427,9 @@ async function loadSongDetails (playlistDetail, songId, retry) {
       url = res.data.map(v => v.url)[0]
       if (!url) {
         throw new Error('获取资源失败')
+      }
+      if (store.chinaIp) {
+        url = url.replace(/(m\d+?)(?!c)\.music\.126\.net/, '$1c.music.126.net')
       }
     }
   } catch (err) {
@@ -494,8 +503,31 @@ function getNextSongId (playlistDetail, songId) {
   return songsIndex[nextIndex]
 }
 
+async function detectOversea () {
+  const selectedPlaylistId = store.selectedPlaylist.id
+  if (PLAYLIST_TOP[0].id !== selectedPlaylistId) {
+    return
+  }
+  const songsMap = await loadSongsMap()
+  const ids = Object.keys(songsMap)
+  const ids2 = ids.filter(id => songsMap[id].st === -100)
+  if (ids2.length / ids.length < 0.25) {
+    if (!store.chinaIp) return
+    logger.info('Oversea removed')
+    store.chinaIp = null
+  } else {
+    logger.info('Oversea detected')
+    store.chinaIp = randChinaIp()
+  }
+  delete songsMapStore[selectedPlaylistId]
+  await persistSave()
+  await refreshStore()
+}
+
 function createAudio (url) {
   const audio = new Audio(url)
+  globalThis.audio = audio
+
   audio.volume = store.volume
   audio.onprogress = () => {
     if (audio.buffered.length) {
@@ -554,7 +586,7 @@ function tracksToSongsMap (tracks) {
       id,
       name,
       valid: true,
-      miss: st < 0,
+      st,
       vip: !(fee === 0 || fee === 8),
       picUrl: picUrl + IMAGE_CLIP,
       artists: ar.map(v => v.name).join(' & '),
@@ -596,11 +628,16 @@ subscribeKey(store, 'playing', playing => {
 
 setInterval(async () => {
   await refreshLogin()
-  if (Date.now() - rebootAt > 13 * 60 * 60 * 1000) {
-    await bootstrap()
+  if (Date.now() - refreshAt > 13 * 60 * 60 * 1000) {
+    await refreshStore()
   }
 }, 33 * 60 * 1000)
 
 api.code301 = reset
+
+globalThis.store = store
+globalThis.songsMapStore = songsMapStore
+globalThis.playlistDetailStore = playlistDetailStore
+globalThis.refreshStore = refreshStore
 
 export default store

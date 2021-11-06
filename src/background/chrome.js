@@ -134,8 +134,9 @@ function initRequestHook () {
               }
             }
           }
-          logger.verbose('requestHook.163', details.requestHeaders)
+          if (store.chinaIp) details.requestHeaders.push({ name: 'X-Real-Ip', value: store.chinaIp })
           details.requestHeaders.push({ name: 'Referer', value: DOMAIN })
+          logger.verbose('requestHook.163', details.requestHeaders)
         } else if (details.url.startsWith(KUWO_DOMAIN)) {
           let token = ''
           for (let i = 0; i < details.requestHeaders.length; ++i) {
@@ -147,6 +148,7 @@ function initRequestHook () {
             }
           }
           if (token) details.requestHeaders.push({ name: 'csrf', value: token })
+          if (store.chinaIp) details.requestHeaders.push({ name: 'X-Real-Ip', value: store.chinaIp })
           details.requestHeaders.push({ name: 'Referer', value: KUWO_DOMAIN })
           logger.verbose('requestHook.kuwo', details.requestHeaders)
         } else if (details.url.startsWith(KUWO_MOBI_DOMAIN)) {

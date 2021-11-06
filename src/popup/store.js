@@ -9,6 +9,7 @@ const store = proxy({
   audioState: { ...EMPTY_AUDIO_STATE },
   ...COMMON_PROPS,
 })
+globalThis.store = store
 
 export function updateAudioTime (currentTime) {
   return doAction('updateAudioTime', [currentTime])
