@@ -1,5 +1,5 @@
 import { proxy } from 'valtio'
-import { subscribeKey } from 'valtio/utils'
+
 import { loadData, saveData, sendToPopup } from './chrome'
 import api from './api'
 import { getKuWoSong } from './kuwo'
@@ -26,19 +26,19 @@ import {
 const playlistDetailStore = {}
 // 缓存歌单内歌曲
 const songsMapStore = {}
-
-// 播放器
+/**
+ * 播放器
+ * @type HTMLAudioElement
+ */
 let audio
 // 播放状态
 let audioState = { ...EMPTY_AUDIO_STATE, volumeMute: null }
-// 点播
-let isForcePlay = false
 // 持久化缓存信息
 let persistData = null
 // 上次刷新时间
 let refreshAt = 0
 
-const store = proxy({ ...COMMON_PROPS, dir: 1, songUrl: '', chinaIp: null })
+const store = proxy({ ...COMMON_PROPS, dir: 1, chinaIp: null })
 
 export async function bootstrap () {
   await persistLoad()
@@ -54,8 +54,20 @@ export function updateAudioTime (currentTime) {
 }
 
 export function togglePlaying () {
-  store.playing = !store.playing
-  return { playing: store.playing }
+  let { playing } = store
+  if (!audio) {
+    return { playing }
+  }
+  if (playing) {
+    audio.pause()
+    playing = false
+  } else {
+    audio.play()
+    playing = true
+  }
+  store.playing = playing
+  persistSave()
+  return { playing }
 }
 
 export function toggleMute () {
@@ -86,9 +98,9 @@ export async function playNext () {
 }
 
 export async function playSong (songId) {
-  isForcePlay = true
-  const [newSong, songUrl] = await loadSongDetails(store.selectedPlaylist, songId, false)
-  return updateSelectedSong(newSong, songUrl)
+  store.playing = true
+  const { selectedSong, playing } = await loadAndPlaySong(store.selectedPlaylist, songId, false)
+  return { selectedSong, playing }
 }
 
 export async function updatePlayMode () {
@@ -117,11 +129,7 @@ export async function changePlaylist (playlistId) {
     const songsIndex = store.playMode === PLAY_MODE.SHUFFLE ? selectedPlaylist.shuffleIndexes : selectedPlaylist.normalIndexes
     songId = songsIndex[0]
   }
-  const [selectedSong, songUrl] = await loadSongDetails(selectedPlaylist, songId, true)
-  const change = { selectedPlaylist, selectedSong, songUrl }
-  Object.assign(store, change)
-  persistSave()
-  return change
+  return loadAndPlaySong(selectedPlaylist, songId)
 }
 
 export async function loadSongsMap () {
@@ -166,11 +174,9 @@ export async function unlikeSong () {
   if (res.code === 200) {
     const playlist = store.playlists.find(v => v.id === selectedPlaylistId)
     const selectedPlaylist = await loadPlaylistDetails(playlist)
-    const [selectedSong, songUrl] = await loadSongDetails(selectedPlaylist, nextSongId, true)
-    Object.assign(store, { selectedPlaylist, selectedSong, songUrl })
-    persistSave()
+    const { selectedSong } = await loadAndPlaySong(selectedPlaylist, nextSongId)
     sendToPopup({ topic: 'changeSongsMap', songId: deleteSongId, op: 'remove' })
-    return { selectedPlaylist, selectedSong, message: '取消收藏成功' }
+    return { selectedSong, selectedPlaylist, message: '取消收藏成功' }
   } else {
     throw new Error(res.message)
   }
@@ -261,10 +267,10 @@ function getPopupData () {
 }
 
 async function refreshStore () {
+  logger.debug('refreshStore')
   await refreshLogin()
   await refreshPlaylists()
   refreshAt = Date.now()
-  logger.debug('refreshStore')
 }
 
 async function refreshLogin () {
@@ -398,7 +404,7 @@ async function refreshPlaylistDetails (playlistId) {
   logger.debug('refreshPlaylistDetails', playlist.name)
 }
 
-async function loadSongDetails (playlistDetail, songId, retry) {
+async function loadAndPlaySong (playlistDetail, songId, failable = true) {
   const { normalIndexes, invalidIndexes } = playlistDetail
   let songsMap = songsMapStore[playlistDetail.id]
   if (!songsMap || !songsMap[songId]) {
@@ -432,20 +438,25 @@ async function loadSongDetails (playlistDetail, songId, retry) {
         url = url.replace(/(m\d+?)(?!c)\.music\.126\.net/, '$1c.music.126.net')
       }
     }
+    const playing = store.playing
+    await updateAudioSrc(url, playing)
+    const change = { selectedPlaylist: playlistDetail, selectedSong: song, playing }
+    Object.assign(store, change)
+    persistSave()
+    return change
   } catch (err) {
-    logger.error('loadSongDetail.err', err)
+    logger.error('loadSongDetail.error', song.id, song.name, err.message)
     if (song) {
       song.valid = false
       sendToPopup({ topic: 'changeSongsMap', songId, op: 'invalid' })
     }
     invalidIndexes.push(songId)
-    if (!retry || normalIndexes.length - invalidIndexes.length < 1) {
+    if (!failable || normalIndexes.length - invalidIndexes.length < 1) {
       throw new Error('歌曲无法播放')
     }
     const newSongId = getNextSongId(playlistDetail, songId)
-    return loadSongDetails(playlistDetail, newSongId, retry)
+    return loadAndPlaySong(playlistDetail, newSongId, failable)
   }
-  return [song, url]
 }
 
 async function loadTracks (ids) {
@@ -467,18 +478,17 @@ async function loadTracks (ids) {
 }
 
 async function playNextSong () {
-  const { selectedSong, selectedPlaylist } = store
-  let songId = selectedSong.id
+  const { selectedPlaylist } = store
+  let songId = store.selectedSong.id
   if (store.playMode !== PLAY_MODE.ONE) {
     songId = getNextSongId(selectedPlaylist, songId)
   }
-  const [newSong, songUrl] = await loadSongDetails(selectedPlaylist, songId, true)
-  return updateSelectedSong(newSong, songUrl)
+  const { selectedSong, playing } = await loadAndPlaySong(selectedPlaylist, songId)
+  return { selectedSong, playing }
 }
 
 function getNextSongId (playlistDetail, songId) {
   const { playMode, dir } = store
-  isForcePlay = false
   const songsIndex = playMode === PLAY_MODE.SHUFFLE ? playlistDetail.shuffleIndexes : playlistDetail.normalIndexes
   const len = songsIndex.length
   const currentIndex = songsIndex.findIndex(v => v === songId)
@@ -524,10 +534,8 @@ async function detectOversea () {
   await refreshStore()
 }
 
-function createAudio (url) {
-  const audio = new Audio(url)
+function setupAudio () {
   globalThis.audio = audio
-
   audio.volume = store.volume
   audio.onprogress = () => {
     if (audio.buffered.length) {
@@ -538,7 +546,6 @@ function createAudio (url) {
     }
   }
   audio.oncanplay = () => {
-    audio.onprogress()
     updateAudioState({
       duration: audio.duration,
     })
@@ -551,32 +558,38 @@ function createAudio (url) {
     const change = await playNextSong()
     sendToPopup({ topic: 'sync', change })
   }
-  audio.onerror = async () => {
-    logger.error('audio.error', store.selectedSong.id, store.selectedSong.name, audio.error.message)
-    if (isForcePlay) {
-      sendToPopup({ topic: 'error', message: '歌曲无法播放' })
-    } else {
-      const change = await playNextSong()
-      sendToPopup({ topic: 'sync', change })
-    }
-  }
   audio.ontimeupdate = () => {
     updateAudioState({
       currentTime: audio.currentTime,
     })
   }
-  return audio
+}
+async function updateAudioSrc (src, playing) {
+  if (audio) {
+    audio.src = src
+  } else {
+    audio = new Audio(src)
+    setupAudio()
+  }
+  if (playing) {
+    audio.autoplay = true
+  } else {
+    audio.autoplay = false
+  }
+  return new Promise((resolve, reject) => {
+    audio.onerror = () => {
+      return reject(audio.error)
+    }
+    audio.onloadedmetadata = () => {
+      console.log('onloadedmetadata')
+      return resolve()
+    }
+  })
 }
 
 function updateAudioState (state) {
   audioState = { ...audioState, ...state }
   sendToPopup({ topic: 'audioState', audioState })
-}
-
-async function updateSelectedSong (selectedSong, songUrl) {
-  Object.assign(store, { selectedSong, songUrl, playing: true })
-  persistSave()
-  return { selectedSong, playing: true }
 }
 
 function tracksToSongsMap (tracks) {
@@ -599,33 +612,6 @@ function tracksToSongsMap (tracks) {
   }, {})
   return songsMap
 }
-
-subscribeKey(store, 'songUrl', songUrl => {
-  if (!songUrl) {
-    audio.src = ''
-    return
-  }
-  if (audio) {
-    audio.src = songUrl
-  } else {
-    audio = createAudio(songUrl)
-  }
-  if (store.playing) {
-    audio.autoplay = true
-  } else {
-    audio.autoplay = false
-  }
-})
-
-subscribeKey(store, 'playing', playing => {
-  if (!audio) return
-  if (playing) {
-    if (audio.paused) audio.play()
-  } else {
-    if (!audio.paused) audio.pause()
-  }
-})
-
 setInterval(async () => {
   await refreshLogin()
   if (Date.now() - refreshAt > 13 * 60 * 60 * 1000) {
