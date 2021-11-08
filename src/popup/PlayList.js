@@ -28,7 +28,6 @@ export default function PlayList ({ maxHeight }) {
   const currentPlaylistId = selectedPlaylist?.id
   const playlistRefs = createRefs(playlists)
   useEffect(() => {
-    setLoading(true)
     storeUtils
       .loadSongsMap()
       .then(songsMap => setSongsMap(songsMap))
@@ -39,6 +38,7 @@ export default function PlayList ({ maxHeight }) {
   const [songs, songRefs] = useMemo(() => {
     const songs = selectedPlaylist?.normalIndexes
       .map(id => {
+        if (!songsMap[id]) return null
         if (id === songsMapChanged?.songId) {
           if (songsMapChanged?.op === 'invalid') {
             songsMap[id].valid = false
@@ -52,6 +52,7 @@ export default function PlayList ({ maxHeight }) {
     return [songs, songRefs]
   }, [selectedPlaylist, songsMap, songsMapChanged])
   const changePlaylist = id => {
+    setLoading(true)
     storeUtils.changePlaylist(id)
   }
   useEffect(() => {

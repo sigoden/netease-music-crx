@@ -37,6 +37,8 @@ let audioState = { ...EMPTY_AUDIO_STATE, volumeMute: null }
 let persistData = null
 // 上次刷新时间
 let refreshAt = 0
+// 上次暂停时间
+let pausedAt = null
 
 const store = proxy({ ...COMMON_PROPS, dir: 1, chinaIp: null })
 
@@ -53,15 +55,22 @@ export function updateAudioTime (currentTime) {
   audio.play()
 }
 
-export function togglePlaying () {
+export async function togglePlaying () {
   let { playing } = store
   if (!audio) {
     return { playing }
   }
   if (playing) {
+    pausedAt = Date.now()
     audio.pause()
     playing = false
   } else {
+    if (pausedAt && Date.now() - pausedAt > 10 * 60 * 1000) {
+      const currentTime = audioState.currentTime
+      await loadAndPlaySong(store.selectedPlaylist, store.selectedSong.id, false)
+      updateAudioTime(currentTime)
+      pausedAt = null
+    }
     audio.play()
     playing = true
   }
@@ -129,7 +138,15 @@ export async function changePlaylist (playlistId) {
     const songsIndex = store.playMode === PLAY_MODE.SHUFFLE ? selectedPlaylist.shuffleIndexes : selectedPlaylist.normalIndexes
     songId = songsIndex[0]
   }
-  return loadAndPlaySong(selectedPlaylist, songId)
+  loadAndPlaySong(selectedPlaylist, songId)
+    .then(({ selectedSong }) => {
+      sendToPopup({ topic: 'sync', change: { selectedSong } })
+    })
+    .catch(err => {
+      sendToPopup({ topic: 'error', message: err.message })
+    })
+  store.selectedPlaylist = selectedPlaylist
+  return { selectedPlaylist, selectedSong: null }
 }
 
 export async function loadSongsMap () {
@@ -581,7 +598,6 @@ async function updateAudioSrc (src, playing) {
       return reject(audio.error)
     }
     audio.onloadedmetadata = () => {
-      console.log('onloadedmetadata')
       return resolve()
     }
   })

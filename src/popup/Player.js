@@ -112,10 +112,10 @@ export default function Player () {
         <Grid container direction='column' sx={{ mx: 1 }}>
           <Grid item sx={{ display: 'flex', alignItems: 'baseline' }}>
             <Box sx={{ maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-              {selectedSong?.name || ''}
+              {selectedSong?.name || '歌名'}
             </Box>
             <Box sx={{ ml: 2, maxWidth: 175, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', fontSize: '14px', opacity: 0.6 }}>
-              {selectedSong?.artists || ''}
+              {selectedSong?.artists || '歌手'}
             </Box>
           </Grid>
           <Grid item alignItems='center' sx={{ display: 'flex' }}>
