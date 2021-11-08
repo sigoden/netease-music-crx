@@ -23,12 +23,12 @@ import {
   randChinaIp,
 } from '../utils'
 
-// 缓存歌单
-const playlistDetailStore = {}
-// 缓存歌单内歌曲
-const songsMapStore = {}
 // 播放器
 const audio = new Audio()
+// 缓存歌单
+let playlistDetailStore = {}
+// 缓存歌单内歌曲
+let songsMapStore = {}
 // 播放状态
 let audioState = { ...EMPTY_AUDIO_STATE, volumeMute: null }
 // 持久化缓存信息
@@ -234,20 +234,18 @@ export async function logout () {
 }
 
 export async function refreshPlaylists () {
-  const oldPlaylistIds = store.playlists.map(v => v.id)
+  playlistDetailStore = {}
+  globalThis.playlistDetailStore = playlistDetailStore
+
+  songsMapStore = {}
+  globalThis.songsMapStore = songsMapStore
+
   if (store.userId) {
     store.playlists = await loadPlaylists()
     await changePlaylist()
   } else {
     store.playlists = [...PLAYLIST_TOP, PLAYLIST_NEW_SONGS]
     await changePlaylist()
-  }
-  const newPlaylists = store.playlists
-  for (const playlistId of oldPlaylistIds) {
-    if (newPlaylists.findIndex(v => v.id === playlistId) === -1) {
-      delete songsMapStore[playlistId]
-      delete playlistDetailStore[playlistId]
-    }
   }
   return getPopupData()
 }
@@ -666,11 +664,8 @@ function tracksToSongsMap (tracks) {
   return songsMap
 }
 
-// 这些暴露到全局变量仅为调试用
 globalThis.audio = audio
 globalThis.store = store
-globalThis.songsMapStore = songsMapStore
-globalThis.playlistDetailStore = playlistDetailStore
 globalThis.refreshStore = refreshStore
 globalThis.api = api
 
