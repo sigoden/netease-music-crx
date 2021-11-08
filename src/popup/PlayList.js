@@ -53,7 +53,7 @@ export default function PlayList ({ maxHeight }) {
   }, [selectedPlaylist, songsMap, songsMapChanged])
   const changePlaylist = id => {
     setLoading(true)
-    storeUtils.changePlaylist(id)
+    storeUtils.changePlaylist(id).catch(_ => setLoading(false))
   }
   useEffect(() => {
     scrollListItemToView(playlistRefs, selectedPlaylist?.id)
