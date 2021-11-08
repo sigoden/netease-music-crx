@@ -64,7 +64,7 @@ function initContextMenu () {
   })
 
   chrome.contextMenus.onClicked.addListener(item => {
-    logger.debug(`contextMenu.${item}`)
+    logger.debug(`contextMenu.${item.menuItemId}`)
     switch (item.menuItemId) {
       case 'togglePlaying':
       case 'playPrev':
