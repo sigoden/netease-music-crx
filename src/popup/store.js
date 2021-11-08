@@ -76,9 +76,8 @@ function doAction (action, params = []) {
   logger.debug(action + '.req', params)
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ action, params }, response => {
-      logger.debug(action + '.res', response)
-      if (action === 'popupInit') {
-        logger.debug('store', store)
+      if (action !== 'loadSongsMap') {
+        logger.debug(action + '.res', response)
       }
       if (!response.isErr) {
         Object.assign(store, response)
@@ -124,5 +123,7 @@ chrome.runtime.onMessage.addListener((request) => {
       break
   }
 })
+
+globalThis.store = store
 
 export default store

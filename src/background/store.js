@@ -26,11 +26,8 @@ import {
 const playlistDetailStore = {}
 // 缓存歌单内歌曲
 const songsMapStore = {}
-/**
- * 播放器
- * @type HTMLAudioElement
- */
-let audio
+// 播放器
+const audio = new Audio()
 // 播放状态
 let audioState = { ...EMPTY_AUDIO_STATE, volumeMute: null }
 // 持久化缓存信息
@@ -43,6 +40,17 @@ let pausedAt = null
 const store = proxy({ ...COMMON_PROPS, dir: 1, chinaIp: null })
 
 export async function bootstrap () {
+  setInterval(async () => {
+    await refreshLogin()
+    if (Date.now() - refreshAt > 13 * 60 * 60 * 1000) {
+      await refreshStore()
+    }
+  }, 33 * 60 * 1000)
+
+  api.code301 = reset
+
+  setupAudio()
+
   await persistLoad()
   await refreshStore()
   await detectOversea()
@@ -552,7 +560,6 @@ async function detectOversea () {
 }
 
 function setupAudio () {
-  globalThis.audio = audio
   audio.volume = store.volume
   audio.onprogress = () => {
     if (audio.buffered.length) {
@@ -582,12 +589,7 @@ function setupAudio () {
   }
 }
 async function updateAudioSrc (src, playing) {
-  if (audio) {
-    audio.src = src
-  } else {
-    audio = new Audio(src)
-    setupAudio()
-  }
+  audio.src = src
   if (playing) {
     audio.autoplay = true
   } else {
@@ -628,15 +630,8 @@ function tracksToSongsMap (tracks) {
   }, {})
   return songsMap
 }
-setInterval(async () => {
-  await refreshLogin()
-  if (Date.now() - refreshAt > 13 * 60 * 60 * 1000) {
-    await refreshStore()
-  }
-}, 33 * 60 * 1000)
 
-api.code301 = reset
-
+globalThis.audio = audio
 globalThis.store = store
 globalThis.songsMapStore = songsMapStore
 globalThis.playlistDetailStore = playlistDetailStore
