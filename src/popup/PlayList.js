@@ -132,7 +132,7 @@ export default function PlayList ({ maxHeight }) {
                     </Box>
                   </TableCell>
                   <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{song.artists}</TableCell>
-                  <TableCell align='right'>{formatScondTime(song.duration / 1000)}</TableCell>
+                  <TableCell align='right'>{song.duration ? formatScondTime(song.duration / 1000) : '-'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

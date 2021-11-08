@@ -14,6 +14,7 @@ export const PLAYLIST_TYPE = {
   RECOMMEND: 2,
   CRATE: 3,
   FAVORIATE: 4,
+  CLOUD: 5,
 }
 
 // 榜单
@@ -55,6 +56,13 @@ export const PLAYLIST_REC_SONGS = {
   id: 20,
   name: '每日推荐',
   type: PLAYLIST_TYPE.RECOMMEND,
+  picUrl: '',
+}
+
+export const PLAYLIST_CLOUD_SONGS = {
+  id: 30,
+  name: '音乐云盘',
+  type: PLAYLIST_TYPE.CLOUD,
   picUrl: '',
 }
 

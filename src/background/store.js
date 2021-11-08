@@ -10,6 +10,7 @@ import {
   IMAGE_CLIP,
   PLAYLIST_REC_SONGS,
   PLAYLIST_NEW_SONGS,
+  PLAYLIST_CLOUD_SONGS,
   PLAYLIST_TOP,
   PLAYLIST_TYPE,
   EMPTY_AUDIO_STATE,
@@ -325,7 +326,14 @@ async function reset () {
 async function loadPlaylists () {
   const result = await Promise.all([loadRecommendResourcePlaylist(), loadUserPlaylist()])
   const [recommendResourcePlaylist, userPlaylists] = result
-  return [...PLAYLIST_TOP, PLAYLIST_NEW_SONGS, PLAYLIST_REC_SONGS, ...recommendResourcePlaylist, ...userPlaylists]
+  return [
+    ...PLAYLIST_TOP,
+    PLAYLIST_NEW_SONGS,
+    PLAYLIST_REC_SONGS,
+    ...recommendResourcePlaylist,
+    PLAYLIST_CLOUD_SONGS,
+    ...userPlaylists,
+  ]
 }
 
 async function loadRecommendResourcePlaylist () {
@@ -369,11 +377,11 @@ async function loadPlaylistDetails (playlist) {
     let cachedPlaylistDetail = playlistDetailStore[playlist.id]
     if (cachedPlaylistDetail) return cachedPlaylistDetail
     let normalIndexes = []
-    const dealSongs = songs => {
-      const tracks = songs.map(song => {
-        const { id, name, album: al, artists: ar, duration, fee } = song
-        return { id, name, al, ar, dt: duration, st: 0, fee }
-      })
+    const mapSong1 = song => {
+      const { id, name, album: al, artists: ar, duration, fee } = song
+      return { id, name, al, ar, dt: duration, st: 0, fee }
+    }
+    const dealTracks = tracks => {
       const songsMap = tracksToSongsMap(tracks)
       normalIndexes = tracks.map(v => v.id)
       songsMapStore[playlist.id] = songsMap
@@ -381,7 +389,7 @@ async function loadPlaylistDetails (playlist) {
     if (playlist.id === PLAYLIST_REC_SONGS.id) {
       const res = await api.getRecommendSongs()
       if (res.code === 200) {
-        dealSongs(res.recommend)
+        dealTracks(res.recommend.map(mapSong1))
       } else {
         logger.error('getRecommendSongs.error', res.message)
         throw new Error(res.message)
@@ -389,10 +397,23 @@ async function loadPlaylistDetails (playlist) {
     } else if (playlist.id === PLAYLIST_NEW_SONGS.id) {
       const res = await api.discoveryNeSongs()
       if (res.code === 200) {
-        dealSongs(res.data)
+        dealTracks(res.data.map(mapSong1))
       } else {
         logger.error('discoveryNeSongs.error', res.message)
         throw new Error(res.message)
+      }
+    } else if (playlist.id === PLAYLIST_CLOUD_SONGS.id) {
+      try {
+        const songs = await loadCloudSongs()
+        dealTracks(songs.map(song => {
+          const { songName: name, songId: id, simpleSong, artist } = song
+          const picUrl = simpleSong?.al?.picUrl || ''
+          const ar = Array.isArray(simpleSong?.ar) ? simpleSong?.ar : [{ name: artist }]
+          return { id, name, al: { picUrl }, ar, dt: simpleSong?.dt || 0, st: 0, fee: 0 }
+        }))
+      } catch (err) {
+        logger.error('loadCloudSongs.error', err.message)
+        throw new Error(err.message)
       }
     } else {
       const res = await api.getPlaylistDetail(playlist.id)
@@ -418,7 +439,7 @@ async function loadPlaylistDetails (playlist) {
     return cachedPlaylistDetail
   } catch (err) {
     logger.error('loadPlaylistDetails.err', err)
-    throw new Error(`获取歌单(${playlist.name})失败`)
+    throw new Error(`获取${playlist.name}歌单失败`)
   }
 }
 
@@ -500,6 +521,20 @@ async function loadTracks (ids) {
     }
   }))
   return chunkTracks.flatMap(v => v)
+}
+
+async function loadCloudSongs () {
+  let songs = []
+  while (true) {
+    const res = await api.getCloudSongs()
+    if (res.code === 200) {
+      songs = [...songs, ...res.data]
+      if (!res.hasMore) break
+    } else {
+      throw new Error(res.message)
+    }
+  }
+  return songs
 }
 
 async function playNextSong () {
@@ -612,7 +647,7 @@ function updateAudioState (state) {
 
 function tracksToSongsMap (tracks) {
   const songs = tracks.map(track => {
-    const { id, name, al: { picUrl }, ar, dt, st = 0, fee } = track
+    const { id, name, al: { picUrl = '' }, ar = [], dt = 0, st = 0, fee = 0 } = track
     return {
       id,
       name,
@@ -631,10 +666,12 @@ function tracksToSongsMap (tracks) {
   return songsMap
 }
 
+// 这些暴露到全局变量仅为调试用
 globalThis.audio = audio
 globalThis.store = store
 globalThis.songsMapStore = songsMapStore
 globalThis.playlistDetailStore = playlistDetailStore
 globalThis.refreshStore = refreshStore
+globalThis.api = api
 
 export default store

@@ -58,6 +58,7 @@ export default function Player () {
 
   const renderLikeBtn = () => {
     if (!userId) return
+    if (selectedPlaylist?.type === PLAYLIST_TYPE.CLOUD) return
     if (selectedPlaylist?.type === PLAYLIST_TYPE.CRATE) {
       return (
         <IconButton onClick={() => storeUtils.unlikeSong()} title='取消收藏'>

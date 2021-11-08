@@ -164,6 +164,16 @@ function createRequester () {
         },
       })
     },
+    // 云盘音乐
+    getCloudSongs (limit = 250, offset = 0) {
+      return createRequest({
+        url: '/api/v1/cloud/get',
+        data: {
+          limit,
+          offset,
+        },
+      })
+    },
   }
 }
 
