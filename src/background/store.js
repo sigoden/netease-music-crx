@@ -328,8 +328,8 @@ async function loadPlaylists () {
     ...PLAYLIST_TOP,
     PLAYLIST_NEW_SONGS,
     PLAYLIST_REC_SONGS,
-    ...recommendResourcePlaylist,
     PLAYLIST_CLOUD_SONGS,
+    ...recommendResourcePlaylist,
     ...userPlaylists,
   ]
 }
