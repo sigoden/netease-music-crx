@@ -147,6 +147,9 @@ export async function changePlaylist (playlistId) {
     const songsIndex = store.playMode === PLAY_MODE.SHUFFLE ? selectedPlaylist.shuffleIndexes : selectedPlaylist.normalIndexes
     songId = songsIndex[0]
   }
+  if (!songId) {
+    throw new Error('播放列表为空')
+  }
   loadAndPlaySong(selectedPlaylist, songId)
     .then(({ selectedSong }) => {
       sendToPopup({ topic: 'sync', change: { selectedSong } })
