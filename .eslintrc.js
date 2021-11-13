@@ -1,19 +1,15 @@
-process.env.NODE_ENV = 'development'
+process.env.NODE_ENV = "development";
 
 module.exports = {
-  parser: '@babel/eslint-parser',
-  extends: [
-    'react-app',
-    'standard',
-    'standard-jsx',
-    'standard-react',
-  ],
+  parser: "@babel/eslint-parser",
+  extends: ["react-app", "plugin:prettier/recommended"],
+  plugins: ["react"],
   globals: {
-    chrome: 'readonly',
+    chrome: "readonly",
+    globalThis: true,
   },
-  ignorePatterns: ['build', 'tmp'],
+  ignorePatterns: ["build", "tmp"],
   rules: {
-    'react/prop-types': 0,
-    'comma-dangle': ['error', 'always-multiline'],
+    "@typescript-eslint/no-explicit-any": 0,
   },
-}
+};

@@ -1,232 +1,226 @@
-import crypto from 'crypto'
-import bigInt from 'big-integer'
-import { DOMAIN, logger } from '../utils'
+import crypto from "crypto";
+import bigInt from "big-integer";
+import { DOMAIN, logger } from "../utils";
 
 const MODULUS =
-  '00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7'
-const NONCE = '0CoJUm6Qyw8W8jud'
-const PUBKEY = '010001'
+  "00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7";
+const NONCE = "0CoJUm6Qyw8W8jud";
+const PUBKEY = "010001";
 
-const api = createRequester()
-export default api
+const api = createRequester();
+export default api;
 
-function createRequester () {
-  async function createRequest (reqInfo) {
-    let {
-      method = 'post',
-      baseURL = DOMAIN,
-      url,
-      data,
-    } = reqInfo
-    url = baseURL + url
-    logger.verbose('api.fetch', url, data)
+function createRequester() {
+  async function createRequest(reqInfo) {
+    let { method = "post", baseURL = DOMAIN, url, data } = reqInfo;
+    url = baseURL + url;
+    logger.verbose("api.fetch", url, data);
     const res = await fetch(url, {
       method,
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      credentials: 'same-origin',
+      credentials: "same-origin",
       body: createQueryParams(data),
-    })
-    const result = await res.json()
+    });
+    const result = await res.json();
     if (result?.code === 301 && !/\/weapi\/login/.test(reqInfo.url)) {
-      await api.code301()
+      await api.code301();
     }
-    return result
+    return result;
   }
   return {
-    code301 () {
-    },
+    code301() {},
     // 手机登录
-    cellphoneLogin (phone, captcha) {
+    cellphoneLogin(phone, captcha) {
       return createRequest({
-        url: '/weapi/login/cellphone',
+        url: "/weapi/login/cellphone",
         data: {
           phone,
           captcha,
-          countrycode: '86',
-          rememberLogin: 'true',
+          countrycode: "86",
+          rememberLogin: "true",
         },
-      })
+      });
     },
     // 刷新登录态
-    loginRefresh () {
+    loginRefresh() {
       return createRequest({
-        url: '/weapi/login/token/refresh',
+        url: "/weapi/login/token/refresh",
         data: {},
-      })
+      });
     },
     // 发送验证码
-    captchaSent (phone) {
+    captchaSent(phone) {
       return createRequest({
-        url: '/weapi/sms/captcha/sent',
+        url: "/weapi/sms/captcha/sent",
         data: {
           cellphone: phone,
-          ctcode: '86',
+          ctcode: "86",
         },
-      })
+      });
     },
     // 用户账户
-    getUser () {
+    getUser() {
       return createRequest({
-        url: '/api/nuser/account/get',
+        url: "/api/nuser/account/get",
         data: {},
-      })
+      });
     },
     // 退出登录
-    logout () {
+    logout() {
       return createRequest({
-        url: '/weapi/logout',
+        url: "/weapi/logout",
         data: {},
-      })
+      });
     },
     // 获取歌单
-    getUserPlaylist (uid) {
+    getUserPlaylist(uid) {
       return createRequest({
-        url: '/weapi/user/playlist',
+        url: "/weapi/user/playlist",
         data: {
           offset: 0,
           uid,
           limit: 50,
         },
-      })
+      });
     },
     // 获取歌单详情
-    getPlaylistDetail (id) {
+    getPlaylistDetail(id) {
       return createRequest({
-        url: '/weapi/v3/playlist/detail',
+        url: "/weapi/v3/playlist/detail",
         data: {
           id,
           n: 1000,
           s: 8,
         },
-      })
+      });
     },
     // 获取每日推荐歌曲
-    getRecommendSongs () {
+    getRecommendSongs() {
       return createRequest({
-        url: '/weapi/v2/discovery/recommend/songs',
+        url: "/weapi/v2/discovery/recommend/songs",
         data: {
           offset: 0,
           total: true,
           limit: 50,
         },
-      })
+      });
     },
     // 个性化推荐歌单
-    getRecommendResource () {
+    getRecommendResource() {
       return createRequest({
-        url: '/weapi/discovery/recommend/resource',
+        url: "/weapi/discovery/recommend/resource",
         data: {},
-      })
+      });
     },
     // 新歌速递
-    discoveryNeSongs (areaId = 0) {
+    discoveryNeSongs(areaId = 0) {
       return createRequest({
-        url: '/weapi/v1/discovery/new/songs',
+        url: "/weapi/v1/discovery/new/songs",
         data: {
           areaId,
           total: true,
         },
-      })
+      });
     },
     // 获取歌曲详情
-    getSongDetail (ids) {
-      const idsHash = ids.map(id => ({ id }))
-      const idsStringify = JSON.stringify(ids)
+    getSongDetail(ids) {
+      const idsHash = ids.map((id) => ({ id }));
+      const idsStringify = JSON.stringify(ids);
       return createRequest({
-        url: '/weapi/v3/song/detail',
+        url: "/weapi/v3/song/detail",
         data: {
           c: JSON.stringify(idsHash),
           ids: idsStringify,
         },
-      })
+      });
     },
     // 获取音乐 url
-    getSongUrls (ids, br = 999000) {
+    getSongUrls(ids, br = 999000) {
       return createRequest({
-        url: '/weapi/song/enhance/player/url',
+        url: "/weapi/song/enhance/player/url",
         data: {
           ids,
           br,
         },
-      })
+      });
     },
     // 喜欢音乐
-    likeSong (playlistId, songId, isLike) {
+    likeSong(playlistId, songId, isLike) {
       return createRequest({
-        url: '/weapi/playlist/manipulate/tracks',
+        url: "/weapi/playlist/manipulate/tracks",
         data: {
-          tracks: '[object Object]',
+          tracks: "[object Object]",
           pid: playlistId,
           trackIds: `[${songId}]`,
-          op: isLike ? 'add' : 'del',
+          op: isLike ? "add" : "del",
         },
-      })
+      });
     },
     // 云盘音乐
-    getCloudSongs (limit = 250, offset = 0) {
+    getCloudSongs(limit = 250, offset = 0) {
       return createRequest({
-        url: '/api/v1/cloud/get',
+        url: "/api/v1/cloud/get",
         data: {
           limit,
           offset,
         },
-      })
+      });
     },
-  }
+  };
 }
 
-function createQueryParams (data) {
-  const cryptoReq = encryptData(data)
-  const body = new URLSearchParams()
-  body.append('params', cryptoReq.params)
-  body.append('encSecKey', cryptoReq.encSecKey)
-  return body
+function createQueryParams(data) {
+  const cryptoReq = encryptData(data);
+  const body = new URLSearchParams();
+  body.append("params", cryptoReq.params);
+  body.append("encSecKey", cryptoReq.encSecKey);
+  return body;
 }
 
-function encryptData (obj) {
-  const text = JSON.stringify(obj)
-  const secKey = createSecretKey(16)
-  const encText = aesEncrypt(aesEncrypt(text, NONCE), secKey)
-  const encSecKey = rsaEncrypt(secKey, PUBKEY, MODULUS)
+function encryptData(obj) {
+  const text = JSON.stringify(obj);
+  const secKey = createSecretKey(16);
+  const encText = aesEncrypt(aesEncrypt(text, NONCE), secKey);
+  const encSecKey = rsaEncrypt(secKey, PUBKEY, MODULUS);
   return {
     params: encText,
     encSecKey: encSecKey,
-  }
+  };
 }
 
-function createSecretKey (size) {
-  const keys = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  let key = ''
+function createSecretKey(size) {
+  const keys = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let key = "";
   for (let i = 0; i < size; i++) {
-    let pos = Math.random() * keys.length
-    pos = Math.floor(pos)
-    key = key + keys.charAt(pos)
+    let pos = Math.random() * keys.length;
+    pos = Math.floor(pos);
+    key = key + keys.charAt(pos);
   }
-  return key
+  return key;
 }
 
-function aesEncrypt (text, secKey) {
-  const _text = text
-  const lv = Buffer.from('0102030405060708', 'binary')
-  const _secKey = Buffer.from(secKey, 'binary')
-  const cipher = crypto.createCipheriv('AES-128-CBC', _secKey, lv)
-  let encrypted = cipher.update(_text, 'utf8', 'base64')
-  encrypted += cipher.final('base64')
-  return encrypted
+function aesEncrypt(text, secKey) {
+  const _text = text;
+  const lv = Buffer.from("0102030405060708", "binary");
+  const _secKey = Buffer.from(secKey, "binary");
+  const cipher = crypto.createCipheriv("AES-128-CBC", _secKey, lv);
+  let encrypted = cipher.update(_text, "utf8", "base64");
+  encrypted += cipher.final("base64");
+  return encrypted;
 }
 
-function rsaEncrypt (text, pubKey, modulus) {
-  const _text = text.split('').reverse().join('')
-  const biText = bigInt(Buffer.from(_text).toString('hex'), 16)
-  const biEx = bigInt(pubKey, 16)
-  const biMod = bigInt(modulus, 16)
-  const biRet = biText.modPow(biEx, biMod)
-  return zfill(biRet.toString(16), 256)
+function rsaEncrypt(text, pubKey, modulus) {
+  const _text = text.split("").reverse().join("");
+  const biText = bigInt(Buffer.from(_text).toString("hex"), 16);
+  const biEx = bigInt(pubKey, 16);
+  const biMod = bigInt(modulus, 16);
+  const biRet = biText.modPow(biEx, biMod);
+  return zfill(biRet.toString(16), 256);
 }
 
-function zfill (str, size) {
-  while (str.length < size) str = '0' + str
-  return str
+function zfill(str, size) {
+  while (str.length < size) str = "0" + str;
+  return str;
 }

@@ -1,5 +1,5 @@
-import { init } from './background/chrome'
-import { bootstrap } from './background/store'
+import { init } from "./background/chrome";
+import { bootstrap } from "./background/store";
 
-init()
-bootstrap()
+init();
+bootstrap();
