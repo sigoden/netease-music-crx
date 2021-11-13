@@ -18,14 +18,11 @@ for (const entryName in config.entry) {
   }
 }
 
-config.plugins = [new webpack.HotModuleReplacementPlugin(), ...(config.plugins || [])]
-
 const compiler = webpack(config)
 
 const server = new WebpackDevServer(
   {
     https: false,
-    hot: false,
     client: false,
     host: 'localhost',
     port: PORT,
@@ -44,10 +41,6 @@ const server = new WebpackDevServer(
   compiler,
 )
 
-if (process.env.NODE_ENV === 'development' && module.hot) {
-  module.hot.accept()
-}
-
-(async () => {
+;(async () => {
   await server.start()
 })()
