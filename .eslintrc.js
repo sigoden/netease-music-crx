@@ -9,7 +9,4 @@ module.exports = {
     globalThis: true,
   },
   ignorePatterns: ["build", "tmp"],
-  rules: {
-    "@typescript-eslint/no-explicit-any": 0,
-  },
 };
