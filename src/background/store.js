@@ -342,7 +342,9 @@ async function refreshStore() {
 async function refreshLogin() {
   const res = await api.loginRefresh();
   if (res.code !== 200) {
-    await reset();
+    if (store.userId) {
+      await reset();
+    }
     return;
   }
   if (store.userId === null) {
