@@ -50,10 +50,11 @@ export async function bootstrap() {
 
   api.code301 = reset;
 
-  setupAudio();
-
   await persistLoad();
   await refreshStore();
+
+  setupAudio();
+
   await detectOversea();
 }
 
