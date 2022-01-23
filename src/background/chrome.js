@@ -83,9 +83,9 @@ function initContextMenu() {
     }
   });
 
-  subscribeKey(store, "playing", (playing) => {
+  subscribeKey(store, "audioPlaying", (audioPlaying) => {
     const id = "togglePlaying";
-    chrome.contextMenus.update(id, contextMenus[id](playing));
+    chrome.contextMenus.update(id, contextMenus[id](audioPlaying));
   });
 
   subscribeKey(store, "userId", (userId) => {

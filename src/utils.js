@@ -90,7 +90,7 @@ export const PLAY_MODE = {
 export const COMMON_PROPS = {
   userId: null,
   vip: false,
-  playing: false,
+  audioPlaying: false,
   volume: 1,
   playMode: PLAY_MODE.LOOP,
   playlists: [],

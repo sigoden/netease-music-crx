@@ -21,6 +21,7 @@ import {
   shuffleArr,
   race,
   randChinaIp,
+  sleep,
 } from "../utils";
 
 // 播放器
@@ -38,12 +39,13 @@ let refreshAt = 0;
 // 上次暂停时间
 let pausedAt = null;
 
-const store = proxy({ ...COMMON_PROPS, dir: 1, chinaIp: null });
+const store = proxy({ ...COMMON_PROPS, playing: false, dir: 1, chinaIp: null });
 
 export async function bootstrap() {
   setInterval(async () => {
     await refreshLogin();
     if (Date.now() - refreshAt > 13 * 60 * 60 * 1000) {
+      store.playing = store.audioPlaying;
       await refreshStore();
     }
   }, 33 * 60 * 1000);
@@ -66,11 +68,13 @@ export function updateAudioTime(currentTime) {
 }
 
 export async function togglePlaying() {
-  let { playing } = store;
+  let { audioPlaying, playing } = store;
   if (!audio) {
-    return { playing };
+    store.audioPlaying = false;
+    store.playing = false;
+    return { audioPlaying: false };
   }
-  if (playing) {
+  if (audioPlaying) {
     pausedAt = Date.now();
     audio.pause();
     playing = false;
@@ -90,7 +94,7 @@ export async function togglePlaying() {
   }
   store.playing = playing;
   persistSave();
-  return { playing };
+  return { audioPlaying: !audioPlaying };
 }
 
 export function toggleMute() {
@@ -315,6 +319,7 @@ function getPopupData() {
   const {
     userId,
     playing,
+    audioPlaying,
     volume,
     playMode,
     playlists,
@@ -324,6 +329,7 @@ function getPopupData() {
   return {
     userId,
     playing,
+    audioPlaying,
     volume,
     playMode,
     playlists,
@@ -687,6 +693,12 @@ function setupAudio() {
         loadPercentage,
       });
     }
+  };
+  audio.onplay = () => {
+    store.audioPlaying = true;
+  };
+  audio.onpause = () => {
+    store.audioPlaying = false;
   };
   audio.oncanplay = () => {
     updateAudioState({

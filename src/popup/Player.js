@@ -26,7 +26,7 @@ export default function Player() {
   const [showModal, setShowModal] = useState(false);
   const {
     userId,
-    playing,
+    audioPlaying,
     selectedSong,
     selectedPlaylist,
     volume,
@@ -100,7 +100,7 @@ export default function Player() {
           onClick={() => storeUtils.togglePlaying()}
           title="播放/暂停"
         >
-          {playing ? <PauseIcon /> : <PlayArrowIcon />}
+          {audioPlaying ? <PauseIcon /> : <PlayArrowIcon />}
         </IconButton>
         <IconButton onClick={() => storeUtils.playNext()} title="下一首">
           <SkipNextIcon />
