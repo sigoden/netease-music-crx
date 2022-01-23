@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSnapshot } from "valtio";
-import { useHistory } from "react-router";
+import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
@@ -12,7 +12,7 @@ import { DOMAIN, sleep } from "../utils";
 
 export default function Login() {
   const snap = useSnapshot(store);
-  const history = useHistory();
+  const navigate = useNavigate();
   const [state, setState] = useState({
     phone: "",
     captcha: "",
@@ -42,7 +42,7 @@ export default function Login() {
     try {
       await storeUtils.login(phone, captcha);
       await storeUtils.refreshPlaylists();
-      history.push("/");
+      navigate("/", { replace: true });
     } catch {}
   };
   return (

@@ -1,6 +1,6 @@
 import React from "react";
 import { useSnapshot } from "valtio";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Alert from "@mui/material/Alert";
 import Link from "@mui/material/Link";
@@ -10,7 +10,7 @@ import store from "./store";
 
 export default function Home() {
   const snap = useSnapshot(store);
-  const history = useHistory();
+  const navigate = useNavigate();
   return (
     <Box sx={{ width: 800 }}>
       <Player />
@@ -22,7 +22,7 @@ export default function Home() {
       )}
       {!snap.userId && (
         <Box sx={{ p: 3, textAlign: "center", background: "white" }}>
-          <Link href="#" onClick={() => history.push("/login")}>
+          <Link href="#" onClick={() => navigate("/login", { replace: true })}>
             登录
           </Link>
           后获取个性化推荐及我的歌单
