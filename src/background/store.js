@@ -21,7 +21,6 @@ import {
   shuffleArr,
   race,
   randChinaIp,
-  sleep,
 } from "../utils";
 
 // 播放器
@@ -36,8 +35,8 @@ let audioState = { ...EMPTY_AUDIO_STATE, volumeMute: null };
 let persistData = null;
 // 上次刷新时间
 let refreshAt = 0;
-// 上次暂停时间
-let pausedAt = null;
+// 加载歌曲时间
+let songAt = 0;
 
 const store = proxy({ ...COMMON_PROPS, playing: false, dir: 1, chinaIp: null });
 
@@ -75,11 +74,10 @@ export async function togglePlaying() {
     return { audioPlaying: false };
   }
   if (audioPlaying) {
-    pausedAt = Date.now();
     audio.pause();
     playing = false;
   } else {
-    if (pausedAt && Date.now() - pausedAt > 10 * 60 * 1000) {
+    if (Date.now() - songAt > 10 * 60 * 1000) {
       const currentTime = audioState.currentTime;
       await loadAndPlaySong(
         store.selectedPlaylist,
@@ -87,7 +85,6 @@ export async function togglePlaying() {
         false
       );
       updateAudioTime(currentTime);
-      pausedAt = null;
     }
     audio.play();
     playing = true;
@@ -721,6 +718,7 @@ function setupAudio() {
 }
 async function updateAudioSrc(src, playing) {
   audio.src = src;
+  songAt = Date.now();
   if (playing) {
     audio.autoplay = true;
   } else {
