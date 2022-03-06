@@ -33,22 +33,12 @@ let songsMapStore = {};
 let audioState = { ...EMPTY_AUDIO_STATE, volumeMute: null };
 // 持久化缓存信息
 let persistData = null;
-// 上次刷新时间
-let refreshAt = 0;
 // 加载歌曲时间
 let songAt = 0;
 
 const store = proxy({ ...COMMON_PROPS, playing: false, dir: 1, chinaIp: null });
 
 export async function bootstrap() {
-  setInterval(async () => {
-    await refreshLogin();
-    if (Date.now() - refreshAt > 13 * 60 * 60 * 1000) {
-      store.playing = store.audioPlaying;
-      await refreshStore();
-    }
-  }, 33 * 60 * 1000);
-
   api.code301 = reset;
 
   await persistLoad();
@@ -277,6 +267,12 @@ export async function refreshPlaylists() {
   return getPopupData();
 }
 
+export async function refreshStore() {
+  logger.debug("refreshStore");
+  await refreshLogin();
+  await refreshPlaylists();
+}
+
 export function popupInit() {
   return getPopupData();
 }
@@ -334,13 +330,6 @@ function getPopupData() {
     selectedSong,
     audioState,
   };
-}
-
-async function refreshStore() {
-  logger.debug("refreshStore");
-  await refreshLogin();
-  await refreshPlaylists();
-  refreshAt = Date.now();
 }
 
 async function refreshLogin() {

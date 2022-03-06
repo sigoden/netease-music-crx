@@ -53,6 +53,10 @@ function initContextMenu() {
       title: volumeMute ? "取消静音" : "静音",
       contexts,
     }),
+    refreshStore: () => ({
+      title: "刷新歌单",
+      contexts,
+    }),
     logout: (userId) => ({
       title: "退出登录",
       contexts,
@@ -76,6 +80,7 @@ function initContextMenu() {
       case "playPrev":
       case "playNext":
       case "toggleMute":
+      case "refreshStore":
       case "logout":
         storeUtils[item.menuItemId]();
         break;
