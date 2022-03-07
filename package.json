@@ -2,7 +2,7 @@
   "name": "netease-music-crx",
   "description": "能够收听VIP或变灰歌曲的网易云音乐播放器",
   "license": "GPL-3.0-only",
-  "version": "5.5.0",
+  "version": "5.6.0",
   "scripts": {
     "build": "node scripts/build.js",
     "start": "node scripts/webserver.js",
