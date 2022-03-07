@@ -31,8 +31,6 @@ let playlistDetailStore = {};
 let songsMapStore = {};
 // 播放状态
 let audioState = { ...EMPTY_AUDIO_STATE, volumeMute: null };
-// 持久化缓存信息
-let persistData = null;
 // 加载歌曲时间
 let songAt = 0;
 
@@ -137,16 +135,19 @@ export async function updatePlayMode() {
 export async function changePlaylist(playlistId) {
   let songId;
   if (!playlistId) {
-    if (persistData) {
+    const persistData = await loadData();
+    if (persistData?.playlistId) {
       playlistId = persistData.playlistId;
       songId = persistData.songId;
-      persistData = null;
     }
   }
   let playlist = store.playlists.find((playlist) => playlist.id === playlistId);
-  if (!playlist) playlist = store.playlists[0];
+  if (!playlist) {
+    playlist = store.playlists[0];
+    songId = null;
+  }
   const selectedPlaylist = await loadPlaylistDetails(playlist);
-  if (!selectedPlaylist.normalIndexes.find((v) => v === songId)) {
+  if (!songId || !selectedPlaylist.normalIndexes.find((v) => v === songId)) {
     const songsIndex =
       store.playMode === PLAY_MODE.SHUFFLE
         ? selectedPlaylist.shuffleIndexes
@@ -296,14 +297,8 @@ async function persistLoad() {
       volume = COMMON_PROPS.volume,
       playMode = COMMON_PROPS.playMode,
       chinaIp = null,
-      playlistId,
-      songId,
     } = data;
     logger.debug("persist.load", data);
-    if (playlistId) {
-      persistData = { playlistId };
-      if (songId) persistData.songId = songId;
-    }
     Object.assign(store, { volume, playMode, chinaIp });
   }
 }

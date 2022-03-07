@@ -54,7 +54,7 @@ function initContextMenu() {
       contexts,
     }),
     refreshStore: () => ({
-      title: "刷新歌单",
+      title: "每日刷新",
       contexts,
     }),
     logout: (userId) => ({
