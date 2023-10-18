@@ -17,7 +17,8 @@
     "16" : "icon-128.png"
   },
   "permissions": [
-    "storage", 
+    "input",
+    "storage",
     "webRequest",
     "webRequestBlocking",
     "contextMenus",
@@ -27,5 +28,37 @@
   ],
   "update_url": "http://clients2.google.com/service/update2/crx",
   "minimum_chrome_version": "29",
-  "content_security_policy": "script-src 'self'; object-src 'self'"
+  "content_security_policy": "script-src 'self'; object-src 'self'",
+  "commands": {
+    "playNext": {
+      "suggested_key": {
+        "default": "MediaNextTrack",
+        "windows": "MediaNextTrack",
+        "mac": "MediaNextTrack",
+        "linux": "MediaNextTrack"
+      },
+      "description": "Play Next",
+      "global": true
+    },
+    "playPrev": {
+      "suggested_key": {
+        "default": "MediaPrevTrack",
+        "windows": "MediaPrevTrack",
+        "mac": "MediaPrevTrack",
+        "linux": "MediaPrevTrack"
+      },
+      "description": "Play Previous",
+      "global": true
+    },
+    "togglePlaying": {
+      "suggested_key": {
+        "default": "MediaPlayPause",
+        "windows": "MediaPlayPause",
+        "mac": "MediaPlayPause",
+        "linux": "MediaPlayPause"
+      },
+      "description": "Play Pause",
+      "global": true
+    }
+  }
 }

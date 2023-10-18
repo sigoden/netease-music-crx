@@ -43,6 +43,7 @@ export async function bootstrap() {
   await refreshStore();
 
   setupAudio();
+  listenCommand();
 
   await detectOversea();
 }
@@ -276,6 +277,25 @@ export async function refreshStore() {
 
 export function popupInit() {
   return getPopupData();
+}
+
+function listenCommand() {
+  chrome.commands.onCommand.addListener((command) => {
+    console.log(`Command: ${command}`);
+    switch (command) {
+      case "playNext":
+        playNext();
+        break;
+      case "playPrev":
+        playPrev();
+        break;
+      case "togglePlaying":
+        togglePlaying();
+        break;
+      default:
+        break;
+    }
+  });
 }
 
 function persistSave() {
